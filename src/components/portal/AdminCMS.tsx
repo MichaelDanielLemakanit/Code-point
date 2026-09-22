@@ -46,6 +46,7 @@ import {
 } from 'recharts';
 import { Application, Course, AdminStats, ApplicationStatus, Certificate, AssignmentSubmission, SiteSettings } from '../../types';
 import { CertificateModal } from './CertificateModal';
+import { CertificateGenerator } from './CertificateGenerator';
 import { TechStackManager } from './TechStackManager';
 import { ClassSchedulesManager } from './ClassSchedulesManager';
 import { WhyStudyManager } from './WhyStudyManager';
@@ -838,8 +839,17 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
 
       {/* TAB 3: GRADUATION & CERTIFICATE CMS */}
       {activeTab === 'certificates' && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           
+          {/* Dynamic Certificate Generator Studio & PostgreSQL Registry */}
+          <CertificateGenerator
+            initialCertificates={certificates}
+            applications={applications}
+            submissions={submissions}
+            onRefresh={fetchCertificatesAndSubmissions}
+            onSelectPreview={(cert) => setSelectedCert(cert)}
+          />
+
           {/* Header Policy Rule */}
           <div className="p-5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
             <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase font-mono tracking-wider">

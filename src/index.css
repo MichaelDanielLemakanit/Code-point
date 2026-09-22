@@ -37,3 +37,30 @@
 .animate-marquee-reverse:hover {
   animation-play-state: paused;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #certificate-print-root,
+  #certificate-print-root * {
+    visibility: visible;
+  }
+  #certificate-print-root {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    background: #06101e !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    z-index: 999999;
+  }
+  @page {
+    size: landscape;
+    margin: 0;
+  }
+}

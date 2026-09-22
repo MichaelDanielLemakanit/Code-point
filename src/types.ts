@@ -305,6 +305,12 @@ export interface Certificate {
   approved_by: string;
   approved_at: string;
   qr_code_payload?: string;
+  technologies_covered?: string;
+  issuer_name?: string;
+  issuer_title?: string;
+  second_issuer_name?: string;
+  second_issuer_title?: string;
+  email_sent_at?: string;
 }
 
 export type AnnouncementCategory = 'Class Update' | 'Lab Notice' | 'Urgent' | 'Guest Lecture' | 'Career' | 'General';
