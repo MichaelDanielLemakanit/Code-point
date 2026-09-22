@@ -15,6 +15,7 @@ import {
   Search, 
   Filter, 
   Plus, 
+  Edit3, 
   Phone, 
   Calendar, 
   Clock, 
@@ -144,6 +145,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
   const [certsLoading, setCertsLoading] = useState(false);
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
+  const [certModalMode, setCertModalMode] = useState<'view' | 'edit'>('view');
+  const [isCreatingNewCert, setIsCreatingNewCert] = useState(false);
   const [approvingEmail, setApprovingEmail] = useState<string | null>(null);
   const [approvalFeedback, setApprovalFeedback] = useState<{ text: string; isError: boolean } | null>(null);
 
@@ -985,14 +988,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </p>
                       </div>
 
-                      <button
-                        onClick={fetchCertificatesAndSubmissions}
-                        disabled={certsLoading}
-                        className="px-3.5 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors self-start cursor-pointer shadow-xs"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${certsLoading ? 'animate-spin text-amber-500' : 'text-stone-500'}`} />
-                        <span>Refresh Records</span>
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2.5 self-start">
+                        <button
+                          onClick={() => {
+                            setSelectedCert(null);
+                            setCertModalMode('edit');
+                            setIsCreatingNewCert(true);
+                          }}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm hover:shadow cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>+ Create New Certificate</span>
+                        </button>
+
+                        <button
+                          onClick={fetchCertificatesAndSubmissions}
+                          disabled={certsLoading}
+                          className="px-3.5 py-2 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${certsLoading ? 'animate-spin text-amber-500' : 'text-stone-500'}`} />
+                          <span>Refresh Records</span>
+                        </button>
+                      </div>
                     </div>
 
                     {approvalFeedback && (
@@ -1045,13 +1062,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 <div className="text-[11px] text-amber-700 font-medium">{cert.course_title} • {cert.cohort}</div>
                                 <div className="text-[10px] text-stone-400 font-mono">ID: {cert.verification_id}</div>
                               </div>
-                              <button
-                                onClick={() => setSelectedCert(cert)}
-                                className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                <span>View Cert</span>
-                              </button>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  onClick={() => {
+                                    setSelectedCert(cert);
+                                    setCertModalMode('edit');
+                                    setIsCreatingNewCert(false);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
+                                  title="Edit certificate details"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5 text-amber-600" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedCert(cert);
+                                    setCertModalMode('view');
+                                    setIsCreatingNewCert(false);
+                                  }}
+                                  className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>View Cert</span>
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1144,13 +1179,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                                 <div className="flex items-center gap-2 shrink-0">
                                   {stu.certificate ? (
-                                    <button
-                                      onClick={() => setSelectedCert(stu.certificate!)}
-                                      className="px-3.5 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 text-stone-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
-                                    >
-                                      <Eye className="w-3.5 h-3.5 text-amber-600" />
-                                      <span>View Certificate</span>
-                                    </button>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      <button
+                                        onClick={() => {
+                                          setSelectedCert(stu.certificate!);
+                                          setCertModalMode('edit');
+                                          setIsCreatingNewCert(false);
+                                        }}
+                                        className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs"
+                                        title="Edit certificate details"
+                                      >
+                                        <Edit3 className="w-3.5 h-3.5 text-amber-600" />
+                                        <span>Edit</span>
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setSelectedCert(stu.certificate!);
+                                          setCertModalMode('view');
+                                          setIsCreatingNewCert(false);
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 text-stone-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                      >
+                                        <Eye className="w-3.5 h-3.5 text-amber-600" />
+                                        <span>View Certificate</span>
+                                      </button>
+                                    </div>
                                   ) : (
                                     <button
                                       onClick={() => handleApproveCertificate(stu.email, stu.name, stu.courseTitle)}
@@ -1834,11 +1887,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       </div>
 
-      {/* Verified Certificate Modal */}
-      {selectedCert && (
+      {/* Verified Certificate Modal & Custom Generator */}
+      {(selectedCert || isCreatingNewCert) && (
         <CertificateModal
           certificate={selectedCert}
-          onClose={() => setSelectedCert(null)}
+          initialMode={certModalMode}
+          onClose={() => {
+            setSelectedCert(null);
+            setIsCreatingNewCert(false);
+          }}
+          onSaved={(savedCert) => {
+            fetchCertificatesAndSubmissions();
+            setSelectedCert(savedCert);
+            setIsCreatingNewCert(false);
+          }}
         />
       )}
     </div>

@@ -1475,7 +1475,12 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
       {selectedCert && (
         <CertificateModal
           certificate={selectedCert}
+          initialMode="view"
           onClose={() => setSelectedCert(null)}
+          onSaved={(savedCert) => {
+            fetchCertificatesAndSubmissions();
+            setSelectedCert(savedCert);
+          }}
         />
       )}
 

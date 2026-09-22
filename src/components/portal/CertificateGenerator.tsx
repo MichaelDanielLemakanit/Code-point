@@ -27,10 +27,12 @@ import {
   RefreshCw,
   X,
   FileCheck,
-  Send
+  Send,
+  Plus
 } from 'lucide-react';
 import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
+import { exportCertificatePdf } from '../../utils/certificatePdf';
 
 interface CertificateGeneratorProps {
   initialCertificates?: Certificate[];
@@ -96,8 +98,8 @@ export const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
 
   // Form State
   const [formData, setFormData] = useState<CertificateFormState>({
-    student_name: "Brian Kipchumba",
-    student_email: "student@codepointkenya.com",
+    student_name: "",
+    student_email: "",
     course_title: "Full-Stack Software Engineering",
     technologies_covered: "Python, JavaScript, React 19, Node.js, PostgreSQL, Tailwind CSS, Docker, Git",
     verification_id: `CPK-CERT-2026-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
@@ -256,38 +258,18 @@ export const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
     setIsExportingPdf(true);
     try {
       showToast("Rendering high-resolution vector PDF...", "info");
-
-      // Render the DOM node to canvas with high pixel scale for print fidelity
-      const element = certRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#07101e'
+      await exportCertificatePdf(certRef.current, {
+        verification_id: formData.verification_id,
+        student_name: formData.student_name,
+        course_title: formData.course_title,
+        cohort: formData.cohort,
+        grade: formData.final_grade,
+        completion_date: formData.completion_date
       });
-
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      
-      // Landscape A4 dimensions in mm: 297 x 210
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      // Draw the image fitting the entire landscape page
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-      
-      const fileName = `CodePointKenya_Certificate_${formData.verification_id}.pdf`;
-      pdf.save(fileName);
-
-      showToast(`Certificate downloaded: ${fileName}`, 'success');
+      showToast(`Certificate PDF downloaded for ${formData.student_name || 'Student'}!`, 'success');
     } catch (err: any) {
       console.warn("PDF export notice:", err?.message || err);
-      showToast("PDF rendering completed or redirected to Print dialog.", "info");
+      showToast("PDF rendering forwarded to Print dialog.", "info");
       // Fallback to print
       window.print();
     } finally {
@@ -478,8 +460,20 @@ export const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
 
             <div className="flex flex-wrap items-center gap-2">
               <button
+                onClick={() => {
+                  handleResetForm();
+                  setActiveTab('studio');
+                }}
+                className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                title="Create a new custom certificate from scratch"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Create New Certificate</span>
+              </button>
+
+              <button
                 onClick={handleResetForm}
-                className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-750 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-750 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                 title="Reset to blank form"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -866,7 +860,10 @@ export const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
 
                         {/* Student Name */}
                         <div className="py-0.5">
-                          <h3 className="text-2xl sm:text-3xl lg:text-4xl font-serif italic font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 via-teal-100 to-amber-200 tracking-wide px-4 inline-block border-b-2 border-amber-400/40 pb-1">
+                          <h3 
+                            className="cert-student-name text-2xl sm:text-3xl lg:text-4xl font-serif italic font-extrabold text-[#fef08a] tracking-wide px-4 inline-block border-b-2 border-amber-400/40 pb-1"
+                            style={{ textShadow: '0 0 20px rgba(251, 191, 36, 0.4)' }}
+                          >
                             {formData.student_name || "Student Full Name"}
                           </h3>
                         </div>
