@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
+import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { Hero } from './components/Hero';
 import { ProgramsCatalog } from './components/ProgramsCatalog';
 import { LearningModel } from './components/LearningModel';
@@ -120,6 +121,12 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
       
+      {/* Top-Bar Announcement Banner for Upcoming Intake & Next Cohort */}
+      <AnnouncementBanner
+        siteSettings={siteSettings}
+        onApplyNow={() => handleOpenApply()}
+      />
+
       {/* Main Navigation */}
       <Navbar
         currentUser={currentUser}
@@ -153,7 +160,10 @@ export default function App() {
         <TechnologiesSection />
 
         {/* 4. Flexible Class Schedules (Evening Track & Weekend Track) */}
-        <ClassSchedulesSection onApply={() => handleOpenApply()} />
+        <ClassSchedulesSection
+          onApply={() => handleOpenApply()}
+          siteSettings={siteSettings}
+        />
 
         {/* 5. Online-First + Ngong Road Physical Campus Model */}
         <LearningModel />

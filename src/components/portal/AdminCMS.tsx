@@ -49,6 +49,7 @@ import { CertificateModal } from './CertificateModal';
 import { TechStackManager } from './TechStackManager';
 import { ClassSchedulesManager } from './ClassSchedulesManager';
 import { WhyStudyManager } from './WhyStudyManager';
+import { NextIntakeManager } from './NextIntakeManager';
 
 interface AdminCMSProps {
   courses: Course[];
@@ -65,7 +66,7 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
   onUpdateSiteSettings,
   onSettingsUpdated
 }) => {
-  const [activeTab, setActiveTab] = useState<'applications' | 'courses' | 'certificates' | 'school-analytics' | 'tech-stack' | 'schedules' | 'why-study'>('applications');
+  const [activeTab, setActiveTab] = useState<'applications' | 'intake' | 'courses' | 'certificates' | 'school-analytics' | 'tech-stack' | 'schedules' | 'why-study'>('applications');
   const [localSiteSettings, setLocalSiteSettings] = useState<SiteSettings | undefined>(siteSettings);
 
   useEffect(() => {
@@ -164,11 +165,11 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
         fetch('/api/certificates'),
         fetch('/api/submissions')
       ]);
-      if (cRes.ok) {
+      if (cRes.ok && cRes.headers.get('content-type')?.includes('application/json')) {
         const cData = await cRes.json();
         setCertificates(cData);
       }
-      if (sRes.ok) {
+      if (sRes.ok && sRes.headers.get('content-type')?.includes('application/json')) {
         const sData = await sRes.json();
         setSubmissions(sData);
       }
@@ -352,6 +353,21 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
         </button>
 
         <button
+          onClick={() => setActiveTab('intake')}
+          className={`pb-3 border-b-2 flex items-center gap-2 cursor-pointer whitespace-nowrap transition-colors ${
+            activeTab === 'intake'
+              ? 'border-emerald-400 text-emerald-400'
+              : 'border-transparent text-slate-400 hover:text-white'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          <span>Next Intake & Cohort</span>
+          <span className="px-1.5 py-0.2 rounded text-[10px] bg-emerald-500/20 text-emerald-400 font-mono font-bold border border-emerald-500/30">
+            Live
+          </span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('courses')}
           className={`pb-3 border-b-2 flex items-center gap-2 cursor-pointer whitespace-nowrap transition-colors ${
             activeTab === 'courses'
@@ -426,6 +442,39 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
           <span>Why Study Features</span>
         </button>
       </div>
+
+      {/* TAB: UPCOMING INTAKE & COHORT CMS */}
+      {activeTab === 'intake' && (
+        <NextIntakeManager
+          siteSettings={localSiteSettings}
+          onUpdateSiteSettings={async (newSet) => {
+            if (onUpdateSiteSettings) {
+              const ok = await onUpdateSiteSettings(newSet);
+              if (ok) setLocalSiteSettings(prev => ({ ...(prev || {}), ...newSet } as SiteSettings));
+              return ok;
+            } else {
+              const res = await fetch('/api/site-settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newSet)
+              });
+              if (res.ok) {
+                setLocalSiteSettings(prev => ({ ...(prev || {}), ...newSet } as SiteSettings));
+                return true;
+              }
+              return false;
+            }
+          }}
+          onSettingsUpdated={() => {
+            if (onSettingsUpdated) onSettingsUpdated();
+            fetch('/api/site-settings')
+              .then(res => res.json())
+              .then(data => setLocalSiteSettings(data))
+              .catch(console.error);
+          }}
+          showToast={(msg) => alert(msg)}
+        />
+      )}
 
       {/* TAB 1: APPLICATIONS CMS */}
       {activeTab === 'applications' && (

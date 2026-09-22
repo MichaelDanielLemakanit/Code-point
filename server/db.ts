@@ -1,13 +1,11 @@
 import initSqlJs from "sql.js";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 import pg from "pg";
 
 const { Pool } = pg;
 
-const currentFilename = typeof __filename !== "undefined" ? __filename : (typeof import.meta !== "undefined" && import.meta.url ? fileURLToPath(import.meta.url) : "");
-const currentDirname = typeof __dirname !== "undefined" ? __dirname : (currentFilename ? path.dirname(currentFilename) : process.cwd());
+const currentDirname = typeof __dirname !== "undefined" ? __dirname : process.cwd();
 
 export interface AppDatabase {
   type: "postgres" | "sqlite" | "memory";
@@ -81,6 +79,11 @@ export const DEFAULT_SITE_SETTINGS: Record<string, string> = {
   hero_badge_text: "Online-First + Ngong Road Campus Hub",
   hero_image_url: "",
   school_logo_url: "",
+  next_intake_date: "October 15, 2026",
+  registration_deadline: "October 10, 2026",
+  intake_status: "Enrollment Open",
+  announcement_banner_text: "Early Bird 10% Discount Available for the Upcoming Cohort — Limited Campus & Online Seats!",
+  announcement_banner_enabled: "true",
   carousel_slides_json: JSON.stringify([
     {
       id: 0,

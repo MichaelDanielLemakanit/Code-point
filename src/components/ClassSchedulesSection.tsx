@@ -199,9 +199,17 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
           ))}
         </div>
 
-        {/* Bottom Banner Note */}
-        <div className="mt-12 text-center">
-          <div className="inline-flex flex-col sm:flex-row items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-300 max-w-2xl mx-auto">
+        {/* Bottom Banner Note & Next Intake Callout */}
+        <div className="mt-12 text-center flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-xs text-emerald-200 shadow-sm">
+            <Calendar className="w-4 h-4 text-emerald-400" />
+            <span>Next Cohort Starts: <strong className="text-white font-bold">{siteSettings?.next_intake_date || "October 15, 2026"}</strong></span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              {siteSettings?.intake_status || "Enrollment Open"}
+            </span>
+          </div>
+
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
               <Sparkles className="w-4 h-4" />
               Hybrid Flexibility:

@@ -126,6 +126,60 @@ app.put("/api/site-settings", async (req: Request, res: Response) => {
   }
 });
 
+// Intake Settings: Get upcoming intake & cohort configuration
+app.get("/api/intake-settings", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const settings = await getSiteSettings(db);
+    res.json({
+      next_intake_date: settings.next_intake_date || "October 15, 2026",
+      registration_deadline: settings.registration_deadline || "October 10, 2026",
+      intake_status: settings.intake_status || "Enrollment Open",
+      announcement_banner_text: settings.announcement_banner_text || "Early Bird 10% Discount Available for the Upcoming Cohort — Limited Campus & Online Seats!",
+      announcement_banner_enabled: settings.announcement_banner_enabled !== "false"
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Intake Settings: Update upcoming intake & cohort configuration (Admin)
+app.put("/api/intake-settings", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { 
+      next_intake_date, 
+      registration_deadline, 
+      intake_status, 
+      announcement_banner_text, 
+      announcement_banner_enabled 
+    } = req.body;
+    
+    const payload: Record<string, string> = {};
+    if (next_intake_date !== undefined) payload.next_intake_date = String(next_intake_date).trim();
+    if (registration_deadline !== undefined) payload.registration_deadline = String(registration_deadline).trim();
+    if (intake_status !== undefined) payload.intake_status = String(intake_status).trim();
+    if (announcement_banner_text !== undefined) payload.announcement_banner_text = String(announcement_banner_text).trim();
+    if (announcement_banner_enabled !== undefined) payload.announcement_banner_enabled = String(announcement_banner_enabled);
+
+    const updated = await saveSiteSettings(db, payload);
+    res.json({
+      success: true,
+      message: "Upcoming cohort and intake configuration saved successfully.",
+      intake: {
+        next_intake_date: updated.next_intake_date,
+        registration_deadline: updated.registration_deadline,
+        intake_status: updated.intake_status,
+        announcement_banner_text: updated.announcement_banner_text,
+        announcement_banner_enabled: updated.announcement_banner_enabled !== "false"
+      },
+      settings: updated
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // -------------------------------------------------------------
 // PROGRESSION STAGES (PATH FROM LEARNER TO HIRED ENGINEER)
 // -------------------------------------------------------------
@@ -1970,7 +2024,7 @@ app.delete("/api/assignments/:id", async (req: Request, res: Response) => {
 // -------------------------------------------------------------
 // SUBMISSIONS & GRADING API
 // -------------------------------------------------------------
-app.get("/api/submissions", async (req: Request, res: Response) => {
+const handleGetSubmissions = async (req: Request, res: Response) => {
   try {
     const db = await getDatabase();
     let sql = "SELECT * FROM submissions WHERE 1=1";
@@ -1995,7 +2049,10 @@ app.get("/api/submissions", async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
-});
+};
+
+app.get("/api/submissions", handleGetSubmissions);
+app.get("/api/assignments/submissions", handleGetSubmissions);
 
 app.post("/api/submissions", async (req: Request, res: Response) => {
   try {

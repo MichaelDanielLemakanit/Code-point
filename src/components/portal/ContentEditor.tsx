@@ -31,6 +31,7 @@ import { SiteSettings, CarouselSlide, FAQItem, ProgressionStage } from '../../ty
 import { TechStackManager } from './TechStackManager';
 import { ClassSchedulesManager } from './ClassSchedulesManager';
 import { WhyStudyManager } from './WhyStudyManager';
+import { NextIntakeManager } from './NextIntakeManager';
 
 interface ContentEditorProps {
   siteSettings?: SiteSettings;
@@ -162,7 +163,7 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
   onSettingsUpdated,
   showToast
 }) => {
-  const [subTab, setSubTab] = useState<'brand_hero' | 'carousel' | 'tech_stack' | 'schedules' | 'why_study' | 'faqs' | 'progression' | 'hours_lab' | 'contact_about'>('brand_hero');
+  const [subTab, setSubTab] = useState<'brand_hero' | 'intake' | 'carousel' | 'tech_stack' | 'schedules' | 'why_study' | 'faqs' | 'progression' | 'hours_lab' | 'contact_about'>('brand_hero');
   const [formData, setFormData] = useState<SiteSettings>(siteSettings || {} as SiteSettings);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -507,6 +508,7 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
       <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 pb-3">
         {[
           { id: 'brand_hero', label: 'Brand & Hero Header' },
+          { id: 'intake', label: 'Next Intake & Cohort' },
           { id: 'carousel', label: `Carousel Slides (${slides.length})` },
           { id: 'tech_stack', label: 'Technologies Stack' },
           { id: 'schedules', label: 'Class Schedules' },
@@ -529,6 +531,15 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
           </button>
         ))}
       </div>
+
+      {subTab === 'intake' && (
+        <NextIntakeManager
+          siteSettings={siteSettings}
+          onUpdateSiteSettings={onUpdateSiteSettings}
+          onSettingsUpdated={onSettingsUpdated}
+          showToast={showToast}
+        />
+      )}
 
       {subTab === 'tech_stack' && (
         <TechStackManager

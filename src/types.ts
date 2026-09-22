@@ -185,7 +185,20 @@ export interface SiteSettings {
   primary_cta_color?: string;
   secondary_cta_color?: string;
   accent_style?: string;
+  next_intake_date?: string;
+  registration_deadline?: string;
+  intake_status?: 'Enrollment Open' | 'Limited Seats' | 'Registration Closed' | string;
+  announcement_banner_text?: string;
+  announcement_banner_enabled?: string | boolean;
   [key: string]: any;
+}
+
+export interface IntakeConfig {
+  next_intake_date: string;
+  registration_deadline: string;
+  intake_status: 'Enrollment Open' | 'Limited Seats' | 'Registration Closed' | string;
+  announcement_banner_text?: string;
+  announcement_banner_enabled?: boolean | string;
 }
 
 export interface TechCardItem {

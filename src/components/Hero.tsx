@@ -14,7 +14,10 @@ import {
   Play,
   ExternalLink,
   Laptop,
-  Code2
+  Code2,
+  Calendar,
+  Clock,
+  Flame
 } from 'lucide-react';
 
 import kenyanCodingLab from '../assets/images/kenyan_coding_lab_1789557291842.jpg';
@@ -240,9 +243,20 @@ export const Hero: React.FC<HeroProps> = ({
           {/* Left Column */}
           <div className="lg:col-span-7 space-y-6">
             
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-emerald-500/40 text-emerald-300 text-xs font-semibold tracking-wide backdrop-blur-md shadow-lg shadow-emerald-950/40 transition-all duration-300">
-              {activeSlide.badgeIcon}
-              <span className="truncate max-w-xs sm:max-w-md">{activeSlide.badge}</span>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-emerald-500/40 text-emerald-300 text-xs font-semibold tracking-wide backdrop-blur-md shadow-lg shadow-emerald-950/40 transition-all duration-300">
+                {activeSlide.badgeIcon}
+                <span className="truncate max-w-xs sm:max-w-md">{activeSlide.badge}</span>
+              </div>
+
+              {/* Dynamic Next Intake & Cohort Badge */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-emerald-950/40">
+                <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Next Intake: <strong className="text-white font-bold">{siteSettings?.next_intake_date || "October 15, 2026"}</strong></span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-extrabold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                  {siteSettings?.intake_status || "Enrollment Open"}
+                </span>
+              </div>
             </div>
 
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.14] min-h-[120px] sm:min-h-[140px] flex flex-col justify-center">
@@ -334,6 +348,34 @@ export const Hero: React.FC<HeroProps> = ({
                 <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                   {siteSettings?.short_hours_label || "Open Mon - Sat"}
                 </span>
+              </div>
+
+              {/* Dynamic Next Cohort Urgency & Intake Card */}
+              <div className="mt-4 p-3.5 rounded-xl bg-gradient-to-r from-emerald-950/80 via-slate-950 to-slate-900 border border-emerald-500/40 shadow-inner">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white">
+                    <Calendar className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Next Cohort: <strong className="text-emerald-300">{siteSettings?.next_intake_date || "October 15, 2026"}</strong></span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wide">
+                    {siteSettings?.intake_status || "Enrollment Open"}
+                  </span>
+                </div>
+
+                <div className="mt-2 flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-300 gap-1 pt-1.5 border-t border-emerald-500/20">
+                  <span className="flex items-center gap-1.5 text-amber-300">
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    <span>Apply before: <strong>{siteSettings?.registration_deadline || "October 10, 2026"}</strong></span>
+                  </span>
+                  <span className="text-emerald-400 font-medium">Campus & Online Seats</span>
+                </div>
+
+                {siteSettings?.announcement_banner_text && (
+                  <div className="mt-2 pt-1.5 border-t border-emerald-500/20 text-[11px] text-emerald-200/90 flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span className="truncate">{siteSettings.announcement_banner_text}</span>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 space-y-3">
