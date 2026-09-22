@@ -1,0 +1,7 @@
+{
+  "name": "Code Point Kenya",
+  "description": "Premier tech school in Nairobi offering online-first and in-person programs in Software Engineering, Data Science, AI, and Cybersecurity.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
