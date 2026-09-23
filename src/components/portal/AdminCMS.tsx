@@ -274,9 +274,15 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
         setShowAddCourse(false);
         setNewCourseTitle('');
         setNewCourseSummary('');
+      } else {
+        const errorData = await res.json().catch(() => null);
+        const errorMsg = errorData?.error || errorData?.message || `Server returned HTTP ${res.status}`;
+        console.error('Failed to create course:', { status: res.status, errorData });
+        alert(`Failed to save course: ${errorMsg}`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to create course', e);
+      alert(`Network or system error: ${e?.message || 'Failed to save course'}`);
     } finally {
       setAddingCourseLoading(false);
     }

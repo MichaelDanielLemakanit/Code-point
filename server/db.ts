@@ -49,6 +49,30 @@ export function convertSqlForPostgres(sql: string): string {
     ) + " ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, password = EXCLUDED.password, role = EXCLUDED.role, avatar = EXCLUDED.avatar";
   }
 
+  // SQLite 'INSERT OR REPLACE INTO courses (...) VALUES (...)'
+  if (/INSERT\s+OR\s+REPLACE\s+INTO\s+courses/i.test(converted)) {
+    converted = converted.replace(
+      /INSERT\s+OR\s+REPLACE\s+INTO\s+courses/i,
+      "INSERT INTO courses"
+    ) + " ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, slug = EXCLUDED.slug, category = EXCLUDED.category, duration_weeks = EXCLUDED.duration_weeks, price_kes = EXCLUDED.price_kes, monthly_kes = EXCLUDED.monthly_kes, summary = EXCLUDED.summary, curriculum = EXCLUDED.curriculum, level = EXCLUDED.level, delivery_mode = EXCLUDED.delivery_mode, schedule = EXCLUDED.schedule, next_intake = EXCLUDED.next_intake, is_featured = EXCLUDED.is_featured";
+  }
+
+  // SQLite 'INSERT OR REPLACE INTO programs (...) VALUES (...)'
+  if (/INSERT\s+OR\s+REPLACE\s+INTO\s+programs/i.test(converted)) {
+    converted = converted.replace(
+      /INSERT\s+OR\s+REPLACE\s+INTO\s+programs/i,
+      "INSERT INTO programs"
+    ) + " ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, slug = EXCLUDED.slug, category = EXCLUDED.category, duration_weeks = EXCLUDED.duration_weeks, price_kes = EXCLUDED.price_kes, monthly_kes = EXCLUDED.monthly_kes, summary = EXCLUDED.summary, curriculum = EXCLUDED.curriculum, level = EXCLUDED.level, delivery_mode = EXCLUDED.delivery_mode, schedule = EXCLUDED.schedule, next_intake = EXCLUDED.next_intake, is_featured = EXCLUDED.is_featured";
+  }
+
+  // SQLite 'INSERT OR REPLACE INTO tuition_fees (...) VALUES (...)'
+  if (/INSERT\s+OR\s+REPLACE\s+INTO\s+tuition_fees/i.test(converted)) {
+    converted = converted.replace(
+      /INSERT\s+OR\s+REPLACE\s+INTO\s+tuition_fees/i,
+      "INSERT INTO tuition_fees"
+    ) + " ON CONFLICT (id) DO UPDATE SET course_title = EXCLUDED.course_title, upfront_kes = EXCLUDED.upfront_kes, monthly_installment_kes = EXCLUDED.monthly_installment_kes";
+  }
+
   return converted;
 }
 
@@ -423,7 +447,7 @@ export const DEFAULT_COURSES = [
   }
 ];
 
-const DEFAULT_USERS = [
+export const DEFAULT_USERS = [
   {
     id: "usr-admin-primary",
     name: "Code Point Admin",
@@ -481,7 +505,7 @@ const DEFAULT_USERS = [
   }
 ];
 
-const DEFAULT_REVIEWS = [
+export const DEFAULT_REVIEWS = [
   {
     id: "rev-001",
     rating: 5,
@@ -961,7 +985,76 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
         date VARCHAR(50),
         created_at VARCHAR(100) NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS programs (
+        id VARCHAR(255) PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        slug VARCHAR(255),
+        category VARCHAR(100) NOT NULL DEFAULT 'Software Development',
+        duration_weeks INTEGER NOT NULL DEFAULT 12,
+        price_kes NUMERIC NOT NULL DEFAULT 0,
+        monthly_kes NUMERIC NOT NULL DEFAULT 0,
+        summary TEXT NOT NULL DEFAULT '',
+        curriculum TEXT NOT NULL DEFAULT '[]',
+        level VARCHAR(100) NOT NULL DEFAULT 'Beginner to Intermediate',
+        delivery_mode VARCHAR(255) NOT NULL DEFAULT 'Online-First + Ngong Rd Campus Lab Access',
+        schedule VARCHAR(255) NOT NULL DEFAULT 'Mon-Thu 7:00 PM - 9:30 PM EAT',
+        next_intake VARCHAR(100) NOT NULL DEFAULT 'Upcoming Cohort',
+        is_featured INTEGER DEFAULT 1,
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+
+      CREATE TABLE IF NOT EXISTS course_modules (
+        id VARCHAR(255) PRIMARY KEY,
+        course_id VARCHAR(255) REFERENCES courses(id) ON DELETE CASCADE,
+        module_number INTEGER DEFAULT 1,
+        title VARCHAR(255) NOT NULL,
+        topics TEXT DEFAULT '[]',
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+
+      CREATE TABLE IF NOT EXISTS modules (
+        id VARCHAR(255) PRIMARY KEY,
+        course_id VARCHAR(255),
+        module_number INTEGER DEFAULT 1,
+        title VARCHAR(255) NOT NULL,
+        topics TEXT DEFAULT '[]',
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+
+      CREATE TABLE IF NOT EXISTS tuition_fees (
+        id VARCHAR(255) PRIMARY KEY,
+        course_id VARCHAR(255),
+        course_title VARCHAR(255) NOT NULL,
+        upfront_kes NUMERIC NOT NULL DEFAULT 0,
+        monthly_installment_kes NUMERIC NOT NULL DEFAULT 0,
+        installment_months INTEGER NOT NULL DEFAULT 5,
+        currency VARCHAR(10) NOT NULL DEFAULT 'KES',
+        discount_percent NUMERIC NOT NULL DEFAULT 10,
+        notes TEXT DEFAULT '',
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
     `);
+
+    // Ensure all required columns exist on courses if created earlier
+    const alterColumns = [
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS slug VARCHAR(255)",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Software Development'",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS duration_weeks INTEGER DEFAULT 12",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS price_kes NUMERIC DEFAULT 0",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS monthly_kes NUMERIC DEFAULT 0",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS summary TEXT DEFAULT ''",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS curriculum TEXT DEFAULT '[]'",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS level VARCHAR(100) DEFAULT 'Beginner to Intermediate'",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS delivery_mode VARCHAR(255) DEFAULT 'Online-First + Ngong Rd Campus Lab Access'",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS schedule VARCHAR(255) DEFAULT 'Mon-Thu 7:00 PM - 9:30 PM EAT'",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS next_intake VARCHAR(100) DEFAULT 'Upcoming Cohort'",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS is_featured INTEGER DEFAULT 1",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS created_at VARCHAR(100) DEFAULT CURRENT_TIMESTAMP::text"
+    ];
+    for (const sql of alterColumns) {
+      await pool.query(sql).catch((err: any) => console.warn("[Database] Alter column notice:", err?.message));
+    }
 
     // Seed default courses if empty
     const courseCountRes = await pool.query("SELECT count(*) as count FROM courses");

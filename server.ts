@@ -1,7 +1,9 @@
+import "dotenv/config";
 import express, { Request, Response } from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { getDatabase, queryAll, queryOne, saveDatabase, getSiteSettings, saveSiteSettings, getDatabaseStatus, DEFAULT_ANNOUNCEMENTS, DEFAULT_LOGIN_ATTEMPTS, DEFAULT_LECTURES } from "./server/db.js";
+import { runDatabaseMigrations } from "./server/migrate.js";
 
 const app = express();
 const PORT = 3000;
@@ -889,6 +891,103 @@ app.get("/api/courses/:id", async (req: Request, res: Response) => {
   }
 });
 
+// Admin: Run database migrations on-demand
+app.post("/api/admin/run-migrations", async (req: Request, res: Response) => {
+  try {
+    const result = await runDatabaseMigrations();
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    console.error("[Migration API Error]:", {
+      message: err?.message,
+      code: err?.code,
+      detail: err?.detail,
+      table: err?.table
+    });
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      detail: err.detail,
+      code: err.code
+    });
+  }
+});
+
+// Helper to synchronize related program entities (programs, tuition_fees, course_modules, modules)
+async function syncCourseRelations(db: any, course: any, modules: any[]) {
+  try {
+    // 1. Sync programs table
+    await db.run(
+      `INSERT OR REPLACE INTO programs (
+         id, title, slug, category, duration_weeks, price_kes, monthly_kes,
+         summary, curriculum, level, delivery_mode, schedule, next_intake,
+         is_featured, created_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        course.id,
+        course.title,
+        course.slug,
+        course.category || "Software Development",
+        Number(course.duration_weeks) || 12,
+        Number(course.price_kes) || 0,
+        Number(course.monthly_kes) || 0,
+        course.summary || "",
+        JSON.stringify(modules),
+        course.level || "Beginner to Intermediate",
+        course.delivery_mode || "Online-First + Ngong Rd Campus Lab Access",
+        course.schedule || "Mon-Thu 7:00 PM - 9:30 PM EAT",
+        course.next_intake || "Upcoming Cohort",
+        course.is_featured ? 1 : 0,
+        course.created_at || new Date().toISOString()
+      ]
+    ).catch((err: any) => console.warn("[Courses API] Program sync notice:", err?.message));
+
+    // 2. Sync tuition_fees table
+    const feeId = `fee-${course.id}`;
+    const upfront = Number(course.price_kes) || 0;
+    const monthly = Number(course.monthly_kes) || Math.round(upfront / 5);
+    await db.run(
+      `INSERT OR REPLACE INTO tuition_fees (
+         id, course_id, course_title, upfront_kes, monthly_installment_kes,
+         installment_months, currency, discount_percent, notes, created_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        feeId,
+        course.id,
+        course.title,
+        upfront,
+        monthly,
+        5,
+        "KES",
+        10,
+        "Full tuition & installment pricing tier",
+        new Date().toISOString()
+      ]
+    ).catch((err: any) => console.warn("[Courses API] Tuition fee sync notice:", err?.message));
+
+    // 3. Sync course_modules and modules table
+    await db.run("DELETE FROM course_modules WHERE course_id = ?", [course.id]).catch(() => {});
+    await db.run("DELETE FROM modules WHERE course_id = ?", [course.id]).catch(() => {});
+    for (let idx = 0; idx < modules.length; idx++) {
+      const m = modules[idx];
+      const modId = `${course.id}-mod-${idx + 1}`;
+      const modTitle = m.title || m.module || `Module ${idx + 1}`;
+      const modTopics = JSON.stringify(Array.isArray(m.topics) ? m.topics : []);
+      await db.run(
+        `INSERT INTO course_modules (id, course_id, module_number, title, topics, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [modId, course.id, idx + 1, modTitle, modTopics, new Date().toISOString()]
+      ).catch(() => {});
+      await db.run(
+        `INSERT INTO modules (id, course_id, module_number, title, topics, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [modId, course.id, idx + 1, modTitle, modTopics, new Date().toISOString()]
+      ).catch(() => {});
+    }
+  } catch (syncErr) {
+    console.warn("[Courses API] Relation synchronization warning:", syncErr);
+  }
+}
+
 // Admin: Create course
 app.post("/api/courses", async (req: Request, res: Response) => {
   try {
@@ -1013,32 +1112,95 @@ app.post("/api/courses", async (req: Request, res: Response) => {
 
     const curJson = JSON.stringify(sanitizedModules);
 
-    // 9. Execute database insertion with parameterized query
-    await db.run(
-      `INSERT INTO courses (
-         id, title, slug, category, duration_weeks, price_kes, monthly_kes,
-         summary, curriculum, level, delivery_mode, schedule, next_intake,
-         is_featured, created_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        rawTitle,
-        cleanSlug,
-        cleanCategory,
-        parsedWeeks,
-        parsedPrice,
-        parsedMonthly,
-        cleanSummary,
-        curJson,
-        cleanLevel,
-        cleanDelivery,
-        cleanSchedule,
-        cleanNextIntake,
-        isFeaturedInt,
-        new Date().toISOString()
-      ]
-    );
+    // 9. Execute database insertion with parameterized query & schema self-healing
+    try {
+      await db.run(
+        `INSERT INTO courses (
+           id, title, slug, category, duration_weeks, price_kes, monthly_kes,
+           summary, curriculum, level, delivery_mode, schedule, next_intake,
+           is_featured, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          rawTitle,
+          cleanSlug,
+          cleanCategory,
+          parsedWeeks,
+          parsedPrice,
+          parsedMonthly,
+          cleanSummary,
+          curJson,
+          cleanLevel,
+          cleanDelivery,
+          cleanSchedule,
+          cleanNextIntake,
+          isFeaturedInt,
+          new Date().toISOString()
+        ]
+      );
+    } catch (insertErr: any) {
+      console.warn("[Courses API POST] First insert attempt failed, checking for missing tables/columns:", {
+        code: insertErr.code,
+        message: insertErr.message,
+        table: insertErr.table,
+        column: insertErr.column
+      });
+
+      // Self-heal: If table or column is missing, run migration and retry
+      if (
+        insertErr.code === "42P01" ||
+        insertErr.code === "42703" ||
+        insertErr.message?.includes("does not exist")
+      ) {
+        console.log("[Courses API POST] Running migration to heal schema...");
+        await runDatabaseMigrations().catch((mErr) => console.error("[Courses API] Auto-heal migration failed:", mErr));
+        await db.run(
+          `INSERT INTO courses (
+             id, title, slug, category, duration_weeks, price_kes, monthly_kes,
+             summary, curriculum, level, delivery_mode, schedule, next_intake,
+             is_featured, created_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            id,
+            rawTitle,
+            cleanSlug,
+            cleanCategory,
+            parsedWeeks,
+            parsedPrice,
+            parsedMonthly,
+            cleanSummary,
+            curJson,
+            cleanLevel,
+            cleanDelivery,
+            cleanSchedule,
+            cleanNextIntake,
+            isFeaturedInt,
+            new Date().toISOString()
+          ]
+        );
+      } else {
+        throw insertErr;
+      }
+    }
+
     await saveDatabase(db);
+
+    // Synchronize auxiliary tables: programs, tuition_fees, course_modules, modules
+    await syncCourseRelations(db, {
+      id,
+      title: rawTitle,
+      slug: cleanSlug,
+      category: cleanCategory,
+      duration_weeks: parsedWeeks,
+      price_kes: parsedPrice,
+      monthly_kes: parsedMonthly,
+      summary: cleanSummary,
+      level: cleanLevel,
+      delivery_mode: cleanDelivery,
+      schedule: cleanSchedule,
+      next_intake: cleanNextIntake,
+      is_featured: isFeaturedInt
+    }, sanitizedModules);
 
     console.log(`[Courses API POST] Successfully created course "${rawTitle}" (${id}, slug: ${cleanSlug})`);
 
@@ -1053,11 +1215,48 @@ app.post("/api/courses", async (req: Request, res: Response) => {
 
     return res.status(201).json(created);
   } catch (error: any) {
-    console.error("[Courses API POST Error] Failed to create course:", error);
     const dbStatus = await getDatabaseStatus().catch(() => null);
-    return res.status(500).json({
-      error: error?.message || "Failed to create program due to a database execution error.",
-      details: error?.stack || String(error),
+
+    // Log the exact SQL / Postgres / Database error details
+    console.error("[Courses API POST Error] Database query failure:", {
+      message: error?.message,
+      code: error?.code,
+      detail: error?.detail,
+      hint: error?.hint,
+      table: error?.table,
+      column: error?.column,
+      constraint: error?.constraint,
+      position: error?.position,
+      routine: error?.routine,
+      databaseType: dbStatus?.type || "unknown",
+      stack: error?.stack
+    });
+
+    let statusCode = 500;
+    let userMessage = error?.message || "Failed to create program due to a database execution error.";
+
+    if (error?.code === "23505") {
+      statusCode = 409;
+      userMessage = `A program with this URL slug or identifier already exists (${error?.detail || error?.constraint || "duplicate key"}). Please choose a unique title or slug.`;
+    } else if (error?.code === "42P01") {
+      userMessage = `Database table is missing on the server (${error?.message}). Migration is required.`;
+    } else if (error?.code === "42703") {
+      userMessage = `Database column is missing on courses table (${error?.message}). Schema update required.`;
+    } else if (error?.detail) {
+      userMessage = `${error.message}: ${error.detail}`;
+    }
+
+    return res.status(statusCode).json({
+      error: userMessage,
+      sqlError: {
+        message: error?.message,
+        code: error?.code,
+        detail: error?.detail,
+        hint: error?.hint,
+        table: error?.table,
+        column: error?.column,
+        constraint: error?.constraint
+      },
       databaseType: dbStatus?.type || "unknown"
     });
   }
@@ -1196,41 +1395,112 @@ app.put("/api/courses/:id", async (req: Request, res: Response) => {
     }
     const curJson = JSON.stringify(finalModules);
 
-    // 8. Execute update
-    await db.run(
-      `UPDATE courses SET
-         title = ?,
-         slug = ?,
-         category = ?,
-         duration_weeks = ?,
-         price_kes = ?,
-         monthly_kes = ?,
-         summary = ?,
-         curriculum = ?,
-         level = ?,
-         delivery_mode = ?,
-         schedule = ?,
-         next_intake = ?,
-         is_featured = ?
-       WHERE id = ?`,
-      [
-        finalTitle,
-        finalSlug,
-        finalCategory,
-        finalWeeks,
-        finalPrice,
-        finalMonthly,
-        finalSummary,
-        curJson,
-        finalLevel,
-        finalDelivery,
-        finalSchedule,
-        finalNextIntake,
-        finalFeatured,
-        courseId
-      ]
-    );
+    // 8. Execute update with schema self-healing
+    try {
+      await db.run(
+        `UPDATE courses SET
+           title = ?,
+           slug = ?,
+           category = ?,
+           duration_weeks = ?,
+           price_kes = ?,
+           monthly_kes = ?,
+           summary = ?,
+           curriculum = ?,
+           level = ?,
+           delivery_mode = ?,
+           schedule = ?,
+           next_intake = ?,
+           is_featured = ?
+         WHERE id = ?`,
+        [
+          finalTitle,
+          finalSlug,
+          finalCategory,
+          finalWeeks,
+          finalPrice,
+          finalMonthly,
+          finalSummary,
+          curJson,
+          finalLevel,
+          finalDelivery,
+          finalSchedule,
+          finalNextIntake,
+          finalFeatured,
+          courseId
+        ]
+      );
+    } catch (updateErr: any) {
+      console.warn(`[Courses API PUT] Update failed on first attempt for ${courseId}:`, {
+        code: updateErr.code,
+        message: updateErr.message,
+        table: updateErr.table,
+        column: updateErr.column
+      });
+
+      if (
+        updateErr.code === "42P01" ||
+        updateErr.code === "42703" ||
+        updateErr.message?.includes("does not exist")
+      ) {
+        console.log("[Courses API PUT] Running migration to heal schema...");
+        await runDatabaseMigrations().catch((mErr) => console.error("[Courses API] Auto-heal migration failed:", mErr));
+        await db.run(
+          `UPDATE courses SET
+             title = ?,
+             slug = ?,
+             category = ?,
+             duration_weeks = ?,
+             price_kes = ?,
+             monthly_kes = ?,
+             summary = ?,
+             curriculum = ?,
+             level = ?,
+             delivery_mode = ?,
+             schedule = ?,
+             next_intake = ?,
+             is_featured = ?
+           WHERE id = ?`,
+          [
+            finalTitle,
+            finalSlug,
+            finalCategory,
+            finalWeeks,
+            finalPrice,
+            finalMonthly,
+            finalSummary,
+            curJson,
+            finalLevel,
+            finalDelivery,
+            finalSchedule,
+            finalNextIntake,
+            finalFeatured,
+            courseId
+          ]
+        );
+      } else {
+        throw updateErr;
+      }
+    }
+
     await saveDatabase(db);
+
+    // Synchronize auxiliary tables: programs, tuition_fees, course_modules, modules
+    await syncCourseRelations(db, {
+      id: courseId,
+      title: finalTitle,
+      slug: finalSlug,
+      category: finalCategory,
+      duration_weeks: finalWeeks,
+      price_kes: finalPrice,
+      monthly_kes: finalMonthly,
+      summary: finalSummary,
+      level: finalLevel,
+      delivery_mode: finalDelivery,
+      schedule: finalSchedule,
+      next_intake: finalNextIntake,
+      is_featured: finalFeatured
+    }, finalModules);
 
     console.log(`[Courses API PUT] Successfully updated course "${finalTitle}" (${courseId})`);
 
@@ -1244,11 +1514,47 @@ app.put("/api/courses/:id", async (req: Request, res: Response) => {
 
     return res.json(updated);
   } catch (error: any) {
-    console.error(`[Courses API PUT Error] Failed to update course ${req.params.id}:`, error);
     const dbStatus = await getDatabaseStatus().catch(() => null);
-    return res.status(500).json({
-      error: error?.message || "Failed to update program due to a database execution error.",
-      details: error?.stack || String(error),
+
+    console.error(`[Courses API PUT Error] Database query failure updating course ${req.params.id}:`, {
+      message: error?.message,
+      code: error?.code,
+      detail: error?.detail,
+      hint: error?.hint,
+      table: error?.table,
+      column: error?.column,
+      constraint: error?.constraint,
+      position: error?.position,
+      routine: error?.routine,
+      databaseType: dbStatus?.type || "unknown",
+      stack: error?.stack
+    });
+
+    let statusCode = 500;
+    let userMessage = error?.message || "Failed to update program due to a database execution error.";
+
+    if (error?.code === "23505") {
+      statusCode = 409;
+      userMessage = `A program with this URL slug or identifier already exists (${error?.detail || error?.constraint || "duplicate key"}). Please choose a unique title or slug.`;
+    } else if (error?.code === "42P01") {
+      userMessage = `Database table is missing on the server (${error?.message}). Migration is required.`;
+    } else if (error?.code === "42703") {
+      userMessage = `Database column is missing on courses table (${error?.message}). Schema update required.`;
+    } else if (error?.detail) {
+      userMessage = `${error.message}: ${error.detail}`;
+    }
+
+    return res.status(statusCode).json({
+      error: userMessage,
+      sqlError: {
+        message: error?.message,
+        code: error?.code,
+        detail: error?.detail,
+        hint: error?.hint,
+        table: error?.table,
+        column: error?.column,
+        constraint: error?.constraint
+      },
       databaseType: dbStatus?.type || "unknown"
     });
   }
@@ -1266,13 +1572,29 @@ app.delete("/api/courses/:id", async (req: Request, res: Response) => {
     }
 
     await db.run("DELETE FROM courses WHERE id = ?", [courseId]);
+    await db.run("DELETE FROM programs WHERE id = ?", [courseId]).catch(() => {});
+    await db.run("DELETE FROM course_modules WHERE course_id = ?", [courseId]).catch(() => {});
+    await db.run("DELETE FROM modules WHERE course_id = ?", [courseId]).catch(() => {});
+    await db.run("DELETE FROM tuition_fees WHERE course_id = ?", [courseId]).catch(() => {});
     await saveDatabase(db);
 
     console.log(`[Courses API DELETE] Successfully deleted course "${existing.title}" (${courseId})`);
     res.json({ success: true, message: `Course "${existing.title}" deleted successfully` });
   } catch (error: any) {
-    console.error(`[Courses API DELETE Error] Course ID "${req.params.id}":`, error);
-    res.status(500).json({ error: error.message || "Failed to delete program from database" });
+    console.error(`[Courses API DELETE Error] Course ID "${req.params.id}":`, {
+      message: error?.message,
+      code: error?.code,
+      detail: error?.detail,
+      table: error?.table
+    });
+    res.status(500).json({
+      error: error.message || "Failed to delete program from database",
+      sqlError: {
+        message: error?.message,
+        code: error?.code,
+        detail: error?.detail
+      }
+    });
   }
 });
 
