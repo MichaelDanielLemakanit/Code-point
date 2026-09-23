@@ -182,7 +182,7 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
       total_fee_kes: Number(account.total_fee_kes),
       paid_fee_kes: Number(account.paid_fee_kes),
       balance_kes: Number(account.balance_kes),
-      portal_access_granted: (account.portal_access_granted === 1 || account.portal_access_granted === true || account.portal_access_granted === '1') ? 1 : 0
+      portal_access_granted: (account.portal_access_granted === 1 || account.portal_access_granted === true || String(account.portal_access_granted) === '1') ? 1 : 0
     });
     setIsModalOpen(true);
   };
