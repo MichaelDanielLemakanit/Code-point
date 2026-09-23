@@ -354,6 +354,75 @@ export const DEFAULT_SITE_SETTINGS: Record<string, string> = {
   })
 };
 
+export const DEFAULT_COURSES = [
+  {
+    id: "course-software-engineering",
+    title: "Full-Stack Software Engineering",
+    slug: "full-stack-software-engineering",
+    category: "Software Development",
+    duration_weeks: 16,
+    price_kes: 85000,
+    monthly_kes: 17000,
+    summary: "Master modern end-to-end full-stack software development. Build responsive web frontends with React & Tailwind CSS, robust backend microservices with Node.js, Express & Python Flask, scalable PostgreSQL database schemas, and deploy containerized Docker applications with CI/CD on cloud infrastructure.",
+    curriculum: JSON.stringify([
+      { module: "Module 1: Modern Frontend & React UI Architecture", topics: ["HTML5 & Responsive CSS3", "Modern JavaScript (ES6+)", "React 19 & Hooks", "Tailwind CSS", "State Management & Vite"] },
+      { module: "Module 2: Backend REST APIs & Relational Databases", topics: ["Node.js & Express Architecture", "Python & Flask APIs", "PostgreSQL & Database Normalization", "Authentication & JWT", "M-Pesa Daraja Payment API"] },
+      { module: "Module 3: Microservices & Cloud Infrastructure", topics: ["Docker Containerization", "CI/CD with GitHub Actions", "Cloud Hosting on Vercel & AWS", "System Design Fundamentals"] },
+      { module: "Module 4: Production Capstone & Job Placement", topics: ["Production-Grade Team Capstone", "Git Workflows & Code Reviews", "Mock Technical Interviews", "Portfolio & CV Optimization"] }
+    ]),
+    level: "Beginner to Advanced",
+    delivery_mode: "Online-First + Ngong Rd Campus Lab Access",
+    schedule: "Mon-Thu 7:00 PM - 9:30 PM EAT & Saturday Coding Clinics (9 AM - 4 PM)",
+    next_intake: "October 15, 2026",
+    is_featured: 1,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: "course-data-science-ai",
+    title: "Data Science & Applied AI",
+    slug: "data-science-applied-ai",
+    category: "Artificial Intelligence",
+    duration_weeks: 16,
+    price_kes: 95000,
+    monthly_kes: 19000,
+    summary: "Transform raw data into predictive intelligence and production AI systems. Master Python for data analysis, SQL databases, machine learning algorithms, deep learning, retrieval-augmented generation (RAG), and fine-tuning enterprise LLMs using the Gemini API.",
+    curriculum: JSON.stringify([
+      { module: "Module 1: Python for Data Science & Relational SQL", topics: ["Python Data Structures", "NumPy & Pandas Analysis", "Data Cleaning & Transformation", "PostgreSQL & Complex Queries"] },
+      { module: "Module 2: Statistical Modeling & Machine Learning", topics: ["Exploratory Data Analysis", "Scikit-Learn Algorithms", "Regression & Classification", "Model Evaluation & Cross-Validation"] },
+      { module: "Module 3: Applied AI, LLMs & RAG Architectures", topics: ["Gemini API Integration", "LangChain & Vector Embeddings", "RAG Pipelines with Pinecone", "Prompt Engineering & Evaluation"] },
+      { module: "Module 4: Production AI Deployment & Capstone", topics: ["FastAPI Model Serving", "Dockerizing AI Apps", "Cloud AI Deployment", "Enterprise AI Capstone"] }
+    ]),
+    level: "Beginner to Advanced",
+    delivery_mode: "Online-First + Ngong Rd Campus Lab Access",
+    schedule: "Mon-Thu 7:00 PM - 9:30 PM EAT & Saturday Coding Clinics (9 AM - 4 PM)",
+    next_intake: "October 15, 2026",
+    is_featured: 1,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: "course-cybersecurity-microservices",
+    title: "Cyber Security & Microservices",
+    slug: "cyber-security-microservices",
+    category: "Security & Infrastructure",
+    duration_weeks: 16,
+    price_kes: 80000,
+    monthly_kes: 16000,
+    summary: "Master offensive and defensive cybersecurity alongside resilient cloud microservice architectures. Learn penetration testing, ethical hacking, network defense, Linux server hardening, container security (Docker/Kubernetes), and secure microservice API gateways.",
+    curriculum: JSON.stringify([
+      { module: "Module 1: Network Security, Linux Internals & Cryptography", topics: ["TCP/IP & OSI Networking", "Wireshark Packet Analysis", "Linux Hardening & Shell Scripting", "Symmetric/Asymmetric Encryption"] },
+      { module: "Module 2: Offensive Security & Penetration Testing", topics: ["OWASP Top 10 Web Vulnerabilities", "Burp Suite & Nmap Recon", "Vulnerability Scanning", "Privilege Escalation"] },
+      { module: "Module 3: Microservices Defense & Cloud Infrastructure", topics: ["Docker & Container Security", "API Gateways & Rate Limiting", "OAuth2 & Zero Trust Architecture", "Cloud Security Best Practices"] },
+      { module: "Module 4: Incident Response & Threat Hunting", topics: ["SIEM Log Analysis", "Incident Response Playbooks", "Mock Penetration Test Report", "Industry Certification Preparation"] }
+    ]),
+    level: "Beginner to Intermediate",
+    delivery_mode: "Online-First + Ngong Rd Campus Lab Access",
+    schedule: "Mon-Thu 7:00 PM - 9:30 PM EAT & Saturday Coding Clinics (9 AM - 4 PM)",
+    next_intake: "October 15, 2026",
+    is_featured: 1,
+    created_at: new Date().toISOString()
+  }
+];
+
 const DEFAULT_USERS = [
   {
     id: "usr-admin-primary",
@@ -588,28 +657,6 @@ export const DEFAULT_ANNOUNCEMENTS = [
   }
 ];
 
-export const DEFAULT_CERTIFICATES = [
-  {
-    id: "cert-001",
-    verification_id: "CPK-CERT-2026-SE9481",
-    student_name: "Brian Kipchumba",
-    student_email: "student@codepointkenya.com",
-    course_title: "Full-Stack Software Engineering",
-    cohort: "Cohort 14 (Evening Track)",
-    completion_date: "September 22, 2026",
-    final_grade: "Distinction with Honors",
-    approved_by: "Code Point Kenya Academic Council",
-    approved_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    qr_code_payload: "https://codepointkenya.com/verify?id=CPK-CERT-2026-SE9481",
-    technologies_covered: "Python, JavaScript, React 19, Node.js, PostgreSQL, Tailwind CSS, Docker, Git",
-    issuer_name: "Ian Kiprop",
-    issuer_title: "Lead Instructor & Head of Curriculum",
-    second_issuer_name: "Dr. Angela Wanjiku",
-    second_issuer_title: "Academic Director & Founder",
-    email_sent_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
-  }
-];
-
 export const DEFAULT_LOGIN_ATTEMPTS = [
   {
     id: "att-001",
@@ -722,20 +769,14 @@ export const DEFAULT_LECTURES = [
  * Initialize PostgreSQL Production Database
  */
 async function initPostgres(connectionString: string): Promise<AppDatabase | null> {
-  let pool: pg.Pool | null = null;
   try {
     const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
-    pool = new Pool({
+    const pool = new Pool({
       connectionString,
       ssl: isLocal ? false : { rejectUnauthorized: false },
       max: 10,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: isLocal ? 1500 : 8000
-    });
-
-    // Prevent unhandled error event emissions on the pool instance
-    pool.on('error', (err) => {
-      console.warn('[Database] Background pool client notice:', err.message);
+      connectionTimeoutMillis: 8000
     });
 
     // Test connection
@@ -866,13 +907,7 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
         final_grade VARCHAR(50) NOT NULL DEFAULT 'Distinction',
         approved_by VARCHAR(255) NOT NULL DEFAULT 'Academic Board',
         approved_at VARCHAR(100) NOT NULL,
-        qr_code_payload TEXT,
-        technologies_covered TEXT,
-        issuer_name VARCHAR(255),
-        issuer_title VARCHAR(255),
-        second_issuer_name VARCHAR(255),
-        second_issuer_title VARCHAR(255),
-        email_sent_at VARCHAR(100)
+        qr_code_payload TEXT
       );
 
       CREATE TABLE IF NOT EXISTS announcements (
@@ -928,18 +963,19 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       );
     `);
 
-    // Ensure extended columns exist in PostgreSQL
-    try {
-      await pool.query(`
-        ALTER TABLE certificates ADD COLUMN IF NOT EXISTS technologies_covered TEXT;
-        ALTER TABLE certificates ADD COLUMN IF NOT EXISTS issuer_name VARCHAR(255);
-        ALTER TABLE certificates ADD COLUMN IF NOT EXISTS issuer_title VARCHAR(255);
-        ALTER TABLE certificates ADD COLUMN IF NOT EXISTS second_issuer_name VARCHAR(255);
-        ALTER TABLE certificates ADD COLUMN IF NOT EXISTS second_issuer_title VARCHAR(255);
-        ALTER TABLE certificates ADD COLUMN IF NOT EXISTS email_sent_at VARCHAR(100);
-      `);
-    } catch (migErr) {
-      console.warn("[Database] PostgreSQL certificates migration warning:", migErr);
+    // Seed default courses if empty
+    const courseCountRes = await pool.query("SELECT count(*) as count FROM courses");
+    const courseCount = Number(courseCountRes.rows[0]?.count || 0);
+    if (courseCount === 0) {
+      console.log("[Database] Seeding default flagship courses in PostgreSQL...");
+      for (const c of DEFAULT_COURSES) {
+        await pool.query(
+          `INSERT INTO courses (id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+           ON CONFLICT (id) DO NOTHING`,
+          [c.id, c.title, c.slug, c.category, c.duration_weeks, c.price_kes, c.monthly_kes, c.summary, c.curriculum, c.level, c.delivery_mode, c.schedule, c.next_intake, c.is_featured, c.created_at]
+        );
+      }
     }
 
     // Seed default admin and accounts if users table is empty
@@ -1068,25 +1104,6 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       console.warn("[Database] PostgreSQL class_lectures seed warning:", e);
     }
 
-    // Seed default certificates if empty
-    try {
-      const certCountRes = await pool.query("SELECT count(*) as count FROM certificates");
-      const certCount = Number(certCountRes.rows[0]?.count || 0);
-      if (certCount === 0) {
-        console.log("[Database] Seeding initial certificates in PostgreSQL...");
-        for (const c of DEFAULT_CERTIFICATES) {
-          await pool.query(
-            `INSERT INTO certificates (id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload, technologies_covered, issuer_name, issuer_title, second_issuer_name, second_issuer_title, email_sent_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-             ON CONFLICT (id) DO NOTHING`,
-            [c.id, c.verification_id, c.student_name, c.student_email, c.course_title, c.cohort, c.completion_date, c.final_grade, c.approved_by, c.approved_at, c.qr_code_payload, c.technologies_covered, c.issuer_name, c.issuer_title, c.second_issuer_name, c.second_issuer_title, c.email_sent_at]
-          );
-        }
-      }
-    } catch (e) {
-      console.warn("[Database] PostgreSQL certificates seed warning:", e);
-    }
-
     const appDb: AppDatabase = {
       type: "postgres",
       providerName: "PostgreSQL (Production Cloud Database)",
@@ -1111,20 +1128,8 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
     };
 
     return appDb;
-  } catch (err: any) {
-    if (pool) {
-      try {
-        await (pool as pg.Pool).end();
-      } catch {
-        // Ignore pool shutdown error
-      }
-    }
-    const isConnRefused = err?.code === "ECONNREFUSED" || err?.message?.includes("ECONNREFUSED");
-    if (isConnRefused) {
-      console.warn("[Database] PostgreSQL server not reachable at target host (ECONNREFUSED). Seamlessly engaging resilient local database engine.");
-    } else {
-      console.warn("[Database] PostgreSQL connection attempt warning:", err?.message || err);
-    }
+  } catch (err) {
+    console.error("[Database] Failed to connect to PostgreSQL:", err);
     return null;
   }
 }
@@ -1136,7 +1141,7 @@ function createInMemoryDb(): AppDatabase {
   console.log("[Database] Initializing high-resiliency in-memory data store.");
 
   const tables: Record<string, any[]> = {
-    courses: [],
+    courses: [...DEFAULT_COURSES],
     applications: [],
     users: [...DEFAULT_USERS],
     site_settings: Object.entries(DEFAULT_SITE_SETTINGS).map(([key, value]) => ({ key, value })),
@@ -1144,7 +1149,7 @@ function createInMemoryDb(): AppDatabase {
     reviews: [...DEFAULT_REVIEWS],
     assignments: [...DEFAULT_ASSIGNMENTS],
     submissions: [...DEFAULT_SUBMISSIONS],
-    certificates: [...DEFAULT_CERTIFICATES],
+    certificates: [],
     announcements: [...DEFAULT_ANNOUNCEMENTS],
     login_attempts: [...DEFAULT_LOGIN_ATTEMPTS],
     class_lectures: [...DEFAULT_LECTURES]
@@ -1402,46 +1407,8 @@ function createInMemoryDb(): AppDatabase {
           final_grade: params[7] || "Distinction",
           approved_by: params[8] || "Academic Board",
           approved_at: params[9],
-          qr_code_payload: params[10],
-          technologies_covered: params[11] || "Python, JavaScript, React, PostgreSQL, Tailwind CSS",
-          issuer_name: params[12] || "Ian Kiprop",
-          issuer_title: params[13] || "Lead Instructor",
-          second_issuer_name: params[14] || "Dr. Angela Wanjiku",
-          second_issuer_title: params[15] || "Academic Director",
-          email_sent_at: params[16] || null
+          qr_code_payload: params[10]
         });
-        return;
-      }
-
-      // UPDATE certificates
-      if (lower.includes("update certificates")) {
-        const id = params[params.length - 1];
-        const cert = tables.certificates.find(c => c.id === id || c.verification_id === id);
-        if (cert) {
-          if (lower.includes("email_sent_at")) {
-            cert.email_sent_at = params[0];
-          } else {
-            cert.student_name = params[0];
-            cert.student_email = params[1];
-            cert.course_title = params[2];
-            cert.cohort = params[3];
-            cert.completion_date = params[4];
-            cert.final_grade = params[5];
-            cert.technologies_covered = params[6];
-            cert.issuer_name = params[7];
-            cert.issuer_title = params[8];
-            cert.second_issuer_name = params[9];
-            cert.second_issuer_title = params[10];
-            cert.approved_by = params[11];
-          }
-        }
-        return;
-      }
-
-      // DELETE FROM certificates
-      if (lower.includes("delete from certificates")) {
-        const id = params[0];
-        tables.certificates = tables.certificates.filter(c => c.id !== id && c.verification_id !== id);
         return;
       }
       // INSERT INTO login_attempts
@@ -1746,13 +1713,7 @@ async function initSqlite(): Promise<AppDatabase | null> {
         final_grade TEXT NOT NULL DEFAULT 'Distinction',
         approved_by TEXT NOT NULL DEFAULT 'Academic Board',
         approved_at TEXT NOT NULL,
-        qr_code_payload TEXT,
-        technologies_covered TEXT,
-        issuer_name TEXT,
-        issuer_title TEXT,
-        second_issuer_name TEXT,
-        second_issuer_title TEXT,
-        email_sent_at TEXT
+        qr_code_payload TEXT
       );
 
       CREATE TABLE IF NOT EXISTS announcements (
@@ -1808,20 +1769,24 @@ async function initSqlite(): Promise<AppDatabase | null> {
       );
     `);
 
-    // Ensure extended columns exist in SQLite
-    const addColSqlite = (table: string, col: string, def: string) => {
-      try {
-        sqliteInstance.run(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
-      } catch (e) {
-        // column may already exist
+    // Seed courses if empty
+    const stmtCourses = sqliteInstance.prepare("SELECT COUNT(*) as count FROM courses");
+    let hasCourses = false;
+    if (stmtCourses.step()) {
+      const row = stmtCourses.getAsObject();
+      hasCourses = Number(row.count) > 0;
+    }
+    stmtCourses.free();
+
+    if (!hasCourses) {
+      for (const c of DEFAULT_COURSES) {
+        sqliteInstance.run(
+          `INSERT INTO courses (id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [c.id, c.title, c.slug, c.category, c.duration_weeks, c.price_kes, c.monthly_kes, c.summary, c.curriculum, c.level, c.delivery_mode, c.schedule, c.next_intake, c.is_featured, c.created_at]
+        );
       }
-    };
-    addColSqlite('certificates', 'technologies_covered', 'TEXT');
-    addColSqlite('certificates', 'issuer_name', 'TEXT');
-    addColSqlite('certificates', 'issuer_title', 'TEXT');
-    addColSqlite('certificates', 'second_issuer_name', 'TEXT');
-    addColSqlite('certificates', 'second_issuer_title', 'TEXT');
-    addColSqlite('certificates', 'email_sent_at', 'TEXT');
+    }
 
     // Seed users if empty
     const stmt = sqliteInstance.prepare("SELECT COUNT(*) as count FROM users");
@@ -1972,29 +1937,6 @@ async function initSqlite(): Promise<AppDatabase | null> {
       console.warn("[Database] SQLite class_lectures seed warning:", e);
     }
 
-    // Seed certificates if empty
-    try {
-      const stmtCert = sqliteInstance.prepare("SELECT COUNT(*) as count FROM certificates");
-      let hasCert = false;
-      if (stmtCert.step()) {
-        const row = stmtCert.getAsObject();
-        hasCert = Number(row.count) > 0;
-      }
-      stmtCert.free();
-
-      if (!hasCert) {
-        for (const c of DEFAULT_CERTIFICATES) {
-          sqliteInstance.run(
-            `INSERT INTO certificates (id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload, technologies_covered, issuer_name, issuer_title, second_issuer_name, second_issuer_title, email_sent_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [c.id, c.verification_id, c.student_name, c.student_email, c.course_title, c.cohort, c.completion_date, c.final_grade, c.approved_by, c.approved_at, c.qr_code_payload, c.technologies_covered, c.issuer_name, c.issuer_title, c.second_issuer_name, c.second_issuer_title, c.email_sent_at]
-          );
-        }
-      }
-    } catch (e) {
-      console.warn("[Database] SQLite certificates seed warning:", e);
-    }
-
     // Save initial state
     try {
       const data = sqliteInstance.export();
@@ -2063,7 +2005,7 @@ export async function getDatabase(): Promise<AppDatabase> {
         dbInstance = pgDb;
         return pgDb;
       }
-      console.info("[Database] Engaging resilient local database engine...");
+      console.warn("[Database] PostgreSQL connection failed. Falling back to local database engine...");
     }
 
     // 2. Try SQLite

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, 
   Sparkles, 
@@ -17,7 +18,8 @@ import {
   Code2,
   Calendar,
   Clock,
-  Flame
+  Flame,
+  Compass
 } from 'lucide-react';
 
 import kenyanCodingLab from '../assets/images/kenyan_coding_lab_1789557291842.jpg';
@@ -29,6 +31,7 @@ interface HeroProps {
   onExplorePrograms?: () => void;
   onApplyNow?: () => void;
   onOpenTracker?: () => void;
+  onTakeQuiz?: () => void;
   siteSettings?: SiteSettings;
   heroCtaText?: string;
   primaryCtaColor?: string;
@@ -51,6 +54,7 @@ export const Hero: React.FC<HeroProps> = ({
   onExplorePrograms,
   onApplyNow,
   onOpenTracker,
+  onTakeQuiz,
   siteSettings
 }) => {
   const heroTitle = siteSettings?.hero_title || "Launch Your Tech Career in Software, Data, & AI with Code Point Kenya";
@@ -198,8 +202,11 @@ export const Hero: React.FC<HeroProps> = ({
   const activeSlide = slides[currentSlide] || slides[0];
 
   return (
-    <section 
+    <motion.section 
       id="hero"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.7 }}
       className="relative overflow-hidden bg-slate-950 text-slate-100 pt-10 pb-16 lg:pt-16 lg:pb-24 border-b border-slate-800/80 group"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
@@ -241,66 +248,91 @@ export const Hero: React.FC<HeroProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
           
           {/* Left Column */}
-          <div className="lg:col-span-7 space-y-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-7 space-y-6"
+          >
             
             <div className="flex flex-wrap items-center gap-2.5">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-emerald-500/40 text-emerald-300 text-xs font-semibold tracking-wide backdrop-blur-md shadow-lg shadow-emerald-950/40 transition-all duration-300">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full theme-badge text-xs font-semibold tracking-wide backdrop-blur-md shadow-lg transition-all duration-300">
                 {activeSlide.badgeIcon}
                 <span className="truncate max-w-xs sm:max-w-md">{activeSlide.badge}</span>
               </div>
 
               {/* Dynamic Next Intake & Cohort Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-emerald-950/40">
-                <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full theme-badge text-xs font-semibold backdrop-blur-md shadow-lg">
+                <Calendar className="w-3.5 h-3.5 theme-text-primary shrink-0" />
                 <span>Next Intake: <strong className="text-white font-bold">{siteSettings?.next_intake_date || "October 15, 2026"}</strong></span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-extrabold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-extrabold theme-badge">
                   {siteSettings?.intake_status || "Enrollment Open"}
                 </span>
               </div>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.14] min-h-[120px] sm:min-h-[140px] flex flex-col justify-center">
-              <span>
-                {activeSlide.headlinePrefix}
-                <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-200 bg-clip-text text-transparent">
-                  {activeSlide.headlineHighlight}
-                </span>
-                {activeSlide.headlineSuffix}
-              </span>
-            </h1>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeSlide.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+              >
+                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.14] min-h-[120px] sm:min-h-[140px] flex flex-col justify-center">
+                  <span>
+                    {activeSlide.headlinePrefix}
+                    <span className="theme-gradient-text">
+                      {activeSlide.headlineHighlight}
+                    </span>
+                    {activeSlide.headlineSuffix}
+                  </span>
+                </h1>
 
-            <p className="text-sm sm:text-base lg:text-lg text-slate-300 max-w-2xl leading-relaxed min-h-[70px] flex items-center">
-              {activeSlide.description}
-            </p>
+                <p className="text-sm sm:text-base lg:text-lg text-slate-300 max-w-2xl leading-relaxed min-h-[70px] flex items-center mt-3">
+                  {activeSlide.description}
+                </p>
+              </motion.div>
+            </AnimatePresence>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs text-slate-200">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 theme-text-primary shrink-0" />
                 <span>Zero fluff: 4 production-grade portfolio projects</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 theme-text-primary shrink-0" />
                 <span>Flexible KES monthly installments (from KES 16.5K/mo)</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 theme-text-primary shrink-0" />
                 <span>1-on-1 mentorship & career placement support</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 theme-text-primary shrink-0" />
                 <span>Physical campus at Ngong Road, Teamshark 5th Fl</span>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 pt-4">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3.5 pt-4">
               <button
                 onClick={onApplyNow}
-                style={{ backgroundColor: primaryCtaColor }}
-                className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-slate-950 text-sm font-bold shadow-lg shadow-emerald-500/25 hover:brightness-110 transition-all hover:scale-[1.02] cursor-pointer"
+                style={{ backgroundColor: 'var(--primary-color)' }}
+                className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-slate-950 text-sm font-bold shadow-lg hover:brightness-110 transition-all hover:scale-[1.02] cursor-pointer"
               >
                 <span>{heroCtaText}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
+
+              {onTakeQuiz && (
+                <button
+                  onClick={onTakeQuiz}
+                  className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl theme-btn-secondary text-sm font-semibold transition-all hover:scale-[1.02] cursor-pointer backdrop-blur-sm"
+                >
+                  <Compass className="w-4 h-4 theme-text-primary" />
+                  <span>Find My Tech Path (60s Quiz)</span>
+                </button>
+              )}
               
               <button
                 onClick={onExplorePrograms}
@@ -311,7 +343,7 @@ export const Hero: React.FC<HeroProps> = ({
 
               <button
                 onClick={onOpenTracker}
-                className="sm:hidden text-center text-xs text-slate-400 hover:text-emerald-400 pt-1 underline"
+                className="sm:hidden text-center text-xs text-slate-400 hover:text-white pt-1 underline"
               >
                 Already applied? Track your application
               </button>
@@ -330,14 +362,19 @@ export const Hero: React.FC<HeroProps> = ({
               </div>
             </div>
 
-          </div>
+          </motion.div>
 
           {/* Right Column */}
-          <div className="lg:col-span-5 space-y-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 32, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.75, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-5 space-y-4"
+          >
             <div className="p-6 rounded-2xl bg-slate-900/85 backdrop-blur-md border border-slate-800/90 shadow-2xl relative overflow-hidden">
               <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg theme-icon-box flex items-center justify-center">
                     <MapPin className="w-4 h-4" />
                   </div>
                   <div>
@@ -345,34 +382,43 @@ export const Hero: React.FC<HeroProps> = ({
                     <p className="text-[11px] text-slate-400">{siteSettings?.address || "Ngong Road, Teamshark, 5th Floor"}</p>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                <span className="px-2 py-0.5 rounded text-[10px] font-semibold theme-badge">
                   {siteSettings?.short_hours_label || "Open Mon - Sat"}
                 </span>
               </div>
 
               {/* Dynamic Next Cohort Urgency & Intake Card */}
-              <div className="mt-4 p-3.5 rounded-xl bg-gradient-to-r from-emerald-950/80 via-slate-950 to-slate-900 border border-emerald-500/40 shadow-inner">
+              <div 
+                style={{ borderColor: 'var(--card-highlight-border)' }}
+                className="mt-4 p-3.5 rounded-xl bg-slate-950/80 border shadow-inner"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-white">
-                    <Calendar className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Next Cohort: <strong className="text-emerald-300">{siteSettings?.next_intake_date || "October 15, 2026"}</strong></span>
+                    <Calendar className="w-4 h-4 theme-text-primary shrink-0" />
+                    <span>Next Cohort: <strong className="theme-text-primary">{siteSettings?.next_intake_date || "October 15, 2026"}</strong></span>
                   </div>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wide">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold theme-badge uppercase tracking-wide">
                     {siteSettings?.intake_status || "Enrollment Open"}
                   </span>
                 </div>
 
-                <div className="mt-2 flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-300 gap-1 pt-1.5 border-t border-emerald-500/20">
+                <div 
+                  style={{ borderTopColor: 'var(--card-highlight-border)' }}
+                  className="mt-2 flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-300 gap-1 pt-1.5 border-t"
+                >
                   <span className="flex items-center gap-1.5 text-amber-300">
                     <Clock className="w-3.5 h-3.5 shrink-0" />
                     <span>Apply before: <strong>{siteSettings?.registration_deadline || "October 10, 2026"}</strong></span>
                   </span>
-                  <span className="text-emerald-400 font-medium">Campus & Online Seats</span>
+                  <span className="theme-text-primary font-medium">Campus & Online Seats</span>
                 </div>
 
                 {siteSettings?.announcement_banner_text && (
-                  <div className="mt-2 pt-1.5 border-t border-emerald-500/20 text-[11px] text-emerald-200/90 flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <div 
+                    style={{ borderTopColor: 'var(--card-highlight-border)' }}
+                    className="mt-2 pt-1.5 border-t text-[11px] text-slate-200 flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-3 h-3 theme-text-primary shrink-0" />
                     <span className="truncate">{siteSettings.announcement_banner_text}</span>
                   </div>
                 )}
@@ -380,7 +426,7 @@ export const Hero: React.FC<HeroProps> = ({
 
               <div className="mt-4 space-y-3">
                 <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-start gap-3">
-                  <Terminal className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <Terminal className="w-5 h-5 theme-text-primary shrink-0 mt-0.5" />
                   <div>
                     <div className="text-xs font-semibold text-white">Software Engineering Immersive</div>
                     <div className="text-[11px] text-slate-400">16 Weeks • React, Node, Python, Cloud • KES 85,000</div>
@@ -388,7 +434,7 @@ export const Hero: React.FC<HeroProps> = ({
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-start gap-3">
-                  <Database className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
+                  <Database className="w-5 h-5 theme-text-secondary shrink-0 mt-0.5" />
                   <div>
                     <div className="text-xs font-semibold text-white">Data Science & Predictive Analytics</div>
                     <div className="text-[11px] text-slate-400">16 Weeks • Python, SQL, Power BI, ML • KES 75,000</div>
@@ -396,7 +442,7 @@ export const Hero: React.FC<HeroProps> = ({
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-start gap-3">
-                  <Cpu className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+                  <Cpu className="w-5 h-5 theme-text-accent shrink-0 mt-0.5" />
                   <div>
                     <div className="text-xs font-semibold text-white">Applied AI & LLM Systems</div>
                     <div className="text-[11px] text-slate-400">14 Weeks • Prompting, LangChain, RAG • KES 95,000</div>
@@ -414,7 +460,7 @@ export const Hero: React.FC<HeroProps> = ({
 
               <div className="mt-5 pt-4 border-t border-slate-800/80 grid grid-cols-3 gap-2 text-center">
                 <div className="p-2 rounded-lg bg-slate-950/60">
-                  <div className="text-base font-extrabold text-emerald-400 font-mono">94%</div>
+                  <div className="text-base font-extrabold theme-text-primary font-mono">94%</div>
                   <div className="text-[10px] text-slate-400">Grad Placement</div>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-950/60">
@@ -422,7 +468,7 @@ export const Hero: React.FC<HeroProps> = ({
                   <div className="text-[10px] text-slate-400">Tech Alumni</div>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-950/60">
-                  <div className="text-base font-extrabold text-teal-400 font-mono">1:1</div>
+                  <div className="text-base font-extrabold theme-text-secondary font-mono">1:1</div>
                   <div className="text-[10px] text-slate-400">Mentor Support</div>
                 </div>
               </div>
@@ -431,13 +477,13 @@ export const Hero: React.FC<HeroProps> = ({
                 href={`https://wa.me/${phoneClean || '254756295128'}?text=Hello%20${encodeURIComponent(siteSettings?.brand_name || 'Code Point Kenya')}!%20I%20would%20like%20to%20learn%20more%20about%20your%20upcoming%20tech%20programs.`}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-colors"
+                className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl theme-btn-secondary text-xs font-semibold transition-all cursor-pointer"
               >
                 <span>Chat with Admissions Advisor on WhatsApp ({siteSettings?.primary_phone || "0756295128"})</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
-          </div>
+          </motion.div>
 
         </div>
 
@@ -451,20 +497,24 @@ export const Hero: React.FC<HeroProps> = ({
                 <button
                   key={slide.id ?? idx}
                   onClick={() => handleSelectSlide(idx)}
+                  style={isCurrent ? { borderColor: 'var(--primary-color)' } : undefined}
                   className={`relative flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     isCurrent
-                      ? 'bg-slate-900 border border-emerald-500/50 text-white shadow-md shadow-emerald-950'
+                      ? 'bg-slate-900 border text-white shadow-md'
                       : 'bg-slate-950/70 border border-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
                   }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${isCurrent ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
-                  <span className="font-mono text-[11px] text-emerald-400">0{idx + 1}</span>
+                  <span 
+                    style={isCurrent ? { backgroundColor: 'var(--primary-color)' } : undefined}
+                    className={`w-1.5 h-1.5 rounded-full ${isCurrent ? 'animate-pulse' : 'bg-slate-600'}`} 
+                  />
+                  <span className="font-mono text-[11px] theme-text-primary">0{idx + 1}</span>
                   <span className="hidden sm:inline">{slide.pillLabel}</span>
 
                   {isCurrent && (
                     <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-slate-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-emerald-400 transition-all duration-75 ease-linear"
+                        className="h-full theme-bg-primary transition-all duration-75 ease-linear"
                         style={{ width: `${progress}%` }}
                       />
                     </div>
@@ -508,6 +558,6 @@ export const Hero: React.FC<HeroProps> = ({
         </div>
 
       </div>
-    </section>
+    </motion.section>
   );
 };

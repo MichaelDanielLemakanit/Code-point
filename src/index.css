@@ -1,5 +1,136 @@
 @import "tailwindcss";
 
+:root {
+  /* Default Nairobi Silicon Savannah palette */
+  --primary-color: #10b981;
+  --primary-rgb: 16, 185, 129;
+  --secondary-color: #06b6d4;
+  --secondary-rgb: 6, 182, 212;
+  --accent-color: #06b6d4;
+  --highlight-color: #10b981;
+
+  /* Badges & Status Pills */
+  --badge-bg: rgba(16, 185, 129, 0.12);
+  --badge-text: #10b981;
+  --badge-border: rgba(16, 185, 129, 0.28);
+  --accent-badge-bg: rgba(6, 182, 212, 0.12);
+  --accent-badge-text: #06b6d4;
+  --accent-badge-border: rgba(6, 182, 212, 0.28);
+
+  /* Borders & Card Highlights */
+  --card-highlight-border: rgba(16, 185, 129, 0.45);
+  --card-highlight-glow: rgba(16, 185, 129, 0.18);
+  --focus-ring: rgba(16, 185, 129, 0.4);
+
+  /* Legacy aliases for backward compatibility */
+  --cpk-primary: #10b981;
+  --cpk-secondary: #06b6d4;
+}
+
+/* ========================================================================= */
+/* DYNAMIC THEME SYSTEM UTILITIES                                            */
+/* ========================================================================= */
+
+.theme-text-primary {
+  color: var(--primary-color) !important;
+}
+
+.theme-text-secondary {
+  color: var(--secondary-color) !important;
+}
+
+.theme-text-accent {
+  color: var(--accent-color) !important;
+}
+
+.theme-bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.theme-bg-secondary {
+  background-color: var(--secondary-color) !important;
+}
+
+.theme-border-primary {
+  border-color: var(--primary-color) !important;
+}
+
+.theme-border-subtle {
+  border-color: rgba(var(--primary-rgb), 0.3) !important;
+}
+
+.theme-border-accent {
+  border-color: rgba(var(--secondary-rgb), 0.3) !important;
+}
+
+.theme-badge {
+  background-color: var(--badge-bg) !important;
+  color: var(--badge-text) !important;
+  border: 1px solid var(--badge-border) !important;
+}
+
+.theme-badge-accent {
+  background-color: var(--accent-badge-bg) !important;
+  color: var(--accent-badge-text) !important;
+  border: 1px solid var(--accent-badge-border) !important;
+}
+
+.theme-icon-box {
+  background-color: rgba(var(--primary-rgb), 0.12) !important;
+  color: var(--primary-color) !important;
+  border: 1px solid rgba(var(--primary-rgb), 0.25) !important;
+}
+
+.theme-icon-box-accent {
+  background-color: rgba(var(--secondary-rgb), 0.12) !important;
+  color: var(--secondary-color) !important;
+  border: 1px solid rgba(var(--secondary-rgb), 0.25) !important;
+}
+
+.theme-card-highlight {
+  border-color: var(--card-highlight-border) !important;
+  box-shadow: 0 12px 28px -6px var(--card-highlight-glow) !important;
+}
+
+.theme-gradient-text {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.theme-gradient-bg {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+}
+
+.theme-progress-bar {
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)) !important;
+}
+
+.theme-btn-primary {
+  background-color: var(--primary-color) !important;
+  color: #020617 !important;
+  box-shadow: 0 10px 15px -3px rgba(var(--primary-rgb), 0.25) !important;
+}
+
+.theme-btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.theme-btn-secondary {
+  background-color: rgba(var(--primary-rgb), 0.1) !important;
+  color: var(--primary-color) !important;
+  border: 1px solid rgba(var(--primary-rgb), 0.3) !important;
+}
+
+.theme-btn-secondary:hover {
+  background-color: rgba(var(--primary-rgb), 0.18) !important;
+  border-color: rgba(var(--primary-rgb), 0.5) !important;
+}
+
+/* ========================================================================= */
+/* KEYFRAMES & ANIMATIONS                                                    */
+/* ========================================================================= */
+
 @keyframes marquee {
   0% {
     transform: translateX(0%);
@@ -36,31 +167,4 @@
 
 .animate-marquee-reverse:hover {
   animation-play-state: paused;
-}
-
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  #certificate-print-root,
-  #certificate-print-root * {
-    visibility: visible;
-  }
-  #certificate-print-root {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 100vw !important;
-    min-height: 100vh !important;
-    margin: 0 !important;
-    padding: 10mm !important;
-    background: #06101e !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    z-index: 999999;
-  }
-  @page {
-    size: landscape;
-    margin: 0;
-  }
 }

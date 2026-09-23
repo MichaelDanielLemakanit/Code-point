@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { 
   Terminal,
   CheckCircle2
@@ -102,12 +103,19 @@ export const TechnologiesSection: React.FC<TechnologiesSectionProps> = ({ siteSe
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
 
   return (
-    <section id="technologies" className="py-20 bg-slate-900 text-slate-100 border-t border-slate-800 relative">
+    <motion.section 
+      id="technologies" 
+      initial={{ opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1, margin: '-40px 0px' }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      className="py-20 bg-slate-900 text-slate-100 border-t border-slate-800 relative"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold">
             <Terminal className="w-3.5 h-3.5" />
             <span>{sectionData.badge_text}</span>
           </div>
@@ -123,22 +131,27 @@ export const TechnologiesSection: React.FC<TechnologiesSectionProps> = ({ siteSe
 
         {/* Technology Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-14">
-          {visibleItems.map((tech) => (
-            <div
+          {visibleItems.map((tech, index) => (
+            <motion.div
               key={tech.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.45, delay: (index % 6) * 0.06 }}
+              whileHover={{ y: -4 }}
               className="p-6 sm:p-7 rounded-2xl bg-slate-950/90 border border-slate-800 hover:border-slate-700 hover:bg-slate-800/80 transition-all duration-200 group flex flex-col justify-between space-y-5"
             >
               <div>
                 <div className="flex items-center justify-between gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-105 group-hover:border-emerald-500/40 group-hover:bg-emerald-500/20 transition-all">
-                    {renderCmsIcon(tech.icon_name, 'w-6 h-6 text-emerald-400')}
+                  <div className="w-12 h-12 rounded-xl theme-icon-box flex items-center justify-center group-hover:scale-105 transition-all">
+                    {renderCmsIcon(tech.icon_name, 'w-6 h-6 theme-text-primary')}
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-medium theme-badge">
                     {tech.category}
                   </span>
                 </div>
 
-                <h3 className="text-xl font-bold text-white tracking-tight group-hover:text-emerald-400 transition-colors">
+                <h3 className="text-xl font-bold text-white tracking-tight group-hover:text-white transition-colors">
                   {tech.title}
                 </h3>
 
@@ -156,18 +169,18 @@ export const TechnologiesSection: React.FC<TechnologiesSectionProps> = ({ siteSe
                         key={tag}
                         className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800"
                       >
-                        <CheckCircle2 className="w-3 h-3 text-emerald-400/70" />
+                        <CheckCircle2 className="w-3 h-3 theme-text-primary opacity-80" />
                         {tag}
                       </span>
                     ))}
                   </div>
                 </div>
               )}
-            </div>
+            </motion.div>
           ))}
         </div>
 
       </div>
-    </section>
+    </motion.section>
   );
 };

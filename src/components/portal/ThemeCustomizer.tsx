@@ -17,6 +17,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { SiteSettings } from '../../types';
+import { applyGlobalTheme } from '../../utils/theme';
 
 interface ThemeCustomizerProps {
   siteSettings?: SiteSettings;
@@ -136,24 +137,26 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
     setPrimaryColor(preset.primary);
     setSecondaryColor(preset.secondary);
 
-    // Apply immediate preview to document root
-    document.documentElement.style.setProperty('--cpk-primary', preset.primary);
-    document.documentElement.style.setProperty('--cpk-secondary', preset.secondary);
+    // Apply immediate global CSS variable binding to document root
+    applyGlobalTheme(preset.primary, preset.secondary);
   };
 
   const handlePrimaryColorChange = (color: string) => {
     setPrimaryColor(color);
-    document.documentElement.style.setProperty('--cpk-primary', color);
+    applyGlobalTheme(color, secondaryColor);
   };
 
   const handleSecondaryColorChange = (color: string) => {
     setSecondaryColor(color);
-    document.documentElement.style.setProperty('--cpk-secondary', color);
+    applyGlobalTheme(primaryColor, color);
   };
 
   const handleSaveTheme = async () => {
     setIsSaving(true);
     try {
+      // Ensure all CSS variables on root are updated
+      applyGlobalTheme(primaryColor, secondaryColor);
+
       const updatedSettings: SiteSettings = {
         ...(siteSettings || {} as SiteSettings),
         theme_palette: selectedPalette,
@@ -177,6 +180,11 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
       if (typeof onSettingsUpdated === 'function') {
         onSettingsUpdated();
       }
+
+      // Notify the app and components of theme update
+      window.dispatchEvent(new CustomEvent('cpk_theme_updated', {
+        detail: { primary: primaryColor, secondary: secondaryColor }
+      }));
 
       if (success) {
         showToast('Theme saved and applied across live public website!');

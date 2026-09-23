@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { 
   Calendar, 
   Clock, 
@@ -88,12 +89,19 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
 
   return (
-    <section id="schedules" className="py-20 bg-slate-950 text-slate-100 border-t border-slate-800 relative">
+    <motion.section 
+      id="schedules" 
+      initial={{ opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1, margin: '-40px 0px' }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      className="py-20 bg-slate-950 text-slate-100 border-t border-slate-800 relative"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold">
             <Calendar className="w-3.5 h-3.5" />
             <span>{sectionData.badge_text}</span>
           </div>
@@ -109,29 +117,36 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
 
         {/* Track Cards Grid */}
         <div className={`grid grid-cols-1 ${visibleItems.length > 1 ? 'md:grid-cols-2' : 'max-w-2xl'} gap-8 max-w-5xl mx-auto mt-14`}>
-          {visibleItems.map((track) => (
-            <div
+          {visibleItems.map((track, index) => (
+            <motion.div
               key={track.id}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
               className="p-8 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-850/90 transition-all duration-200 flex flex-col justify-between space-y-6 relative overflow-hidden group shadow-lg"
             >
               {/* Subtle accent glow */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10 group-hover:bg-emerald-500/10 transition-colors" />
+              <div 
+                style={{ backgroundColor: 'rgba(var(--primary-rgb), 0.05)' }}
+                className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10" 
+              />
 
               <div className="space-y-5">
                 {/* Header row: Icon & Track Type Badge */}
                 <div className="flex items-center justify-between gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-105 group-hover:border-emerald-500/40 group-hover:bg-emerald-500/20 transition-all">
-                    {renderCmsIcon(track.icon_name, 'w-6 h-6 text-emerald-400')}
+                  <div className="w-12 h-12 rounded-xl theme-icon-box flex items-center justify-center group-hover:scale-105 transition-all">
+                    {renderCmsIcon(track.icon_name, 'w-6 h-6 theme-text-primary')}
                   </div>
                   {track.accent_badge && (
-                    <span className="px-3 py-1 rounded-full text-xs font-mono font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                    <span className="px-3 py-1 rounded-full text-xs font-mono font-medium theme-badge">
                       {track.accent_badge}
                     </span>
                   )}
                 </div>
 
                 <div>
-                  <h3 className="text-2xl font-bold text-white tracking-tight group-hover:text-emerald-400 transition-colors">
+                  <h3 className="text-2xl font-bold text-white tracking-tight group-hover:text-white transition-colors">
                     {track.title}
                   </h3>
 
@@ -139,13 +154,13 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
                   <div className="flex flex-wrap items-center gap-2 mt-3">
                     {track.schedule && (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-950 border border-slate-800 text-white font-medium text-xs">
-                        <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                        <Calendar className="w-3.5 h-3.5 theme-text-primary" />
                         {track.schedule}
                       </span>
                     )}
                     {track.time_badge && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono font-semibold text-xs">
-                        <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg theme-badge font-mono font-semibold text-xs">
+                        <Clock className="w-3.5 h-3.5 theme-text-primary" />
                         {track.time_badge}
                       </span>
                     )}
@@ -164,7 +179,7 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
                     </div>
                     {track.highlights.map((h, i) => (
                       <div key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-300">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-4 h-4 theme-text-primary shrink-0 mt-0.5" />
                         <span>{h}</span>
                       </div>
                     ))}
@@ -176,11 +191,11 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
               <div className="pt-6 border-t border-slate-800/80 space-y-3">
                 <div className="flex items-center justify-between text-xs text-slate-400">
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                    <MapPin className="w-3.5 h-3.5 theme-text-primary" />
                     {track.campus_note || 'Ngong Rd Lab Included'}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Laptop className="w-3.5 h-3.5 text-emerald-400" />
+                    <Laptop className="w-3.5 h-3.5 theme-text-primary" />
                     {track.online_note || 'Live Online Sync'}
                   </span>
                 </div>
@@ -188,29 +203,29 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
                 {onApply && (
                   <button
                     onClick={onApply}
-                    className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-white font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 group/btn cursor-pointer"
+                    className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-750 text-white font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 group/btn cursor-pointer"
                   >
                     <span>Apply for {track.title}</span>
                     <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                   </button>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 
         {/* Bottom Banner Note & Next Intake Callout */}
         <div className="mt-12 text-center flex flex-col sm:flex-row items-center justify-center gap-3">
-          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-xs text-emerald-200 shadow-sm">
-            <Calendar className="w-4 h-4 text-emerald-400" />
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl theme-badge text-xs shadow-sm">
+            <Calendar className="w-4 h-4 theme-text-primary" />
             <span>Next Cohort Starts: <strong className="text-white font-bold">{siteSettings?.next_intake_date || "October 15, 2026"}</strong></span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-slate-900 border border-slate-700 theme-text-primary">
               {siteSettings?.intake_status || "Enrollment Open"}
             </span>
           </div>
 
           <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+            <span className="flex items-center gap-1.5 theme-text-primary font-semibold">
               <Sparkles className="w-4 h-4" />
               Hybrid Flexibility:
             </span>
@@ -219,6 +234,6 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
         </div>
 
       </div>
-    </section>
+    </motion.section>
   );
 };

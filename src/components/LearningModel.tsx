@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { 
   Laptop, 
   MapPin, 
@@ -125,7 +126,7 @@ export const LearningModel: React.FC<LearningModelProps> = ({ siteSettings }) =>
         
         {/* Section Title */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full theme-badge text-xs font-semibold">
             <Building2 className="w-3.5 h-3.5" />
             <span>The Code Point Kenya Hybrid Model</span>
           </div>
@@ -141,13 +142,13 @@ export const LearningModel: React.FC<LearningModelProps> = ({ siteSettings }) =>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-14">
           
           {/* Pillar 1: Online-First Training */}
-          <div className="p-8 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-6 relative overflow-hidden group hover:border-emerald-500/50 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-              <Laptop className="w-6 h-6" />
+          <div className="p-8 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-6 relative overflow-hidden group hover:border-slate-700 transition-colors">
+            <div className="w-12 h-12 rounded-xl theme-icon-box flex items-center justify-center">
+              <Laptop className="w-6 h-6 theme-text-primary" />
             </div>
 
             <div>
-              <div className="text-xs font-mono text-emerald-400 font-semibold uppercase tracking-wider">
+              <div className="text-xs font-mono theme-text-primary font-semibold uppercase tracking-wider">
                 Anywhere in Kenya & Beyond
               </div>
               <h3 className="text-2xl font-bold text-white mt-1">
@@ -160,28 +161,35 @@ export const LearningModel: React.FC<LearningModelProps> = ({ siteSettings }) =>
 
             <div className="space-y-3 pt-2">
               <div className="flex items-start gap-3 text-xs sm:text-sm text-slate-300">
-                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle className="w-4 h-4 theme-text-primary shrink-0 mt-0.5" />
                 <span><strong className="text-white">Evening Schedules:</strong> 7:00 PM – 9:30 PM EAT classes designed for working professionals and university scholars.</span>
               </div>
               <div className="flex items-start gap-3 text-xs sm:text-sm text-slate-300">
-                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle className="w-4 h-4 theme-text-primary shrink-0 mt-0.5" />
                 <span><strong className="text-white">Active Community:</strong> Dedicated Discord and Slack workspaces with instant pair-programming rooms.</span>
               </div>
               <div className="flex items-start gap-3 text-xs sm:text-sm text-slate-300">
-                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle className="w-4 h-4 theme-text-primary shrink-0 mt-0.5" />
                 <span><strong className="text-white">Industry Instructors:</strong> Taught by senior developers currently working at top Kenyan tech firms.</span>
               </div>
             </div>
           </div>
 
           {/* Pillar 2: Physical Nairobi Campus & Lab */}
-          <div className="p-8 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-6 relative overflow-hidden group hover:border-teal-500/50 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400 flex items-center justify-center">
-              <MapPin className="w-6 h-6" />
+          <div className="p-8 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-6 relative overflow-hidden group hover:border-slate-700 transition-colors">
+            <div 
+              style={{ 
+                backgroundColor: 'rgba(var(--secondary-rgb), 0.15)', 
+                borderColor: 'rgba(var(--secondary-rgb), 0.3)', 
+                color: 'var(--secondary-color)' 
+              }}
+              className="w-12 h-12 rounded-xl border flex items-center justify-center"
+            >
+              <MapPin className="w-6 h-6 theme-text-secondary" />
             </div>
 
             <div>
-              <div className="text-xs font-mono text-teal-400 font-semibold uppercase tracking-wider">
+              <div className="text-xs font-mono theme-text-secondary font-semibold uppercase tracking-wider">
                 Ngong Road, Teamshark, 5th Floor, Nairobi
               </div>
               <h3 className="text-2xl font-bold text-white mt-1">
@@ -194,15 +202,15 @@ export const LearningModel: React.FC<LearningModelProps> = ({ siteSettings }) =>
 
             <div className="space-y-3 pt-2">
               <div className="flex items-start gap-3 text-xs sm:text-sm text-slate-300">
-                <Wifi className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+                <Wifi className="w-4 h-4 theme-text-secondary shrink-0 mt-0.5" />
                 <span><strong className="text-white">Zero Power/Internet Worries:</strong> Uncapped high-speed fiber internet and continuous backup generator power.</span>
               </div>
               <div className="flex items-start gap-3 text-xs sm:text-sm text-slate-300">
-                <Users className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+                <Users className="w-4 h-4 theme-text-secondary shrink-0 mt-0.5" />
                 <span><strong className="text-white">Saturday Hackathons & Clinics:</strong> Meet mentors face-to-face for architectural reviews and code debugging.</span>
               </div>
               <div className="flex items-start gap-3 text-xs sm:text-sm text-slate-300">
-                <CalendarCheck className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+                <CalendarCheck className="w-4 h-4 theme-text-secondary shrink-0 mt-0.5" />
                 <span><strong className="text-white">Hot-desking & Collaboration:</strong> Co-work alongside fellow engineers, data scientists, and startup founders.</span>
               </div>
             </div>
@@ -213,7 +221,7 @@ export const LearningModel: React.FC<LearningModelProps> = ({ siteSettings }) =>
         {/* Dynamic Progression Pathway: Your Path from Learner to Hired Engineer */}
         <div className="mt-16 pt-12 border-t border-slate-800">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold mb-2">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Engineered Career Acceleration</span>
             </div>

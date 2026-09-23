@@ -151,7 +151,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full theme-badge text-xs font-semibold">
             <MessageSquareHeart className="w-3.5 h-3.5" />
             <span>Community Feedback & Alumni Endorsements</span>
           </div>
@@ -179,14 +179,14 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
             <div className="h-4 w-px bg-slate-800 hidden sm:block" />
 
             <div className="flex items-center gap-1.5 text-xs text-slate-400">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 theme-text-primary" />
               <span><strong className="text-white">100% Moderated</strong> Verified Student Reviews</span>
             </div>
 
             <div className="h-4 w-px bg-slate-800 hidden sm:block" />
 
             <div className="flex items-center gap-1.5 text-xs text-slate-400">
-              <Building2 className="w-4 h-4 text-teal-400" />
+              <Building2 className="w-4 h-4 theme-text-secondary" />
               <span><strong className="text-white">Ngong Road Lab</strong> Alumni Network</span>
             </div>
           </div>
@@ -263,9 +263,9 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
                             <span className="text-xs font-bold text-white truncate">
                               {review.full_name}
                             </span>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" title="Verified Alumni / Partner" />
+                            <CheckCircle2 className="w-3.5 h-3.5 theme-text-primary shrink-0" title="Verified Alumni / Partner" />
                           </div>
-                          <p className="text-[11px] text-emerald-400 font-medium truncate">
+                          <p className="text-[11px] theme-text-primary font-medium truncate">
                             {review.role_program}
                           </p>
                           <p className="text-[10px] text-slate-400 truncate">
@@ -357,8 +357,8 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
 
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">
+                <Sparkles className="w-4 h-4 theme-text-primary" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider theme-text-primary">
                   Share Your Story
                 </span>
               </div>
@@ -372,10 +372,10 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
 
               {/* Feedback Success Notification */}
               {submitSuccess && (
-                <div className="mt-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="mt-6 p-4 rounded-xl theme-badge text-xs flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 theme-text-primary shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <p className="font-bold text-emerald-300">Feedback Received!</p>
+                    <p className="font-bold theme-text-primary">Feedback Received!</p>
                     <p className="leading-relaxed">{submitSuccess}</p>
                   </div>
                 </div>
@@ -418,7 +418,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
                       </button>
                     ))}
                   </div>
-                  <p className="text-[11px] font-mono text-emerald-400 font-semibold pt-1">
+                  <p className="text-[11px] font-mono theme-text-primary font-semibold pt-1">
                     {getRatingLabel(hoverRating || rating)}
                   </p>
                 </div>
@@ -506,14 +506,15 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
                 {/* Submit Action */}
                 <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                    <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <UserCheck className="w-3.5 h-3.5 theme-text-primary" />
                     Sent to Admissions Moderation Desk
                   </span>
 
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-500/20 cursor-pointer disabled:opacity-50"
+                    style={{ backgroundColor: 'var(--primary-color)' }}
+                    className="px-6 py-2.5 rounded-xl text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md hover:brightness-110 cursor-pointer disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <>

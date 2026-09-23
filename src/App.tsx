@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { Hero } from './components/Hero';
+import { CareerPathQuiz } from './components/CareerPathQuiz';
 import { ProgramsCatalog } from './components/ProgramsCatalog';
 import { LearningModel } from './components/LearningModel';
 import { ReviewsSection } from './components/ReviewsSection';
@@ -17,6 +18,7 @@ import { ApplicationTrackerModal } from './components/ApplicationTrackerModal';
 import { PortalModal } from './components/portal/PortalModal';
 import { AdminPanel } from './components/portal/AdminPanel';
 import { Course, User, Application, SiteSettings } from './types';
+import { applyGlobalTheme } from './utils/theme';
 
 export default function App() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -88,12 +90,21 @@ export default function App() {
 
   // Dynamically synchronize theme colors and root CSS variables
   useEffect(() => {
-    if (!siteSettings) return;
-    const primary = siteSettings.primary_cta_color || '#10B981';
-    const secondary = siteSettings.secondary_cta_color || '#06B6D4';
-    document.documentElement.style.setProperty('--cpk-primary', primary);
-    document.documentElement.style.setProperty('--cpk-secondary', secondary);
+    const primary = siteSettings?.primary_cta_color || '#10B981';
+    const secondary = siteSettings?.secondary_cta_color || '#06B6D4';
+    applyGlobalTheme(primary, secondary);
   }, [siteSettings]);
+
+  // Listen for real-time theme updates dispatched across components
+  useEffect(() => {
+    const handleThemeUpdated = () => {
+      fetchSiteSettings();
+    };
+    window.addEventListener('cpk_theme_updated', handleThemeUpdated);
+    return () => {
+      window.removeEventListener('cpk_theme_updated', handleThemeUpdated);
+    };
+  }, []);
 
   const handleOpenApply = (courseId?: string) => {
     setApplyCourseId(courseId);
@@ -146,6 +157,15 @@ export default function App() {
           onExplorePrograms={() => handleNavigateSection('programs')}
           onApplyNow={() => handleOpenApply()}
           onOpenTracker={() => handleOpenTracker()}
+          onTakeQuiz={() => handleNavigateSection('career-quiz')}
+          siteSettings={siteSettings}
+        />
+
+        {/* 1.5 Interactive Career Path Quiz Section */}
+        <CareerPathQuiz
+          courses={courses}
+          onApplyCourse={(courseId) => handleOpenApply(courseId)}
+          onExplorePrograms={() => handleNavigateSection('programs')}
           siteSettings={siteSettings}
         />
 

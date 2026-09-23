@@ -72,7 +72,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold">
             <Building2 className="w-3.5 h-3.5" />
             <span>Connect with {siteSettings?.brand_name || "Code Point Kenya"}</span>
           </div>
@@ -92,18 +92,18 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
             {/* Campus Physical Address Card */}
             <div className="p-7 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                  <MapPin className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-xl theme-icon-box flex items-center justify-center">
+                  <MapPin className="w-6 h-6 theme-text-primary" />
                 </div>
                 <div>
-                  <div className="text-xs font-mono text-emerald-400 uppercase font-semibold">Physical Headquarters</div>
+                  <div className="text-xs font-mono theme-text-primary uppercase font-semibold">Physical Headquarters</div>
                   <h3 className="text-xl font-bold text-white">Nairobi Innovation Hub</h3>
                 </div>
               </div>
 
               <div className="space-y-4 text-sm text-slate-300">
                 <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
-                  <Building2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <Building2 className="w-5 h-5 theme-text-primary shrink-0 mt-0.5" />
                   <div>
                     <span className="text-xs font-semibold text-white block">Official Office Location:</span>
                     <span className="text-slate-300">{siteSettings?.address || "Ngong Road, Teamshark, 5th Floor, Nairobi, Kenya"}</span>
@@ -112,7 +112,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                 </div>
 
                 <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
-                  <Clock className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
+                  <Clock className="w-5 h-5 theme-text-secondary shrink-0 mt-0.5" />
                   <div>
                     <span className="text-xs font-semibold text-white block">Physical Office Hours:</span>
                     <span className="text-slate-300">{siteSettings?.weekday_hours || "Monday – Friday: 8:00 AM – 8:00 PM EAT"}</span>
@@ -129,16 +129,16 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                   href={`https://wa.me/${cleanPhone || '254756295128'}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="p-3.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-between group transition-all"
+                  className="p-3.5 rounded-xl theme-badge flex items-center justify-between group transition-all"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Phone className="w-4 h-4 text-emerald-400" />
+                    <Phone className="w-4 h-4 theme-text-primary" />
                     <div>
-                      <div className="text-[10px] uppercase font-mono text-emerald-400 font-bold">WhatsApp Support</div>
-                      <div className="text-xs font-bold text-white group-hover:text-emerald-300 font-mono">{siteSettings?.primary_phone || "0756295128"}</div>
+                      <div className="text-[10px] uppercase font-mono theme-text-primary font-bold">WhatsApp Support</div>
+                      <div className="text-xs font-bold text-white group-hover:underline font-mono">{siteSettings?.primary_phone || "0756295128"}</div>
                     </div>
                   </div>
-                  <ExternalLink className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
+                  <ExternalLink className="w-3.5 h-3.5 theme-text-primary group-hover:translate-x-0.5 transition-transform" />
                 </a>
 
                 {/* Email Card */}
@@ -147,10 +147,10 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                   className="p-3.5 rounded-xl bg-slate-950 hover:bg-slate-850 border border-slate-800 flex items-center justify-between group transition-all"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Mail className="w-4 h-4 text-teal-400" />
+                    <Mail className="w-4 h-4 theme-text-secondary" />
                     <div className="overflow-hidden">
                       <div className="text-[10px] uppercase font-mono text-slate-400 font-bold">Official Email</div>
-                      <div className="text-xs font-bold text-white group-hover:text-teal-300 truncate">{siteSettings?.email || "info@codepointkenya.com"}</div>
+                      <div className="text-xs font-bold text-white group-hover:text-white truncate">{siteSettings?.email || "info@codepointkenya.com"}</div>
                     </div>
                   </div>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
@@ -188,7 +188,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
             <div className="p-7 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-6">
               
               <div>
-                <div className="inline-flex items-center gap-1 text-emerald-400 text-xs font-mono font-semibold uppercase tracking-wider">
+                <div className="inline-flex items-center gap-1 theme-text-primary text-xs font-mono font-semibold uppercase tracking-wider">
                   <MessageSquare className="w-3.5 h-3.5" />
                   <span>Instant Admissions Advisory</span>
                 </div>
@@ -201,15 +201,15 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
               </div>
 
               {sentSuccess ? (
-                <div className="p-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-3">
-                  <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
+                <div className="p-6 rounded-xl theme-badge text-center space-y-3">
+                  <CheckCircle2 className="w-10 h-10 theme-text-primary mx-auto" />
                   <h4 className="text-base font-bold text-white">Opening WhatsApp Chat...</h4>
                   <p className="text-xs text-slate-300 max-w-sm mx-auto">
-                    Connecting you directly to Code Point Kenya admissions at <strong className="text-emerald-400">0756295128</strong>.
+                    Connecting you directly to Code Point Kenya admissions at <strong className="theme-text-primary">0756295128</strong>.
                   </p>
                   <button
                     onClick={() => setSentSuccess(false)}
-                    className="text-xs text-emerald-400 hover:underline pt-2 inline-block cursor-pointer"
+                    className="text-xs theme-text-primary hover:underline pt-2 inline-block cursor-pointer"
                   >
                     Send another question
                   </button>
@@ -219,7 +219,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Your Name <span className="text-emerald-400">*</span>
+                        Your Name <span className="theme-text-primary">*</span>
                       </label>
                       <input
                         type="text"
@@ -227,13 +227,13 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                         value={inquiryName}
                         onChange={(e) => setInquiryName(e.target.value)}
                         placeholder="e.g. Mercy Wanjiku"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-700 transition-colors"
                       />
                     </div>
 
                     <div>
                       <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Phone / WhatsApp <span className="text-emerald-400">*</span>
+                        Phone / WhatsApp <span className="theme-text-primary">*</span>
                       </label>
                       <input
                         type="tel"
@@ -241,7 +241,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                         value={inquiryPhone}
                         onChange={(e) => setInquiryPhone(e.target.value)}
                         placeholder="e.g. 0712345678"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-700 transition-colors"
                       />
                     </div>
                   </div>
@@ -255,7 +255,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                       value={inquiryEmail}
                       onChange={(e) => setInquiryEmail(e.target.value)}
                       placeholder="e.g. mercy@gmail.com"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-700 transition-colors"
                     />
                   </div>
 
@@ -266,7 +266,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                     <select
                       value={inquirySubject}
                       onChange={(e) => setInquirySubject(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-slate-700 transition-colors"
                     >
                       <option value="Admission & Tuition Options">Admission & Tuition Options (KES)</option>
                       <option value="Software Engineering Track Details">Software Engineering Track Details</option>
@@ -285,14 +285,15 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                       value={inquiryMsg}
                       onChange={(e) => setInquiryMsg(e.target.value)}
                       placeholder="Tell us about your background or questions you'd like answered..."
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-700 transition-colors"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-400 hover:bg-emerald-300 disabled:opacity-50 text-slate-950 text-xs font-bold shadow-md shadow-emerald-500/20 transition-all cursor-pointer"
+                    style={{ backgroundColor: 'var(--primary-color)' }}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl disabled:opacity-50 text-slate-950 text-xs font-bold shadow-md hover:brightness-110 transition-all cursor-pointer"
                   >
                     {isSubmitting ? (
                       <span>Sending inquiry to Admissions...</span>

@@ -15,7 +15,6 @@ import {
   Search, 
   Filter, 
   Plus, 
-  Edit3, 
   Phone, 
   Calendar, 
   Clock, 
@@ -35,7 +34,8 @@ import {
   MessageSquareHeart,
   Award,
   CheckCircle,
-  XCircle
+  XCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { SiteSettings, Application, Course, AdminStats, ApplicationStatus, User, ContactMessage, Certificate, AssignmentSubmission } from '../../types';
 import { ProgramsManager } from './ProgramsManager';
@@ -137,6 +137,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [editingNotes, setEditingNotes] = useState('');
   const [savingNote, setSavingNote] = useState(false);
 
+  // Deletion modal state for inbox submissions
+  const [submissionToDelete, setSubmissionToDelete] = useState<{
+    id: string;
+    type: 'application' | 'message';
+    name: string;
+    detail: string;
+  } | null>(null);
+  const [isDeletingSubmission, setIsDeletingSubmission] = useState(false);
+
   // Stats state
   const [stats, setStats] = useState<AdminStats | null>(null);
 
@@ -145,8 +154,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
   const [certsLoading, setCertsLoading] = useState(false);
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
-  const [certModalMode, setCertModalMode] = useState<'view' | 'edit'>('view');
-  const [isCreatingNewCert, setIsCreatingNewCert] = useState(false);
   const [approvingEmail, setApprovingEmail] = useState<string | null>(null);
   const [approvalFeedback, setApprovalFeedback] = useState<{ text: string; isError: boolean } | null>(null);
 
@@ -539,20 +546,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  // Delete application
-  const handleDeleteApp = async (appId: string) => {
-    if (!window.confirm('Are you sure you want to permanently delete this application record?')) return;
-    try {
-      const res = await fetch(`/api/applications/${appId}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchApplications();
-        fetchStats();
-        if (selectedApp?.id === appId) setSelectedApp(null);
-        showToast('Application record deleted.');
-      }
-    } catch (e) {
-      console.error('Error deleting application:', e);
-    }
+  // Open confirmation dialog for application deletion
+  const handleDeleteApp = (app: Application) => {
+    setSubmissionToDelete({
+      id: app.id,
+      type: 'application',
+      name: app.full_name,
+      detail: `${app.email} • ${app.course_title} (${app.tracking_code})`
+    });
   };
 
   // Update Contact Message Status
@@ -572,17 +573,58 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  // Delete Contact Message
-  const handleDeleteMessage = async (msgId: string) => {
-    if (!window.confirm('Are you sure you want to delete this inquiry message?')) return;
+  // Open confirmation dialog for contact message deletion
+  const handleDeleteMessage = (msg: ContactMessage) => {
+    setSubmissionToDelete({
+      id: msg.id,
+      type: 'message',
+      name: msg.name,
+      detail: `${msg.email} • ${msg.subject || 'General Inquiry'}`
+    });
+  };
+
+  // Permanently delete submission from backend database and update live state instantly
+  const handleConfirmDeleteSubmission = async () => {
+    if (!submissionToDelete) return;
+    setIsDeletingSubmission(true);
+
+    const { id, type } = submissionToDelete;
+
     try {
-      const res = await fetch(`/api/messages/${msgId}`, { method: 'DELETE' });
-      if (res.ok) {
-        setMessages(prev => prev.filter(m => m.id !== msgId));
-        showToast('Inquiry message removed.');
+      // 1. Send DELETE request to /api/inbox/:id (with fallback to specific route)
+      let res = await fetch(`/api/inbox/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const fallbackUrl = type === 'application' ? `/api/applications/${id}` : `/api/messages/${id}`;
+        res = await fetch(fallbackUrl, { method: 'DELETE' });
       }
-    } catch (e) {
-      console.error('Error deleting message:', e);
+
+      // 2. Instantly update live UI state (removes card immediately without refresh)
+      if (type === 'application') {
+        setApplications(prev => prev.filter(a => a.id !== id));
+        if (selectedApp?.id === id) {
+          setSelectedApp(null);
+        }
+        showToast('Application submission permanently deleted.');
+      } else {
+        setMessages(prev => prev.filter(m => m.id !== id));
+        showToast('Inquiry message permanently deleted.');
+      }
+
+      // Dispatch event so other components stay synchronized
+      try {
+        window.dispatchEvent(new CustomEvent('cpk_inbox_updated'));
+      } catch (e) {}
+
+      // 3. Update summary stats dynamically
+      fetchStats();
+
+      // Dismiss confirmation dialog
+      setSubmissionToDelete(null);
+    } catch (err) {
+      console.error('Failed to delete submission:', err);
+      showToast('Error removing submission. Please check connection.');
+    } finally {
+      setIsDeletingSubmission(false);
     }
   };
 
@@ -988,28 +1030,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </p>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2.5 self-start">
-                        <button
-                          onClick={() => {
-                            setSelectedCert(null);
-                            setCertModalMode('edit');
-                            setIsCreatingNewCert(true);
-                          }}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm hover:shadow cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>+ Create New Certificate</span>
-                        </button>
-
-                        <button
-                          onClick={fetchCertificatesAndSubmissions}
-                          disabled={certsLoading}
-                          className="px-3.5 py-2 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                        >
-                          <RefreshCw className={`w-3.5 h-3.5 ${certsLoading ? 'animate-spin text-amber-500' : 'text-stone-500'}`} />
-                          <span>Refresh Records</span>
-                        </button>
-                      </div>
+                      <button
+                        onClick={fetchCertificatesAndSubmissions}
+                        disabled={certsLoading}
+                        className="px-3.5 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors self-start cursor-pointer shadow-xs"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${certsLoading ? 'animate-spin text-amber-500' : 'text-stone-500'}`} />
+                        <span>Refresh Records</span>
+                      </button>
                     </div>
 
                     {approvalFeedback && (
@@ -1062,31 +1090,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 <div className="text-[11px] text-amber-700 font-medium">{cert.course_title} • {cert.cohort}</div>
                                 <div className="text-[10px] text-stone-400 font-mono">ID: {cert.verification_id}</div>
                               </div>
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                <button
-                                  onClick={() => {
-                                    setSelectedCert(cert);
-                                    setCertModalMode('edit');
-                                    setIsCreatingNewCert(false);
-                                  }}
-                                  className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
-                                  title="Edit certificate details"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5 text-amber-600" />
-                                  <span>Edit</span>
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setSelectedCert(cert);
-                                    setCertModalMode('view');
-                                    setIsCreatingNewCert(false);
-                                  }}
-                                  className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
-                                  <span>View Cert</span>
-                                </button>
-                              </div>
+                              <button
+                                onClick={() => setSelectedCert(cert)}
+                                className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>View Cert</span>
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -1179,31 +1189,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                                 <div className="flex items-center gap-2 shrink-0">
                                   {stu.certificate ? (
-                                    <div className="flex items-center gap-1.5 shrink-0">
-                                      <button
-                                        onClick={() => {
-                                          setSelectedCert(stu.certificate!);
-                                          setCertModalMode('edit');
-                                          setIsCreatingNewCert(false);
-                                        }}
-                                        className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs"
-                                        title="Edit certificate details"
-                                      >
-                                        <Edit3 className="w-3.5 h-3.5 text-amber-600" />
-                                        <span>Edit</span>
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setSelectedCert(stu.certificate!);
-                                          setCertModalMode('view');
-                                          setIsCreatingNewCert(false);
-                                        }}
-                                        className="px-3 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 text-stone-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
-                                      >
-                                        <Eye className="w-3.5 h-3.5 text-amber-600" />
-                                        <span>View Certificate</span>
-                                      </button>
-                                    </div>
+                                    <button
+                                      onClick={() => setSelectedCert(stu.certificate!)}
+                                      className="px-3.5 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 text-stone-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                    >
+                                      <Eye className="w-3.5 h-3.5 text-amber-600" />
+                                      <span>View Certificate</span>
+                                    </button>
                                   ) : (
                                     <button
                                       onClick={() => handleApproveCertificate(stu.email, stu.name, stu.courseTitle)}
@@ -1468,7 +1460,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                       </select>
 
                                       <button
-                                        onClick={() => handleDeleteMessage(msg.id)}
+                                        onClick={() => handleDeleteMessage(msg)}
                                         className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                                         title="Delete message"
                                       >
@@ -1560,7 +1552,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                       </select>
 
                                       <button
-                                        onClick={() => handleDeleteApp(app.id)}
+                                        onClick={() => handleDeleteApp(app)}
                                         className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                                         title="Delete record"
                                       >
@@ -1694,21 +1686,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             className="w-full p-3 rounded-xl border border-stone-300 text-xs focus:outline-none focus:border-stone-900"
                           />
 
-                          <div className="flex items-center justify-end gap-2 pt-2">
+                          <div className="flex items-center justify-between pt-2">
                             <button
-                              onClick={() => setSelectedApp(null)}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-stone-600 hover:bg-stone-100"
+                              type="button"
+                              onClick={() => {
+                                const targetApp = selectedApp;
+                                setSelectedApp(null);
+                                handleDeleteApp(targetApp);
+                              }}
+                              className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 font-semibold cursor-pointer py-1"
                             >
-                              Cancel
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete Application</span>
                             </button>
-                            <button
-                              onClick={handleSaveNotes}
-                              disabled={savingNote}
-                              className="px-4 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold flex items-center gap-1.5"
-                            >
-                              {savingNote ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                              <span>Save Note</span>
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setSelectedApp(null)}
+                                className="px-4 py-2 rounded-lg text-xs font-semibold text-stone-600 hover:bg-stone-100 cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={handleSaveNotes}
+                                disabled={savingNote}
+                                className="px-4 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                              >
+                                {savingNote ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                                <span>Save Note</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1887,21 +1893,84 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       </div>
 
-      {/* Verified Certificate Modal & Custom Generator */}
-      {(selectedCert || isCreatingNewCert) && (
+      {/* Verified Certificate Modal */}
+      {selectedCert && (
         <CertificateModal
           certificate={selectedCert}
-          initialMode={certModalMode}
-          onClose={() => {
-            setSelectedCert(null);
-            setIsCreatingNewCert(false);
-          }}
-          onSaved={(savedCert) => {
-            fetchCertificatesAndSubmissions();
-            setSelectedCert(savedCert);
-            setIsCreatingNewCert(false);
-          }}
+          onClose={() => setSelectedCert(null)}
         />
+      )}
+
+      {/* Confirmation Dialog for Submission Deletion */}
+      {submissionToDelete && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200 p-6 space-y-5 animate-in zoom-in-95 text-stone-850">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center text-red-600 shrink-0">
+                <Trash2 className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-stone-900 leading-snug">
+                  Are you sure you want to delete this submission?
+                </h3>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  This action will permanently delete this record from the database. It cannot be recovered once removed.
+                </p>
+              </div>
+            </div>
+
+            {/* Target Submission Details Card */}
+            <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-stone-900 text-xs">{submissionToDelete.name}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono uppercase tracking-wider ${
+                  submissionToDelete.type === 'application' 
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                }`}>
+                  {submissionToDelete.type === 'application' ? 'Course Application' : 'Inquiry Message'}
+                </span>
+              </div>
+              <div className="text-stone-600 text-[11px] truncate font-mono">
+                {submissionToDelete.detail}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => !isDeletingSubmission && setSubmissionToDelete(null)}
+                disabled={isDeletingSubmission}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-300 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmDeleteSubmission}
+                disabled={isDeletingSubmission}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 shadow-sm shadow-red-600/30 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingSubmission ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting Record...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Yes, Delete Submission</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

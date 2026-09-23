@@ -66,13 +66,14 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
     if (s.includes('limit') || s.includes('few')) {
       return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
     }
-    return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+    return 'theme-badge font-bold';
   };
 
   return (
     <div 
       id="top-intake-announcement-banner"
-      className="relative z-50 bg-gradient-to-r from-emerald-950 via-slate-950 to-slate-900 border-b border-emerald-500/30 text-slate-100 shadow-md transition-all animate-fadeIn"
+      style={{ borderBottomColor: 'var(--card-highlight-border)' }}
+      className="relative z-50 bg-slate-950 border-b text-slate-100 shadow-md transition-all animate-fadeIn"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-2 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
         
@@ -81,8 +82,14 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
           {/* Status Badge */}
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getStatusBadgeStyle()}`}>
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              <span 
+                className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                style={{ backgroundColor: 'var(--primary-color)' }}
+              />
+              <span 
+                className="relative inline-flex rounded-full h-2 w-2"
+                style={{ backgroundColor: 'var(--primary-color)' }}
+              />
             </span>
             <span>{status}</span>
           </span>
@@ -90,8 +97,8 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
           {/* Next Intake & Deadline */}
           <div className="flex items-center gap-2 text-slate-200 font-medium">
             <span className="flex items-center gap-1 text-white">
-              <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Next Cohort: <strong className="text-emerald-300 font-bold">{intakeDate}</strong></span>
+              <Calendar className="w-3.5 h-3.5 theme-text-primary" />
+              <span>Next Cohort: <strong className="theme-text-primary font-bold">{intakeDate}</strong></span>
             </span>
 
             <span className="text-slate-600 hidden md:inline">•</span>
@@ -104,8 +111,8 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
 
           {/* Countdown indicator */}
           {daysRemaining !== null && daysRemaining > 0 && (
-            <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/30">
-              <Flame className="w-3 h-3 text-emerald-400" />
+            <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded theme-badge text-[10px] font-mono">
+              <Flame className="w-3 h-3 theme-text-primary" />
               <span>{daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} left to register</span>
             </span>
           )}
@@ -114,7 +121,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
           {announcementText && (
             <>
               <span className="text-slate-600 hidden xl:inline">•</span>
-              <span className="text-emerald-200/90 text-xs hidden xl:inline truncate max-w-md">
+              <span className="text-slate-300 text-xs hidden xl:inline truncate max-w-md">
                 {announcementText}
               </span>
             </>
@@ -125,7 +132,8 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={onApplyNow}
-            className="flex items-center gap-1.5 px-3.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold shadow-sm shadow-emerald-500/30 transition-all hover:scale-105 cursor-pointer"
+            style={{ backgroundColor: 'var(--primary-color)' }}
+            className="flex items-center gap-1.5 px-3.5 py-1 rounded-lg text-slate-950 text-xs font-bold shadow-sm transition-all hover:scale-105 hover:brightness-110 cursor-pointer"
           >
             <span>Apply for Intake</span>
             <ArrowRight className="w-3 h-3" />

@@ -31,17 +31,23 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({ siteSettings }) 
       {isOpen && (
         <div className="mb-3 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-700/80 shadow-2xl overflow-hidden text-slate-100 animate-in fade-in slide-in-from-bottom-5">
           {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-4 text-white flex items-center justify-between">
+          <div 
+            style={{ background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))' }}
+            className="p-4 text-white flex items-center justify-between"
+          >
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-white">
                   CPK
                 </div>
-                <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-900" />
+                <span 
+                  style={{ backgroundColor: 'var(--primary-color)' }}
+                  className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-slate-900" 
+                />
               </div>
               <div>
                 <h4 className="text-sm font-bold leading-tight">{brandName} Support</h4>
-                <p className="text-[11px] text-emerald-100 flex items-center gap-1">
+                <p className="text-[11px] text-white/90 flex items-center gap-1">
                   <span>Admissions Online (Replies in &lt;5 mins)</span>
                 </p>
               </div>
@@ -57,7 +63,7 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({ siteSettings }) 
           {/* Body */}
           <div className="p-4 bg-slate-950/90 text-xs space-y-3">
             <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 space-y-1">
-              <p className="font-semibold text-emerald-400">👋 Karibu to {brandName}!</p>
+              <p className="font-semibold theme-text-primary">👋 Karibu to {brandName}!</p>
               <p>Need help choosing between Software Engineering, Data Science, AI, or Cybersecurity?</p>
               <p className="text-[11px] text-slate-400 pt-1">
                 📍 Physical campus: {siteSettings?.address || "Ngong Road, Teamshark 5th Floor, Nairobi"}.
@@ -70,7 +76,7 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({ siteSettings }) 
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type your question here..."
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 transition-colors"
               />
 
               <div className="flex items-center justify-between gap-2">
@@ -78,7 +84,7 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({ siteSettings }) 
                   href={`https://wa.me/${cleanPhone || '254756295128'}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1 font-mono"
+                  className="text-[11px] theme-text-primary hover:underline flex items-center gap-1 font-mono"
                 >
                   <span>{phone}</span>
                   <ExternalLink className="w-3 h-3" />
@@ -86,7 +92,8 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({ siteSettings }) 
 
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md transition-colors cursor-pointer"
+                  style={{ backgroundColor: 'var(--primary-color)' }}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-slate-950 font-bold text-xs shadow-md hover:brightness-110 transition-colors cursor-pointer"
                 >
                   <span>Start WhatsApp Chat</span>
                   <Send className="w-3.5 h-3.5" />
@@ -100,14 +107,15 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({ siteSettings }) 
       {/* Floating Action Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-xl shadow-emerald-500/30 hover:scale-105 transition-all cursor-pointer select-none"
+        style={{ backgroundColor: 'var(--primary-color)' }}
+        className="group flex items-center gap-2.5 px-4 py-3 rounded-full text-slate-950 font-bold text-xs shadow-xl hover:scale-105 hover:brightness-110 transition-all cursor-pointer select-none"
         title={`Chat on WhatsApp (${phone})`}
         aria-label="Open WhatsApp Chat"
       >
         <div className="relative">
           <MessageCircle className="w-5 h-5 fill-slate-950" />
           <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-950"></span>
           </span>
         </div>

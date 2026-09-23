@@ -43,12 +43,15 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Col 1: Brand & Operating Model (lg:col-span-4) */}
           <div className="lg:col-span-4 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white">
-                <Terminal className="w-5 h-5 text-emerald-100" />
+              <div 
+                style={{ background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))' }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-sm"
+              >
+                <Terminal className="w-5 h-5 text-white" />
               </div>
               <div>
                 <span className="text-base font-bold text-white tracking-tight">{siteSettings?.brand_name || "Code Point Kenya"}</span>
-                <span className="block text-[11px] text-emerald-400 font-mono">Nairobi Tech Institute</span>
+                <span className="block text-[11px] theme-text-primary font-mono">Nairobi Tech Institute</span>
               </div>
             </div>
 
@@ -57,7 +60,7 @@ export const Footer: React.FC<FooterProps> = ({
             </p>
 
             <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 space-y-1">
-              <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px]">
+              <div className="flex items-center gap-1.5 theme-text-primary font-semibold text-[11px]">
                 <MapPin className="w-3.5 h-3.5 shrink-0" />
                 <span>Physical Campus & Offices:</span>
               </div>
@@ -117,7 +120,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <button 
                   onClick={onOpenApply} 
-                  className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors text-left"
+                  className="theme-text-primary hover:underline font-medium transition-colors text-left"
                 >
                   Apply for Next Intake
                 </button>
@@ -135,7 +138,7 @@ export const Footer: React.FC<FooterProps> = ({
                   onClick={onOpenPortal} 
                   className="hover:text-white transition-colors text-left flex items-center gap-1.5"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <ShieldCheck className="w-3.5 h-3.5 theme-text-primary" />
                   <span>Student & Staff Portal</span>
                 </button>
               </li>
@@ -193,17 +196,17 @@ export const Footer: React.FC<FooterProps> = ({
                 href={`https://wa.me/${(siteSettings?.primary_phone || "0756295128").replace(/[^0-9]/g, '')}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 text-slate-300 hover:text-emerald-400 transition-colors"
+                className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
               >
-                <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+                <Phone className="w-4 h-4 theme-text-primary shrink-0" />
                 <span>WhatsApp: {siteSettings?.primary_phone || "0756295128"}</span>
               </a>
 
               <a
                 href={`mailto:${siteSettings?.email || "info@codepointkenya.com"}`}
-                className="flex items-center gap-2 text-slate-300 hover:text-emerald-400 transition-colors"
+                className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
               >
-                <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
+                <Mail className="w-4 h-4 theme-text-primary shrink-0" />
                 <span>{siteSettings?.email || "info@codepointkenya.com"}</span>
               </a>
 

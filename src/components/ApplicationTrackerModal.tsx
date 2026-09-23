@@ -76,7 +76,7 @@ export const ApplicationTrackerModal: React.FC<ApplicationTrackerModalProps> = (
         </button>
 
         {/* Modal Title */}
-        <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono font-semibold uppercase tracking-wider">
+        <div className="flex items-center gap-2 theme-text-primary text-xs font-mono font-semibold uppercase tracking-wider">
           <Search className="w-4 h-4" />
           <span>Code Point Kenya Live Tracking</span>
         </div>
@@ -84,7 +84,7 @@ export const ApplicationTrackerModal: React.FC<ApplicationTrackerModalProps> = (
           Track Your Application Status
         </h2>
         <p className="text-xs sm:text-sm text-slate-400 mt-1">
-          Enter your Tracking ID (e.g. <span className="font-mono text-emerald-300">CPK-2026-4821</span>) or the email address you applied with.
+          Enter your Tracking ID (e.g. <span className="font-mono theme-text-primary">CPK-2026-4821</span>) or the email address you applied with.
         </p>
 
         {/* Search Form */}
@@ -95,12 +95,13 @@ export const ApplicationTrackerModal: React.FC<ApplicationTrackerModalProps> = (
             value={queryInput}
             onChange={(e) => setQueryInput(e.target.value)}
             placeholder="e.g. CPK-2026-4821 or your-email@gmail.com"
-            className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 font-mono transition-colors"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-700 font-mono transition-colors"
           />
           <button
             type="submit"
             disabled={isLoading}
-            className="px-5 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-bold shadow-md shadow-emerald-500/20 disabled:opacity-50 transition-all cursor-pointer shrink-0"
+            style={{ backgroundColor: 'var(--primary-color)' }}
+            className="px-5 py-2.5 rounded-xl text-slate-950 text-xs font-bold shadow-md hover:brightness-110 disabled:opacity-50 transition-all cursor-pointer shrink-0"
           >
             {isLoading ? 'Checking...' : 'Check Status'}
           </button>
@@ -120,7 +121,7 @@ export const ApplicationTrackerModal: React.FC<ApplicationTrackerModalProps> = (
             <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <span className="text-[10px] font-mono uppercase text-slate-400">Tracking Code</span>
-                <div className="text-base font-bold font-mono text-emerald-300">
+                <div className="text-base font-bold font-mono theme-text-primary">
                   {result.application.tracking_code}
                 </div>
                 <div className="text-sm font-semibold text-white mt-1">
@@ -152,18 +153,21 @@ export const ApplicationTrackerModal: React.FC<ApplicationTrackerModalProps> = (
                   return (
                     <div key={s.num} className="space-y-1.5">
                       <div
+                        style={{
+                          backgroundColor: isDone || isCurrent ? 'var(--primary-color)' : undefined
+                        }}
                         className={`h-2 rounded-full transition-all ${
                           isDone
-                            ? 'bg-emerald-400'
+                            ? ''
                             : isCurrent
-                            ? 'bg-emerald-400 animate-pulse'
+                            ? 'animate-pulse'
                             : 'bg-slate-800'
                         }`}
                       />
                       <span
                         className={`block text-[10px] font-medium leading-tight ${
                           isCurrent
-                            ? 'text-emerald-300 font-bold'
+                            ? 'theme-text-primary font-bold'
                             : isDone
                             ? 'text-slate-300'
                             : 'text-slate-600'
@@ -178,8 +182,8 @@ export const ApplicationTrackerModal: React.FC<ApplicationTrackerModalProps> = (
             </div>
 
             {/* Current Status Box */}
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-slate-200 space-y-2">
-              <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+            <div className="p-4 rounded-xl theme-badge text-slate-200 space-y-2">
+              <div className="flex items-center gap-2 theme-text-primary text-xs font-bold uppercase tracking-wider">
                 <Clock className="w-4 h-4" />
                 <span>Current Stage: {result.meta.label}</span>
               </div>
@@ -187,8 +191,8 @@ export const ApplicationTrackerModal: React.FC<ApplicationTrackerModalProps> = (
                 {result.meta.description}
               </p>
               {result.application.notes && (
-                <div className="pt-2 border-t border-emerald-500/20 text-xs">
-                  <span className="text-emerald-400 font-medium">Admissions Note: </span>
+                <div className="pt-2 border-t border-slate-700/50 text-xs">
+                  <span className="theme-text-primary font-medium">Admissions Note: </span>
                   <span className="text-slate-200">{result.application.notes}</span>
                 </div>
               )}
@@ -197,14 +201,14 @@ export const ApplicationTrackerModal: React.FC<ApplicationTrackerModalProps> = (
             {/* Campus & Admissions Help */}
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 text-slate-300">
-                <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                <MapPin className="w-4 h-4 theme-text-primary shrink-0" />
                 <span>In-person visit: Ngong Road, Teamshark 5th Floor, Nairobi</span>
               </div>
               <a
                 href={`https://wa.me/254756295128?text=Hello%20Admissions%20Team,%20I%20am%20tracking%20application%20${result.application.tracking_code}.`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 shrink-0"
+                className="theme-text-primary hover:underline font-semibold flex items-center gap-1 shrink-0"
               >
                 <span>WhatsApp</span>
                 <ExternalLink className="w-3 h-3" />

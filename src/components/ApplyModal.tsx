@@ -309,7 +309,8 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-bold shadow-md shadow-emerald-500/20 disabled:opacity-50 transition-all cursor-pointer"
+                  style={{ backgroundColor: 'var(--primary-color)' }}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-slate-950 text-xs font-bold shadow-md hover:brightness-110 disabled:opacity-50 transition-all cursor-pointer"
                 >
                   {isSubmitting ? (
                     <span>Submitting Application...</span>
@@ -327,27 +328,30 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
         ) : (
           /* Submission Success Screen */
           <div className="text-center py-4 space-y-6">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-9 h-9" />
+            <div className="w-16 h-16 rounded-2xl theme-icon-box flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-9 h-9 theme-text-primary" />
             </div>
 
             <div className="space-y-2">
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold theme-badge">
                 Application Received Successfully!
               </span>
               <h2 className="text-2xl font-bold text-white">
                 Welcome, {submittedApp.full_name}!
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto">
-                Your application for <strong className="text-emerald-400">{submittedApp.course_title}</strong> has been assigned an official Code Point Kenya tracking code.
+                Your application for <strong className="theme-text-primary">{submittedApp.course_title}</strong> has been assigned an official Code Point Kenya tracking code.
               </p>
             </div>
 
             {/* Tracking Code Box */}
-            <div className="p-4 rounded-xl bg-slate-950 border border-emerald-500/30 max-w-sm mx-auto flex items-center justify-between">
+            <div 
+              style={{ borderColor: 'var(--card-highlight-border)' }}
+              className="p-4 rounded-xl bg-slate-950 border max-w-sm mx-auto flex items-center justify-between"
+            >
               <div className="text-left">
                 <div className="text-[10px] text-slate-400 uppercase font-mono">Your Tracking ID:</div>
-                <div className="text-lg font-bold font-mono text-emerald-300">
+                <div className="text-lg font-bold font-mono theme-text-primary">
                   {submittedApp.tracking_code}
                 </div>
               </div>
@@ -356,7 +360,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                 className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white transition-colors"
                 title="Copy code"
               >
-                {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedCode ? <Check className="w-3.5 h-3.5 theme-text-primary" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copiedCode ? 'Copied' : 'Copy'}</span>
               </button>
             </div>
@@ -365,15 +369,24 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
             <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-left space-y-2 text-xs text-slate-300 max-w-md mx-auto">
               <div className="font-semibold text-white">Next Steps from Admissions:</div>
               <div className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
+                <span 
+                  style={{ backgroundColor: 'var(--primary-color)' }}
+                  className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5" 
+                />
                 <span>We sent an acknowledgment email to <strong className="text-white">{submittedApp.email}</strong>.</span>
               </div>
               <div className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
+                <span 
+                  style={{ backgroundColor: 'var(--primary-color)' }}
+                  className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5" 
+                />
                 <span>Our admissions advisor will reach out via WhatsApp at <strong className="text-white">{submittedApp.phone}</strong> within 24 hours.</span>
               </div>
               <div className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
+                <span 
+                  style={{ backgroundColor: 'var(--primary-color)' }}
+                  className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5" 
+                />
                 <span>Physical office visiting hours: Mon-Sat at <strong className="text-white">Ngong Road, Teamshark 5th Floor</strong>.</span>
               </div>
             </div>
@@ -384,7 +397,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                 href={`https://wa.me/254756295128?text=Hello%20Code%20Point%20Kenya!%20I%20have%20submitted%20my%20application%20for%20${encodeURIComponent(submittedApp.course_title)}.%20My%20Tracking%20Code%20is%20${submittedApp.tracking_code}.`}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-colors"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl theme-badge text-xs font-semibold hover:brightness-110 transition-colors"
               >
                 <span>Notify Admissions on WhatsApp (0756295128)</span>
                 <ExternalLink className="w-3.5 h-3.5" />

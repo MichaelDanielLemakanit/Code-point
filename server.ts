@@ -1501,6 +1501,20 @@ app.delete("/api/messages/:id", async (req: Request, res: Response) => {
   }
 });
 
+// Admin: Delete inbox submission (handles either application or message by ID)
+app.delete("/api/inbox/:id", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const id = req.params.id;
+    await db.run("DELETE FROM applications WHERE id = ?", [id]);
+    await db.run("DELETE FROM messages WHERE id = ?", [id]);
+    await saveDatabase(db);
+    res.json({ success: true, message: "Submission permanently removed from database" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Admin: Get all applications with search/filter
 app.get("/api/applications", async (req: Request, res: Response) => {
   try {
@@ -1533,6 +1547,20 @@ app.get("/api/applications", async (req: Request, res: Response) => {
     sql += " ORDER BY created_at DESC";
     const apps = await queryAll(db, sql, params);
     res.json(apps);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Get single application by ID
+app.get("/api/applications/:id", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const appRecord = await queryOne(db, "SELECT * FROM applications WHERE id = ?", [req.params.id]);
+    if (!appRecord) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+    res.json(appRecord);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -2204,256 +2232,26 @@ app.post("/api/certificates/approve", async (req: Request, res: Response) => {
     const qrCodePayload = `https://codepointkenya.com/verify?id=${verificationId}`;
 
     await db.run(
-      `INSERT INTO certificates (id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload, technologies_covered, issuer_name, issuer_title, second_issuer_name, second_issuer_title, email_sent_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO certificates (id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         certId,
         verificationId,
         student_name || "Fellow",
         email,
-        course_title || "Full-Stack Software Engineering",
-        cohort || "Cohort 14 (Evening Track)",
+        course_title || "Software Engineering Immersive",
+        cohort || "Cohort 14",
         completionDate,
-        final_grade || "Distinction with Honors",
-        approved_by || "Code Point Kenya Academic Council",
+        final_grade || "Distinction",
+        approved_by || "Code Point Kenya Academic Board",
         approvedAt,
-        qrCodePayload,
-        "Python, JavaScript, React, PostgreSQL, Tailwind CSS, Docker, Git",
-        "Ian Kiprop",
-        "Lead Instructor & Head of Curriculum",
-        "Dr. Angela Wanjiku",
-        "Academic Director & Founder",
-        null
+        qrCodePayload
       ]
     );
 
     await saveDatabase(db);
     const createdCert = await queryOne(db, "SELECT * FROM certificates WHERE id = ?", [certId]);
     res.status(201).json({ success: true, certificate: createdCert });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Dynamic Certificate Generator & Management APIs
-app.post("/api/certificates", async (req: Request, res: Response) => {
-  try {
-    const db = await getDatabase();
-    const {
-      id: customId,
-      student_name,
-      student_email,
-      course_title,
-      cohort,
-      completion_date,
-      final_grade,
-      approved_by,
-      technologies_covered,
-      issuer_name,
-      issuer_title,
-      second_issuer_name,
-      second_issuer_title,
-      verification_id: customVerificationId
-    } = req.body;
-
-    if (!student_name || !student_name.trim()) {
-      return res.status(400).json({ error: "Student full name is required" });
-    }
-
-    const email = String(student_email || "student@codepointkenya.com").trim().toLowerCase();
-    const certId = customId || `cert-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    const verificationId = (customVerificationId && customVerificationId.trim())
-      ? customVerificationId.trim().toUpperCase()
-      : `CPK-CERT-2026-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-    const completionDate = (completion_date && completion_date.trim())
-      ? completion_date.trim()
-      : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    const approvedAt = new Date().toISOString();
-    const qrCodePayload = `https://codepointkenya.com/verify?id=${verificationId}`;
-
-    // Check if certificate with this ID or verification_id already exists to prevent conflict or allow edit
-    const existing = await queryOne(
-      db,
-      "SELECT * FROM certificates WHERE id = ? OR UPPER(verification_id) = ?",
-      [certId, verificationId]
-    );
-
-    if (existing) {
-      await db.run(
-        `UPDATE certificates 
-         SET student_name = ?, student_email = ?, course_title = ?, cohort = ?, completion_date = ?, final_grade = ?, technologies_covered = ?, issuer_name = ?, issuer_title = ?, second_issuer_name = ?, second_issuer_title = ?, approved_by = ?
-         WHERE id = ?`,
-        [
-          student_name.trim(),
-          email,
-          course_title || "Full-Stack Software Engineering",
-          cohort || "Cohort 14 (Evening Track)",
-          completionDate,
-          final_grade || "Distinction with Honors",
-          technologies_covered || "Python, JavaScript, React, PostgreSQL, Tailwind CSS",
-          issuer_name || "Ian Kiprop",
-          issuer_title || "Lead Instructor",
-          second_issuer_name || "Dr. Angela Wanjiku",
-          second_issuer_title || "Academic Director",
-          approved_by || "Code Point Kenya Academic Council",
-          existing.id
-        ]
-      );
-      await saveDatabase(db);
-      const updated = await queryOne(db, "SELECT * FROM certificates WHERE id = ?", [existing.id]);
-      return res.json({ success: true, certificate: updated, action: "updated" });
-    }
-
-    await db.run(
-      `INSERT INTO certificates (id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload, technologies_covered, issuer_name, issuer_title, second_issuer_name, second_issuer_title, email_sent_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        certId,
-        verificationId,
-        student_name.trim(),
-        email,
-        course_title || "Full-Stack Software Engineering",
-        cohort || "Cohort 14 (Evening Track)",
-        completionDate,
-        final_grade || "Distinction with Honors",
-        approved_by || "Code Point Kenya Academic Council",
-        approvedAt,
-        qrCodePayload,
-        technologies_covered || "Python, JavaScript, React, PostgreSQL, Tailwind CSS",
-        issuer_name || "Ian Kiprop",
-        issuer_title || "Lead Instructor",
-        second_issuer_name || "Dr. Angela Wanjiku",
-        second_issuer_title || "Academic Director",
-        null
-      ]
-    );
-
-    await saveDatabase(db);
-    const createdCert = await queryOne(db, "SELECT * FROM certificates WHERE id = ?", [certId]);
-    res.status(201).json({ success: true, certificate: createdCert, action: "created" });
-  } catch (error: any) {
-    console.error("Error creating certificate:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Update Certificate
-app.put("/api/certificates/:id", async (req: Request, res: Response) => {
-  try {
-    const db = await getDatabase();
-    const { id } = req.params;
-    const {
-      student_name,
-      student_email,
-      course_title,
-      cohort,
-      completion_date,
-      final_grade,
-      technologies_covered,
-      issuer_name,
-      issuer_title,
-      second_issuer_name,
-      second_issuer_title,
-      approved_by
-    } = req.body;
-
-    const existing = await queryOne(db, "SELECT * FROM certificates WHERE id = ? OR UPPER(verification_id) = ?", [id, id.toUpperCase()]);
-    if (!existing) {
-      return res.status(404).json({ error: "Certificate not found" });
-    }
-
-    await db.run(
-      `UPDATE certificates 
-       SET student_name = ?, student_email = ?, course_title = ?, cohort = ?, completion_date = ?, final_grade = ?, technologies_covered = ?, issuer_name = ?, issuer_title = ?, second_issuer_name = ?, second_issuer_title = ?, approved_by = ?
-       WHERE id = ?`,
-      [
-        student_name ? student_name.trim() : existing.student_name,
-        student_email ? student_email.trim().toLowerCase() : existing.student_email,
-        course_title || existing.course_title,
-        cohort || existing.cohort,
-        completion_date || existing.completion_date,
-        final_grade || existing.final_grade,
-        technologies_covered !== undefined ? technologies_covered : existing.technologies_covered,
-        issuer_name || existing.issuer_name,
-        issuer_title || existing.issuer_title,
-        second_issuer_name || existing.second_issuer_name,
-        second_issuer_title || existing.second_issuer_title,
-        approved_by || existing.approved_by,
-        existing.id
-      ]
-    );
-
-    await saveDatabase(db);
-    const updated = await queryOne(db, "SELECT * FROM certificates WHERE id = ?", [existing.id]);
-    res.json({ success: true, certificate: updated });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Delete / Revoke Certificate
-app.delete("/api/certificates/:id", async (req: Request, res: Response) => {
-  try {
-    const db = await getDatabase();
-    const { id } = req.params;
-    const existing = await queryOne(db, "SELECT * FROM certificates WHERE id = ? OR UPPER(verification_id) = ?", [id, id.toUpperCase()]);
-    if (!existing) {
-      return res.status(404).json({ error: "Certificate not found" });
-    }
-
-    await db.run("DELETE FROM certificates WHERE id = ?", [existing.id]);
-    await saveDatabase(db);
-    res.json({ success: true, message: `Certificate ${existing.verification_id} has been revoked and removed.` });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Email / Share Certificate
-app.post("/api/certificates/:id/email", async (req: Request, res: Response) => {
-  try {
-    const db = await getDatabase();
-    const { id } = req.params;
-    const existing = await queryOne(db, "SELECT * FROM certificates WHERE id = ? OR UPPER(verification_id) = ?", [id, id.toUpperCase()]);
-    if (!existing) {
-      return res.status(404).json({ error: "Certificate not found" });
-    }
-
-    const emailSentAt = new Date().toISOString();
-    await db.run("UPDATE certificates SET email_sent_at = ? WHERE id = ?", [emailSentAt, existing.id]);
-
-    // Insert an audit notice into messages log
-    try {
-      const msgId = `msg-${Date.now()}`;
-      await db.run(
-        `INSERT INTO messages (id, name, email, phone, program, message, created_at, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          msgId,
-          existing.student_name,
-          existing.student_email,
-          "N/A",
-          existing.course_title,
-          `Official Graduation Certificate Issued: ${existing.verification_id} sent to ${existing.student_email} with verification link https://codepointkenya.com/verify?id=${existing.verification_id}`,
-          emailSentAt,
-          "unread"
-        ]
-      );
-    } catch (e) {
-      // Ignore non-fatal message audit errors
-    }
-
-    await saveDatabase(db);
-    const updated = await queryOne(db, "SELECT * FROM certificates WHERE id = ?", [existing.id]);
-
-    res.json({
-      success: true,
-      certificate: updated,
-      email_sent_at: emailSentAt,
-      verificationUrl: `https://codepointkenya.com/verify?id=${existing.verification_id}`,
-      message: `Official certificate email and credentials link dispatched to ${existing.student_email}`
-    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -2474,8 +2272,8 @@ app.get("/api/certificates/:verificationId", async (req: Request, res: Response)
     const db = await getDatabase();
     const cert = await queryOne(
       db,
-      "SELECT * FROM certificates WHERE UPPER(verification_id) = ? OR id = ?",
-      [req.params.verificationId.toUpperCase(), req.params.verificationId]
+      "SELECT * FROM certificates WHERE UPPER(verification_id) = ?",
+      [req.params.verificationId.toUpperCase()]
     );
     if (!cert) {
       return res.status(404).json({ error: "Certificate verification ID not found" });
