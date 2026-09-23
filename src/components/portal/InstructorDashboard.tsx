@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Assignment, AssignmentSubmission, Certificate, SubmissionStatus, Announcement, AnnouncementCategory, AnnouncementPriority, ClassLecture } from '../../types';
+import { User, Assignment, AssignmentSubmission, Certificate, SubmissionStatus, Announcement, AnnouncementCategory, AnnouncementPriority, ClassLecture, StudentModuleProgress } from '../../types';
 import { ClassCalendar } from './ClassCalendar';
 import { 
   Users, 
@@ -25,7 +25,11 @@ import {
   Megaphone,
   Pin,
   Radio,
-  Bell
+  Bell,
+  Check,
+  RotateCw,
+  Send,
+  MessageSquare
 } from 'lucide-react';
 import { CertificateModal } from './CertificateModal';
 
@@ -36,7 +40,15 @@ interface InstructorDashboardProps {
 export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ currentUser }) => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'grading' | 'assignments' | 'announcements' | 'certificates' | 'cohorts' | 'calendar'>('grading');
+  const [activeTab, setActiveTab] = useState<'grading' | 'assignments' | 'module-approvals' | 'announcements' | 'certificates' | 'cohorts' | 'calendar'>('grading');
+
+  // Module Progress Verification & Approvals state
+  const [moduleRequests, setModuleRequests] = useState<StudentModuleProgress[]>([]);
+  const [moduleFilter, setModuleFilter] = useState<'all' | 'pending_approval' | 'approved' | 'completed' | 'revision_requested'>('all');
+  const [reviewingRequest, setReviewingRequest] = useState<StudentModuleProgress | null>(null);
+  const [teacherFeedback, setTeacherFeedback] = useState<string>('');
+  const [reviewingAction, setReviewingAction] = useState<boolean>(false);
+  const [moduleActionMsg, setModuleActionMsg] = useState<{ text: string; isError: boolean } | null>(null);
 
   // Lectures & Calendar state
   const [lectures, setLectures] = useState<ClassLecture[]>([]);
@@ -169,6 +181,52 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ curren
     }
   };
 
+  const fetchModuleRequests = async () => {
+    try {
+      const res = await fetch('/api/progress/instructor/requests');
+      if (res.ok) {
+        const d = await res.json();
+        setModuleRequests(d);
+      }
+    } catch (err) {
+      console.error('Failed to load module verification requests', err);
+    }
+  };
+
+  const handleReviewModule = async (action: 'approve' | 'approve_and_complete' | 'reject' | 'request_revision') => {
+    if (!reviewingRequest) return;
+    setReviewingAction(true);
+    setModuleActionMsg(null);
+
+    try {
+      const res = await fetch('/api/progress/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          progress_id: reviewingRequest.id,
+          action,
+          teacher_email: currentUser?.email || 'instructor@codepointkenya.com',
+          teacher_name: currentUser?.name || data?.instructor?.name || 'Brenda Wambui',
+          teacher_feedback: teacherFeedback.trim()
+        })
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setModuleActionMsg({ text: json.error || 'Failed to update module status', isError: true });
+      } else {
+        setModuleActionMsg({ text: json.message || 'Module status updated successfully!', isError: false });
+        setReviewingRequest(null);
+        setTeacherFeedback('');
+        fetchModuleRequests();
+      }
+    } catch (err: any) {
+      setModuleActionMsg({ text: err.message || 'Network error occurred', isError: true });
+    } finally {
+      setReviewingAction(false);
+    }
+  };
+
   useEffect(() => {
     fetchFacultyData();
     fetchLectures();
@@ -176,6 +234,7 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ curren
     fetchAssignments();
     fetchSubmissions();
     fetchCertificates();
+    fetchModuleRequests();
   }, [currentUser?.email]);
 
   const handleCreateAnnouncement = async (e: React.FormEvent) => {
@@ -473,6 +532,18 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ curren
         >
           <BookOpen className="w-4 h-4" />
           <span>Coursework & Material Manager ({assignments.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('module-approvals')}
+          className={`pb-3 border-b-2 flex items-center gap-2 cursor-pointer whitespace-nowrap transition-colors ${
+            activeTab === 'module-approvals'
+              ? 'border-emerald-400 text-emerald-400'
+              : 'border-transparent text-slate-400 hover:text-white'
+          }`}
+        >
+          <CheckCircle2 className="w-4 h-4" />
+          <span>Module Approvals ({moduleRequests.filter(r => r.status === 'pending_approval').length} Pending)</span>
         </button>
 
         <button
@@ -890,6 +961,333 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ curren
             })}
           </div>
 
+        </div>
+      )}
+
+      {/* TAB: MODULE PROGRESS VERIFICATION & TEACHER APPROVALS */}
+      {activeTab === 'module-approvals' && (
+        <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-sm font-bold text-white uppercase font-mono tracking-wider flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Curriculum Module Verification & Teacher Approval Desk</span>
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Students are required to receive course teacher approval on individual modules before marking them as complete. Review student project links, evaluate their work, and approve or request revisions.
+                </p>
+              </div>
+
+              <button
+                onClick={() => fetchModuleRequests()}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 text-xs font-medium transition-colors cursor-pointer self-start sm:self-auto"
+              >
+                <RotateCw className="w-3.5 h-3.5" />
+                <span>Refresh Requests</span>
+              </button>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-850">
+                <span className="text-[10px] font-mono uppercase text-slate-400 block">Total Requests</span>
+                <span className="text-lg font-mono font-bold text-white mt-0.5 block">{moduleRequests.length}</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30">
+                <span className="text-[10px] font-mono uppercase text-amber-400 block">Pending Teacher Review</span>
+                <span className="text-lg font-mono font-bold text-amber-300 mt-0.5 block">
+                  {moduleRequests.filter(r => r.status === 'pending_approval').length}
+                </span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30">
+                <span className="text-[10px] font-mono uppercase text-cyan-400 block">Teacher Approved</span>
+                <span className="text-lg font-mono font-bold text-cyan-300 mt-0.5 block">
+                  {moduleRequests.filter(r => r.status === 'approved').length}
+                </span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30">
+                <span className="text-[10px] font-mono uppercase text-emerald-400 block">Fully Completed</span>
+                <span className="text-lg font-mono font-bold text-emerald-300 mt-0.5 block">
+                  {moduleRequests.filter(r => r.status === 'completed').length}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Feedback message banner */}
+          {moduleActionMsg && (
+            <div className={`p-4 rounded-xl text-xs flex items-center justify-between border ${
+              moduleActionMsg.isError 
+                ? 'bg-rose-950/40 border-rose-500/40 text-rose-300' 
+                : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
+            }`}>
+              <div className="flex items-center gap-2">
+                {moduleActionMsg.isError ? <AlertCircle className="w-4 h-4 text-rose-400" /> : <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                <span>{moduleActionMsg.text}</span>
+              </div>
+              <button onClick={() => setModuleActionMsg(null)} className="text-slate-400 hover:text-white ml-2">
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Filter Bar */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+            {(['all', 'pending_approval', 'approved', 'completed', 'revision_requested'] as const).map(tabKey => {
+              const labelMap: Record<string, string> = {
+                all: `All Requests (${moduleRequests.length})`,
+                pending_approval: `Pending Review (${moduleRequests.filter(r => r.status === 'pending_approval').length})`,
+                approved: `Approved (${moduleRequests.filter(r => r.status === 'approved').length})`,
+                completed: `Completed (${moduleRequests.filter(r => r.status === 'completed').length})`,
+                revision_requested: `Revisions (${moduleRequests.filter(r => r.status === 'revision_requested').length})`
+              };
+              return (
+                <button
+                  key={tabKey}
+                  onClick={() => setModuleFilter(tabKey)}
+                  className={`px-3 py-1.5 rounded-lg font-mono text-[11px] whitespace-nowrap transition-colors cursor-pointer ${
+                    moduleFilter === tabKey
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+                      : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  {labelMap[tabKey]}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Requests List */}
+          <div className="space-y-4">
+            {moduleRequests
+              .filter(r => moduleFilter === 'all' || r.status === moduleFilter)
+              .map(req => {
+                const isUnderReview = reviewingRequest?.id === req.id;
+                const isPending = req.status === 'pending_approval';
+                const isApproved = req.status === 'approved';
+                const isCompleted = req.status === 'completed';
+                const isRevision = req.status === 'revision_requested';
+
+                return (
+                  <div
+                    key={req.id}
+                    className={`p-5 rounded-xl border transition-all ${
+                      isPending 
+                        ? 'bg-amber-950/10 border-amber-500/30' 
+                        : isApproved 
+                        ? 'bg-cyan-950/10 border-cyan-500/30'
+                        : isCompleted
+                        ? 'bg-slate-950 border-emerald-500/30'
+                        : 'bg-slate-950 border-slate-800'
+                    }`}
+                  >
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                      {/* Left: Student & Module Info */}
+                      <div className="space-y-2 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300">
+                            Module {req.module_number}
+                          </span>
+                          <span className="text-xs font-semibold text-white">
+                            {req.course_title}
+                          </span>
+
+                          {/* Status Pill */}
+                          {isPending && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-amber-400" />
+                              <span>Pending Your Review</span>
+                            </span>
+                          )}
+                          {isApproved && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
+                              <Award className="w-3 h-3 text-cyan-400" />
+                              <span>Approved • Student Can Mark Complete</span>
+                            </span>
+                          )}
+                          {isCompleted && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <span>Completed by Student</span>
+                            </span>
+                          )}
+                          {isRevision && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3 text-rose-400" />
+                              <span>Revision Requested</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <h5 className="text-base font-bold text-white">
+                          {req.module_title}
+                        </h5>
+
+                        <div className="flex items-center gap-3 text-xs text-slate-400">
+                          <span className="text-slate-300 font-medium">Student: {req.student_name}</span>
+                          <span>•</span>
+                          <span className="font-mono text-[11px]">{req.student_email}</span>
+                          {req.requested_at && (
+                            <>
+                              <span>•</span>
+                              <span className="font-mono text-[11px]">Submitted {new Date(req.requested_at).toLocaleDateString()}</span>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Student Notes / Summary */}
+                        {req.student_notes && (
+                          <div className="p-3 rounded-lg bg-slate-900 border border-slate-850 text-xs space-y-1">
+                            <span className="text-[10px] font-mono uppercase text-slate-400 block font-semibold">
+                              Student Notes:
+                            </span>
+                            <p className="text-slate-300 leading-relaxed">
+                              {req.student_notes}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Project / Repository URL Link */}
+                        {req.student_submission_url && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <span className="text-xs text-slate-400">Deliverable Link:</span>
+                            <a
+                              href={req.student_submission_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 hover:underline font-mono"
+                            >
+                              <span>{req.student_submission_url}</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        )}
+
+                        {/* Previous Feedback info */}
+                        {req.teacher_feedback && !isUnderReview && (
+                          <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs">
+                            <span className="text-[10px] font-mono uppercase text-cyan-400 block font-semibold">
+                              Teacher Feedback ({req.teacher_name || 'Faculty'}):
+                            </span>
+                            <p className="text-slate-300 italic mt-0.5">
+                              "{req.teacher_feedback}"
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: Actions / Inline Review Form */}
+                      <div className="lg:w-80 flex-shrink-0">
+                        {isUnderReview ? (
+                          <div className="p-4 rounded-xl bg-slate-900 border border-indigo-500/40 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                                <span>Teacher Evaluation</span>
+                              </span>
+                              <button
+                                onClick={() => {
+                                  setReviewingRequest(null);
+                                  setTeacherFeedback('');
+                                }}
+                                className="text-slate-400 hover:text-white text-xs"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                                Feedback / Notes to Student:
+                              </label>
+                              <textarea
+                                rows={2}
+                                placeholder="E.g. Great architecture and test coverage. Approved!"
+                                value={teacherFeedback}
+                                onChange={(e) => setTeacherFeedback(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                              />
+                            </div>
+
+                            {/* Evaluation Action Buttons */}
+                            <div className="space-y-2 pt-1">
+                              <button
+                                onClick={() => handleReviewModule('approve')}
+                                disabled={reviewingAction}
+                                className="w-full py-2 px-3 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                              >
+                                {reviewingAction ? (
+                                  <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Check className="w-4 h-4" />
+                                )}
+                                <span>Approve (Allow Student to Complete)</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleReviewModule('approve_and_complete')}
+                                disabled={reviewingAction}
+                                className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                              >
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>Approve & Mark Complete</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleReviewModule('request_revision')}
+                                disabled={reviewingAction}
+                                className="w-full py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-rose-950/40 text-rose-300 border border-rose-500/30 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                              >
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                <span>Request Revisions</span>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            <button
+                              onClick={() => {
+                                setReviewingRequest(req);
+                                setTeacherFeedback(req.teacher_feedback || '');
+                              }}
+                              className="w-full py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-md cursor-pointer"
+                            >
+                              <FileCode className="w-3.5 h-3.5" />
+                              <span>{isPending ? 'Review & Approve' : 'Update Evaluation'}</span>
+                            </button>
+
+                            {isPending && (
+                              <button
+                                onClick={() => {
+                                  setReviewingRequest(req);
+                                  handleReviewModule('approve');
+                                }}
+                                className="w-full py-1.5 px-3 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Quick Approve</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+            {moduleRequests.length === 0 && (
+              <div className="p-12 text-center bg-slate-950 border border-slate-800 rounded-2xl text-slate-400 space-y-2">
+                <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500/50" />
+                <h6 className="text-sm font-bold text-white">No Module Verification Requests</h6>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  When students submit coursework for their curriculum modules, their submissions will appear here for your faculty review and sign-off.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

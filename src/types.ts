@@ -345,3 +345,73 @@ export interface ClassLecture {
   created_at: string;
 }
 
+export type ModuleProgressStatus =
+  | 'not_started'
+  | 'in_progress'
+  | 'pending_approval'
+  | 'approved'
+  | 'completed'
+  | 'revision_requested';
+
+export interface StudentModuleProgress {
+  id: string;
+  student_email: string;
+  student_name: string;
+  course_id: string;
+  course_title: string;
+  module_id: string;
+  module_title: string;
+  module_number: number;
+  status: ModuleProgressStatus;
+  student_notes?: string;
+  student_submission_url?: string;
+  teacher_email?: string;
+  teacher_name?: string;
+  teacher_feedback?: string;
+  requested_at?: string;
+  reviewed_at?: string;
+  completed_at?: string;
+  created_at: string;
+}
+
+export interface CourseProgressSummary {
+  courseId: string;
+  courseTitle: string;
+  totalModules: number;
+  completedModules: number;
+  approvedModules: number;
+  pendingModules: number;
+  percentage: number;
+  modules: {
+    moduleId: string;
+    moduleNumber: number;
+    title: string;
+    topics: string[];
+    status: ModuleProgressStatus;
+    canMarkComplete: boolean;
+    isComplete: boolean;
+    progressRecord?: StudentModuleProgress;
+  }[];
+}
+
+export type FeePaymentStatus = 'cleared' | 'pending' | 'overdue';
+
+export interface StudentFeeAccount {
+  id: string;
+  student_email: string;
+  student_name: string;
+  course_id: string;
+  course_title: string;
+  cohort: string;
+  total_fee_kes: number;
+  paid_fee_kes: number;
+  balance_kes: number;
+  payment_status: FeePaymentStatus;
+  deadline_date: string;
+  portal_access_granted: number | boolean;
+  installment_plan?: string;
+  notes?: string;
+  updated_at?: string;
+  created_at: string;
+}
+

@@ -9,7 +9,9 @@ import {
   DEFAULT_SUBMISSIONS, 
   DEFAULT_ANNOUNCEMENTS, 
   DEFAULT_LOGIN_ATTEMPTS, 
-  DEFAULT_LECTURES 
+  DEFAULT_LECTURES,
+  DEFAULT_STUDENT_PROGRESS,
+  DEFAULT_STUDENT_FEES
 } from "./db.js";
 
 const { Pool } = pg;
@@ -529,6 +531,86 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
            ON CONFLICT (id) DO NOTHING`,
           [l.id, l.instructor_email, l.instructor_name, l.course_id, l.course_title, l.cohort, l.title, l.description, l.day_of_week, l.start_time, l.end_time, l.recurrence, l.location_type, l.meeting_link, l.date, l.created_at]
+        );
+      }
+    }
+
+    // 17. Table: student_module_progress
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS student_module_progress (
+        id VARCHAR(255) PRIMARY KEY,
+        student_email VARCHAR(255) NOT NULL,
+        student_name VARCHAR(255) NOT NULL,
+        course_id VARCHAR(255) NOT NULL,
+        course_title VARCHAR(255) NOT NULL,
+        module_id VARCHAR(255) NOT NULL,
+        module_title VARCHAR(255) NOT NULL,
+        module_number INTEGER DEFAULT 1,
+        status VARCHAR(50) NOT NULL DEFAULT 'not_started',
+        student_notes TEXT DEFAULT '',
+        student_submission_url TEXT DEFAULT '',
+        teacher_email VARCHAR(255),
+        teacher_name VARCHAR(255),
+        teacher_feedback TEXT DEFAULT '',
+        requested_at VARCHAR(100),
+        reviewed_at VARCHAR(100),
+        completed_at VARCHAR(100),
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_smp_student ON student_module_progress(student_email, course_id);
+      CREATE INDEX IF NOT EXISTS idx_smp_status ON student_module_progress(status);
+    `);
+
+    // Seed default student module progress if empty
+    const progCountRes = await client.query("SELECT count(*) as count FROM student_module_progress");
+    const progCount = Number(progCountRes.rows[0]?.count || 0);
+    if (progCount === 0) {
+      console.log("[Migration] Seeding initial student module progress in PostgreSQL...");
+      for (const p of DEFAULT_STUDENT_PROGRESS) {
+        await client.query(
+          `INSERT INTO student_module_progress (id, student_email, student_name, course_id, course_title, module_id, module_title, module_number, status, student_notes, student_submission_url, teacher_email, teacher_name, teacher_feedback, requested_at, reviewed_at, completed_at, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+           ON CONFLICT (id) DO NOTHING`,
+          [p.id, p.student_email, p.student_name, p.course_id, p.course_title, p.module_id, p.module_title, p.module_number, p.status, p.student_notes, p.student_submission_url, p.teacher_email, p.teacher_name, p.teacher_feedback, p.requested_at, p.reviewed_at, p.completed_at, p.created_at]
+        );
+      }
+    }
+
+    // 18. Table: student_fee_accounts
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS student_fee_accounts (
+        id VARCHAR(255) PRIMARY KEY,
+        student_email VARCHAR(255) NOT NULL,
+        student_name VARCHAR(255) NOT NULL,
+        course_id VARCHAR(255) NOT NULL,
+        course_title VARCHAR(255) NOT NULL,
+        cohort VARCHAR(100) NOT NULL DEFAULT 'Current Cohort',
+        total_fee_kes NUMERIC NOT NULL DEFAULT 85000,
+        paid_fee_kes NUMERIC NOT NULL DEFAULT 0,
+        balance_kes NUMERIC NOT NULL DEFAULT 85000,
+        payment_status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        deadline_date VARCHAR(100) NOT NULL DEFAULT '',
+        portal_access_granted INTEGER NOT NULL DEFAULT 1,
+        installment_plan VARCHAR(255) DEFAULT '5-Month Flexible Installments',
+        notes TEXT DEFAULT '',
+        updated_at VARCHAR(100),
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_sfa_email ON student_fee_accounts(student_email);
+      CREATE INDEX IF NOT EXISTS idx_sfa_status ON student_fee_accounts(payment_status);
+    `);
+
+    // Seed default student fee accounts if empty
+    const feeCountRes = await client.query("SELECT count(*) as count FROM student_fee_accounts");
+    const feeCount = Number(feeCountRes.rows[0]?.count || 0);
+    if (feeCount === 0) {
+      console.log("[Migration] Seeding initial student fee accounts in PostgreSQL...");
+      for (const f of DEFAULT_STUDENT_FEES) {
+        await client.query(
+          `INSERT INTO student_fee_accounts (id, student_email, student_name, course_id, course_title, cohort, total_fee_kes, paid_fee_kes, balance_kes, payment_status, deadline_date, portal_access_granted, installment_plan, notes, updated_at, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+           ON CONFLICT (id) DO NOTHING`,
+          [f.id, f.student_email, f.student_name, f.course_id, f.course_title, f.cohort, f.total_fee_kes, f.paid_fee_kes, f.balance_kes, f.payment_status, f.deadline_date, f.portal_access_granted, f.installment_plan, f.notes, f.updated_at, f.created_at]
         );
       }
     }

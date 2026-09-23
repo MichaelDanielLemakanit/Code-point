@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User as UserType, Announcement } from '../../types';
 import { AnnouncementsBoard } from './AnnouncementsBoard';
+import { CourseProgressTracker } from './CourseProgressTracker';
 import { 
   BookOpen, 
   Calendar, 
@@ -28,6 +29,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
   const [studentData, setStudentData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [downloadedReceipt, setDownloadedReceipt] = useState(false);
+  const [curriculumPercent, setCurriculumPercent] = useState<number>(0);
 
   useEffect(() => {
     const url = currentUser?.email
@@ -38,6 +40,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
       .then(res => res.json())
       .then(data => {
         setStudentData(data);
+        if (data?.student?.progressPercent !== undefined) {
+          setCurriculumPercent(data.student.progressPercent);
+        }
         setLoading(false);
       })
       .catch(err => {
@@ -50,7 +55,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
     return <div className="p-8 text-center text-slate-400 text-xs">Loading your student portal...</div>;
   }
 
-  const { student, modules, upcomingLiveSessions, assignments, announcements = [] } = studentData;
+  const { student, upcomingLiveSessions, assignments, announcements = [] } = studentData;
 
   const handleDownloadReceipt = () => {
     setDownloadedReceipt(true);
@@ -103,7 +108,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
           </a>
           <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-center">
             <div className="text-[10px] uppercase font-mono text-slate-400">Curriculum</div>
-            <div className="text-lg font-bold font-mono text-emerald-400">{student.progressPercent}%</div>
+            <div className="text-lg font-bold font-mono text-emerald-400">{curriculumPercent}%</div>
           </div>
           <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-center">
             <div className="text-[10px] uppercase font-mono text-slate-400">Attendance</div>
@@ -111,6 +116,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
           </div>
         </div>
       </div>
+
+      {/* Prominent Course Progress & Module Completion Tracker */}
+      <CourseProgressTracker
+        studentEmail={student.email}
+        studentName={student.name}
+        onProgressUpdated={(newPercent) => setCurriculumPercent(newPercent)}
+      />
 
       {/* Prominent Announcements Board: Students see immediately upon login */}
       <AnnouncementsBoard 
@@ -271,45 +283,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
                   <MessageCircle className="w-3.5 h-3.5" />
                   <span>Ask TA</span>
                 </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Curriculum Modules & Assignments */}
-      <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
-        <h4 className="text-sm font-bold text-white uppercase font-mono tracking-wider">
-          Software Engineering Learning Roadmap:
-        </h4>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {modules.map((m: any) => (
-            <div key={m.id} className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between space-y-3">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-slate-400 uppercase">{m.lessonsCount} Lessons</span>
-                  {m.status === 'completed' && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300">
-                      Completed ({m.score})
-                    </span>
-                  )}
-                  {m.status === 'in_progress' && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300">
-                      In Progress
-                    </span>
-                  )}
-                  {m.status === 'upcoming' && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-400">
-                      Upcoming
-                    </span>
-                  )}
-                </div>
-                <h5 className="text-xs font-bold text-white mt-2 leading-snug">{m.title}</h5>
-              </div>
-
-              <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-850">
-                Instructor: {m.instructor}
               </div>
             </div>
           ))}

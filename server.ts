@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { Request, Response } from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { getDatabase, queryAll, queryOne, saveDatabase, getSiteSettings, saveSiteSettings, getDatabaseStatus, DEFAULT_ANNOUNCEMENTS, DEFAULT_LOGIN_ATTEMPTS, DEFAULT_LECTURES } from "./server/db.js";
+import { getDatabase, queryAll, queryOne, saveDatabase, getSiteSettings, saveSiteSettings, getDatabaseStatus, DEFAULT_ANNOUNCEMENTS, DEFAULT_LOGIN_ATTEMPTS, DEFAULT_LECTURES, DEFAULT_COURSES, DEFAULT_STUDENT_PROGRESS } from "./server/db.js";
 import { runDatabaseMigrations } from "./server/migrate.js";
 
 const app = express();
@@ -2047,15 +2047,84 @@ app.get("/api/stats", async (req: Request, res: Response) => {
   }
 });
 
+// Helper to build CourseProgressSummary for a given course & student progress records
+function buildCourseProgress(course: any, progressRecords: any[]) {
+  let rawModules: any[] = [];
+  try {
+    rawModules = typeof course.curriculum === 'string' ? JSON.parse(course.curriculum) : (course.curriculum || []);
+  } catch (e) {
+    rawModules = [];
+  }
+
+  // If no curriculum modules in JSON, provide structured default modules
+  if (!Array.isArray(rawModules) || rawModules.length === 0) {
+    rawModules = [
+      { module: "Module 1: Foundations & Architecture", topics: ["Fundamentals", "Code Quality", "Version Control"] },
+      { module: "Module 2: Core Engineering & Database Systems", topics: ["REST APIs", "Data Modeling", "ORM & SQL"] },
+      { module: "Module 3: Advanced Cloud & Microservices", topics: ["Containerization", "CI/CD", "Security"] },
+      { module: "Module 4: Production Capstone Project", topics: ["Live Deployment", "System Architecture", "Review"] }
+    ];
+  }
+
+  let completedCount = 0;
+  let approvedCount = 0;
+  let pendingCount = 0;
+
+  const modules = rawModules.map((m: any, idx: number) => {
+    const moduleNumber = idx + 1;
+    const moduleId = `module-${moduleNumber}`;
+    const title = m.module || m.title || `Module ${moduleNumber}`;
+    const topics = Array.isArray(m.topics) ? m.topics : (typeof m.topics === 'string' ? [m.topics] : []);
+
+    // Find progress record for this module
+    const record = progressRecords.find((p: any) => 
+      (p.course_id === course.id || p.course_id === course.slug) &&
+      (p.module_id === moduleId || p.module_number === moduleNumber || p.module_title === title)
+    );
+
+    const status = record?.status || 'not_started';
+    if (status === 'completed') completedCount++;
+    if (status === 'approved') approvedCount++;
+    if (status === 'pending_approval') pendingCount++;
+
+    return {
+      moduleId,
+      moduleNumber,
+      title,
+      topics,
+      status,
+      canMarkComplete: status === 'approved',
+      isComplete: status === 'completed',
+      progressRecord: record || null
+    };
+  });
+
+  const totalModules = modules.length;
+  const percentage = totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
+
+  return {
+    courseId: course.id,
+    courseTitle: course.title,
+    courseSlug: course.slug,
+    totalModules,
+    completedModules: completedCount,
+    approvedModules: approvedCount,
+    pendingModules: pendingCount,
+    percentage,
+    modules
+  };
+}
+
 // Student Portal coursework & attendance data
 app.get("/api/student/data", async (req: Request, res: Response) => {
   try {
     const db = await getDatabase();
     const emailParam = typeof req.query.email === 'string' ? req.query.email.trim().toLowerCase() : '';
+    const effectiveEmail = emailParam || "student@codepointkenya.com";
 
     let studentName = "Brian Kipchumba";
     let studentId = "CPK-STU-8821";
-    let program = "Software Engineering Immersive";
+    let program = "Full-Stack Software Engineering";
     let cohort = "Cohort 14 (April 2026 - July 2026)";
 
     if (emailParam) {
@@ -2103,68 +2172,127 @@ app.get("/api/student/data", async (req: Request, res: Response) => {
       dbAnnouncements = DEFAULT_ANNOUNCEMENTS;
     }
 
+    // Fetch courses and student module progress to calculate dynamic progress percentage
+    let courses = await queryAll(db, "SELECT * FROM courses ORDER BY created_at ASC");
+    if (!courses || courses.length === 0) {
+      courses = DEFAULT_COURSES;
+    }
+
+    let progressRecords = [];
+    try {
+      progressRecords = await queryAll(
+        db,
+        "SELECT * FROM student_module_progress WHERE LOWER(student_email) = ? ORDER BY module_number ASC",
+        [effectiveEmail]
+      );
+    } catch (e) {
+      console.warn("Could not query student_module_progress in /api/student/data:", e);
+      progressRecords = DEFAULT_STUDENT_PROGRESS.filter(p => p.student_email.toLowerCase() === effectiveEmail);
+    }
+
+    const summaries = courses.map((c: any) => buildCourseProgress(c, progressRecords));
+    const activeSummary = summaries[0] || { percentage: 0, modules: [] };
+
+    // Fetch student live fee account
+    let feeRecord: any = null;
+    try {
+      feeRecord = await queryOne(
+        db,
+        "SELECT * FROM student_fee_accounts WHERE LOWER(student_email) = ? LIMIT 1",
+        [effectiveEmail]
+      );
+    } catch (e) {
+      console.warn("Could not query student_fee_accounts in /api/student/data:", e);
+    }
+
+    if (!feeRecord) {
+      const fallbackFee = DEFAULT_STUDENT_FEES.find(f => f.student_email.toLowerCase() === effectiveEmail);
+      if (fallbackFee) {
+        feeRecord = { ...fallbackFee };
+      } else {
+        feeRecord = {
+          id: `fee-${effectiveEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          student_email: effectiveEmail,
+          student_name: studentName,
+          course_id: "course-software-engineering",
+          course_title: program,
+          cohort: cohort,
+          total_fee_kes: 85000,
+          paid_fee_kes: 37000,
+          balance_kes: 48000,
+          payment_status: "pending",
+          deadline_date: "April 30, 2026",
+          portal_access_granted: 1,
+          installment_plan: "5-Month Flexible Installments",
+          notes: "Standard fee account"
+        };
+      }
+    }
+
+    const totalFeeKes = Number(feeRecord.total_fee_kes) || 85000;
+    const paidFeeKes = Number(feeRecord.paid_fee_kes) || 0;
+    const balanceKes = Number(feeRecord.balance_kes !== undefined ? feeRecord.balance_kes : Math.max(0, totalFeeKes - paidFeeKes));
+    const paymentStatus = (feeRecord.payment_status as 'cleared' | 'pending' | 'overdue') || (balanceKes <= 0 ? 'cleared' : 'pending');
+    const deadlineDate = feeRecord.deadline_date || "April 30, 2026";
+    const portalAccessGranted = (feeRecord.portal_access_granted === 1 || feeRecord.portal_access_granted === true || feeRecord.portal_access_granted === "1");
+    const isLockedOut = (paymentStatus === 'overdue' || !portalAccessGranted);
+
     res.json({
       student: {
         name: studentName,
-        email: emailParam || "student@codepointkenya.com",
+        email: effectiveEmail,
         studentId: studentId,
         program: program,
         cohort: cohort,
         mode: "Online-First + Ngong Road Campus Lab",
-        progressPercent: 68,
+        progressPercent: activeSummary.percentage,
         attendancePercent: 96,
         tuition: {
-          totalKes: 85000,
-          paidKes: 37000,
-          balanceKes: 48000,
-          nextDue: "April 30, 2026",
-          installmentPlan: "5-Month Flexible Installments"
+          totalKes: totalFeeKes,
+          paidKes: paidFeeKes,
+          balanceKes: balanceKes,
+          nextDue: deadlineDate,
+          paymentStatus: paymentStatus,
+          portalAccessGranted: portalAccessGranted,
+          isLockedOut: isLockedOut,
+          installmentPlan: feeRecord.installment_plan || "5-Month Flexible Installments",
+          notes: feeRecord.notes || ""
         },
         campusAccess: {
           facility: "Ngong Road, Teamshark, 5th Floor, Nairobi",
-          passStatus: "Active",
-          deskReservation: "Lab Station 5B (Mon-Sat access)",
-          highSpeedWifi: "CPK-Gigabit-5G"
+          passStatus: isLockedOut ? "Suspended (Tuition Overdue)" : "Active",
+          deskReservation: isLockedOut ? "Access Suspended" : "Lab Station 5B (Mon-Sat access)",
+          highSpeedWifi: isLockedOut ? "Access Suspended" : "CPK-Gigabit-5G",
+          isLockedOut: isLockedOut
         }
+      },
+      lockoutStatus: {
+        isLockedOut: isLockedOut,
+        paymentStatus: paymentStatus,
+        portalAccessGranted: portalAccessGranted,
+        balanceKes: balanceKes,
+        deadlineDate: deadlineDate,
+        alertMessage: isLockedOut 
+          ? `Access Restricted: You have an outstanding tuition balance of KES ${balanceKes.toLocaleString()}. Please clear your balance or contact finance to restore full access to live classes and learning materials.`
+          : null
       },
       certificate: cert || null,
       announcements: dbAnnouncements,
       dbAssignments,
       dbSubmissions,
-      modules: [
-        {
-          id: "m1",
-          title: "Module 1: Advanced TypeScript & Modern Architecture",
-          status: "completed",
-          score: "94%",
-          instructor: "Brenda Wambui",
-          lessonsCount: 12
-        },
-        {
-          id: "m2",
-          title: "Module 2: React 19, Motion & Component Design Systems",
-          status: "in_progress",
-          score: "Current",
-          instructor: "Brenda Wambui",
-          lessonsCount: 16
-        },
-        {
-          id: "m3",
-          title: "Module 3: Scalable Node.js, Express & PostgreSQL APIs",
-          status: "upcoming",
-          score: "-",
-          instructor: "Kevin Omondi",
-          lessonsCount: 14
-        },
-        {
-          id: "m4",
-          title: "Module 4: DevOps, Cloud Run, Docker & Capstone System",
-          status: "upcoming",
-          score: "-",
-          instructor: "Brenda Wambui",
-          lessonsCount: 18
-        }
-      ],
+      courseProgressSummary: activeSummary,
+      allCoursesProgress: summaries,
+      modules: activeSummary.modules.map(m => ({
+        id: m.moduleId,
+        title: m.title,
+        status: m.status === 'completed' ? 'completed' : m.status === 'approved' ? 'approved' : m.status === 'pending_approval' ? 'in_progress' : 'upcoming',
+        score: m.status === 'completed' ? 'Passed' : m.status === 'approved' ? 'Approved' : m.status === 'pending_approval' ? 'In Review' : 'Upcoming',
+        instructor: "Brenda Wambui",
+        lessonsCount: 14,
+        canMarkComplete: isLockedOut ? false : m.canMarkComplete,
+        isLocked: isLockedOut,
+        progressRecord: m.progressRecord
+      })),
       upcomingLiveSessions: [
         {
           id: "s1",
@@ -2172,7 +2300,9 @@ app.get("/api/student/data", async (req: Request, res: Response) => {
           date: "Tomorrow, 7:00 PM - 9:30 PM EAT",
           mode: "Online (Zoom) + Ngong Rd Lab Livestream",
           instructor: "Brenda Wambui",
-          zoomLink: "https://zoom.us/j/codepoint-kenya"
+          zoomLink: isLockedOut ? "" : "https://zoom.us/j/codepoint-kenya",
+          isLocked: isLockedOut,
+          lockedReason: isLockedOut ? `Outstanding tuition balance of KES ${balanceKes.toLocaleString()}. Please clear balance to join.` : undefined
         },
         {
           id: "s2",
@@ -2180,7 +2310,9 @@ app.get("/api/student/data", async (req: Request, res: Response) => {
           date: "Saturday, 10:00 AM - 2:00 PM EAT",
           mode: "Physical at Teamshark 5th Floor & Hybrid Stream",
           instructor: "Brenda Wambui & Mentors",
-          zoomLink: "https://zoom.us/j/codepoint-kenya-lab"
+          zoomLink: isLockedOut ? "" : "https://zoom.us/j/codepoint-kenya-lab",
+          isLocked: isLockedOut,
+          lockedReason: isLockedOut ? `Outstanding tuition balance of KES ${balanceKes.toLocaleString()}. Please clear balance to join.` : undefined
         }
       ],
       assignments: dbAssignments.length > 0 ? dbAssignments : [
@@ -2200,6 +2332,220 @@ app.get("/api/student/data", async (req: Request, res: Response) => {
         }
       ]
     });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// STUDENT FEE MANAGEMENT & PORTAL ACCESS CONTROL APIS
+// ============================================================================
+
+// GET all student fee accounts with aggregated financial summary
+app.get("/api/admin/student-fees", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    let fees: any[] = [];
+    try {
+      fees = await queryAll(db, "SELECT * FROM student_fee_accounts ORDER BY balance_kes DESC, created_at DESC");
+    } catch (e) {
+      console.warn("Could not query student_fee_accounts table:", e);
+    }
+    
+    if (!fees || fees.length === 0) {
+      fees = [...DEFAULT_STUDENT_FEES];
+    }
+
+    const search = typeof req.query.search === 'string' ? req.query.search.trim().toLowerCase() : '';
+    const status = typeof req.query.status === 'string' ? req.query.status.trim().toLowerCase() : 'all';
+
+    let filtered = [...fees];
+
+    if (search) {
+      filtered = filtered.filter(f => 
+        (f.student_name && f.student_name.toLowerCase().includes(search)) ||
+        (f.student_email && f.student_email.toLowerCase().includes(search)) ||
+        (f.course_title && f.course_title.toLowerCase().includes(search)) ||
+        (f.cohort && f.cohort.toLowerCase().includes(search))
+      );
+    }
+
+    if (status && status !== 'all') {
+      filtered = filtered.filter(f => String(f.payment_status).toLowerCase() === status);
+    }
+
+    // Calculate aggregated metrics
+    const totalBilledKes = fees.reduce((acc: number, cur: any) => acc + (Number(cur.total_fee_kes) || 0), 0);
+    const totalPaidKes = fees.reduce((acc: number, cur: any) => acc + (Number(cur.paid_fee_kes) || 0), 0);
+    const totalBalanceKes = fees.reduce((acc: number, cur: any) => acc + (Number(cur.balance_kes) || 0), 0);
+    const clearedCount = fees.filter((f: any) => f.payment_status === 'cleared').length;
+    const pendingCount = fees.filter((f: any) => f.payment_status === 'pending').length;
+    const overdueCount = fees.filter((f: any) => f.payment_status === 'overdue' || f.portal_access_granted === 0 || f.portal_access_granted === false).length;
+
+    res.json({
+      fees: filtered,
+      summary: {
+        totalStudents: fees.length,
+        totalBilledKes,
+        totalPaidKes,
+        totalBalanceKes,
+        clearedCount,
+        pendingCount,
+        overdueCount
+      }
+    });
+  } catch (error: any) {
+    console.error("Failed to query student fees:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// CREATE OR UPDATE student fee account
+app.post("/api/admin/student-fees", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const {
+      id,
+      student_email,
+      student_name,
+      course_id,
+      course_title,
+      cohort,
+      total_fee_kes,
+      paid_fee_kes,
+      payment_status,
+      deadline_date,
+      portal_access_granted,
+      installment_plan,
+      notes
+    } = req.body;
+
+    if (!student_email || !student_name) {
+      return res.status(400).json({ error: "student_email and student_name are required." });
+    }
+
+    const recordId = id || `fee-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const total = Number(total_fee_kes) >= 0 ? Number(total_fee_kes) : 85000;
+    const paid = Number(paid_fee_kes) >= 0 ? Number(paid_fee_kes) : 0;
+    const balance = Math.max(0, total - paid);
+
+    let status = payment_status;
+    if (!status) {
+      if (balance === 0) status = 'cleared';
+      else status = 'pending';
+    }
+
+    let accessGranted = 1;
+    if (portal_access_granted !== undefined) {
+      accessGranted = (portal_access_granted === true || portal_access_granted === 1 || portal_access_granted === '1') ? 1 : 0;
+    } else if (status === 'overdue') {
+      accessGranted = 0;
+    }
+
+    const now = new Date().toISOString();
+
+    await db.run(
+      `INSERT OR REPLACE INTO student_fee_accounts (
+        id, student_email, student_name, course_id, course_title, cohort,
+        total_fee_kes, paid_fee_kes, balance_kes, payment_status,
+        deadline_date, portal_access_granted, installment_plan, notes, updated_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        recordId,
+        student_email.trim().toLowerCase(),
+        student_name.trim(),
+        course_id || 'course-software-engineering',
+        course_title || 'Full-Stack Software Engineering',
+        cohort || 'Cohort 14 (Evening & Hybrid)',
+        total,
+        paid,
+        balance,
+        status,
+        deadline_date || 'April 30, 2026',
+        accessGranted,
+        installment_plan || '5-Month Flexible Installments',
+        notes || '',
+        now,
+        now
+      ]
+    );
+
+    const savedRecord = await queryOne(
+      db,
+      "SELECT * FROM student_fee_accounts WHERE id = ?",
+      [recordId]
+    );
+
+    res.json({
+      success: true,
+      message: `Fee record for ${student_name} saved successfully.`,
+      fee: savedRecord || {
+        id: recordId,
+        student_email,
+        student_name,
+        total_fee_kes: total,
+        paid_fee_kes: paid,
+        balance_kes: balance,
+        payment_status: status,
+        portal_access_granted: accessGranted
+      }
+    });
+  } catch (error: any) {
+    console.error("Failed to save student fee account:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// QUICK TOGGLE access for a student
+app.patch("/api/admin/student-fees/:id/toggle-access", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { id } = req.params;
+    const { portal_access_granted, payment_status } = req.body;
+
+    const existing = await queryOne(
+      db,
+      "SELECT * FROM student_fee_accounts WHERE id = ? OR LOWER(student_email) = ?",
+      [id, id.toLowerCase()]
+    );
+
+    if (!existing) {
+      return res.status(404).json({ error: "Student fee account not found" });
+    }
+
+    const newAccess = (portal_access_granted === true || portal_access_granted === 1 || portal_access_granted === "1") ? 1 : 0;
+    const newStatus = payment_status || (newAccess === 0 ? 'overdue' : (Number(existing.balance_kes) === 0 ? 'cleared' : 'pending'));
+    const now = new Date().toISOString();
+
+    await db.run(
+      "UPDATE student_fee_accounts SET portal_access_granted = ?, payment_status = ?, updated_at = ? WHERE id = ?",
+      [newAccess, newStatus, now, existing.id]
+    );
+
+    const updated = await queryOne(
+      db,
+      "SELECT * FROM student_fee_accounts WHERE id = ?",
+      [existing.id]
+    );
+
+    res.json({
+      success: true,
+      message: `Access for ${existing.student_name} has been ${newAccess === 1 ? 'GRANTED' : 'RESTRICTED / LOCKED OUT'}.`,
+      fee: updated
+    });
+  } catch (error: any) {
+    console.error("Failed to toggle student access:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE student fee account
+app.delete("/api/admin/student-fees/:id", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { id } = req.params;
+    await db.run("DELETE FROM student_fee_accounts WHERE id = ?", [id]);
+    res.json({ success: true, message: "Student fee record removed." });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -2252,6 +2598,22 @@ app.get("/api/instructor/data", async (req: Request, res: Response) => {
       lectures = DEFAULT_LECTURES;
     }
 
+    // Fetch student module verification requests for instructor approval
+    let moduleVerificationRequests = [];
+    try {
+      moduleVerificationRequests = await queryAll(
+        db,
+        "SELECT * FROM student_module_progress ORDER BY requested_at DESC, created_at DESC"
+      );
+    } catch (e) {
+      console.warn("Instructor module requests query fallback:", e);
+      moduleVerificationRequests = DEFAULT_STUDENT_PROGRESS;
+    }
+
+    const pendingModuleRequests = moduleVerificationRequests.filter(
+      (r: any) => r.status === 'pending_approval'
+    );
+
     res.json({
       instructor: {
         name: instructorName,
@@ -2262,6 +2624,8 @@ app.get("/api/instructor/data", async (req: Request, res: Response) => {
       submissions,
       announcements,
       lectures,
+      moduleVerificationRequests,
+      pendingModuleRequestsCount: pendingModuleRequests.length,
       cohorts: [
         { id: "c14", name: "Software Engineering - Cohort 14", studentsCount: 24, avgAttendance: "94%" },
         { id: "c15", name: "Applied AI & LLMs - Cohort 3", studentsCount: 18, avgAttendance: "98%" },
@@ -2275,6 +2639,285 @@ app.get("/api/instructor/data", async (req: Request, res: Response) => {
         { time: "Friday 3:00 PM - 5:00 PM EAT", booked: 3, location: "Online 1-on-1" }
       ]
     });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// -------------------------------------------------------------
+// COURSE PROGRESS & MODULE APPROVALS API
+// -------------------------------------------------------------
+
+// Get course progress summary for a student across all or specific course
+app.get("/api/progress/student", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const emailParam = typeof req.query.email === 'string' ? req.query.email.trim().toLowerCase() : 'student@codepointkenya.com';
+    const courseIdParam = typeof req.query.course_id === 'string' ? req.query.course_id.trim() : '';
+
+    let courses = await queryAll(db, "SELECT * FROM courses ORDER BY created_at ASC");
+    if (!courses || courses.length === 0) {
+      courses = DEFAULT_COURSES;
+    }
+
+    let progressRecords = [];
+    try {
+      progressRecords = await queryAll(
+        db,
+        "SELECT * FROM student_module_progress WHERE LOWER(student_email) = ? ORDER BY module_number ASC",
+        [emailParam]
+      );
+    } catch (e) {
+      console.warn("Could not query student_module_progress:", e);
+      progressRecords = DEFAULT_STUDENT_PROGRESS.filter(p => p.student_email.toLowerCase() === emailParam);
+    }
+
+    const summaries = courses.map((c: any) => buildCourseProgress(c, progressRecords));
+
+    // Determine active course summary
+    let activeSummary = summaries[0];
+    if (courseIdParam) {
+      const found = summaries.find((s: any) => s.courseId === courseIdParam || s.courseSlug === courseIdParam);
+      if (found) activeSummary = found;
+    } else {
+      const user = await queryOne(db, "SELECT * FROM users WHERE LOWER(email) = ?", [emailParam]);
+      if (user?.enrolled_course_id) {
+        const found = summaries.find((s: any) => s.courseId === user.enrolled_course_id || s.courseSlug === user.enrolled_course_id);
+        if (found) activeSummary = found;
+      }
+    }
+
+    res.json({
+      studentEmail: emailParam,
+      activeCourseId: activeSummary?.courseId || (courses[0]?.id ?? ""),
+      overallPercentage: activeSummary?.percentage || 0,
+      activeCourseSummary: activeSummary,
+      allCoursesSummaries: summaries
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Student submits a module for teacher review/approval
+app.post("/api/progress/request", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const {
+      student_email,
+      student_name,
+      course_id,
+      course_title,
+      module_id,
+      module_title,
+      module_number,
+      student_notes,
+      student_submission_url
+    } = req.body;
+
+    if (!student_email || !course_id || !module_id) {
+      return res.status(400).json({ error: "student_email, course_id, and module_id are required" });
+    }
+
+    const email = student_email.trim().toLowerCase();
+    const existing = await queryOne(
+      db,
+      "SELECT * FROM student_module_progress WHERE LOWER(student_email) = ? AND course_id = ? AND module_id = ?",
+      [email, course_id, module_id]
+    );
+
+    const now = new Date().toISOString();
+
+    if (existing) {
+      await db.run(
+        `UPDATE student_module_progress
+         SET status = ?, student_notes = ?, student_submission_url = ?, requested_at = ?
+         WHERE id = ?`,
+        ['pending_approval', student_notes || '', student_submission_url || '', now, existing.id]
+      );
+      const updated = await queryOne(db, "SELECT * FROM student_module_progress WHERE id = ?", [existing.id]);
+      return res.json({
+        success: true,
+        message: "Module submitted for teacher approval. Your course instructor will review your coursework.",
+        progress: updated
+      });
+    } else {
+      const newId = `prog-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      await db.run(
+        `INSERT INTO student_module_progress 
+         (id, student_email, student_name, course_id, course_title, module_id, module_title, module_number, status, student_notes, student_submission_url, teacher_email, teacher_name, teacher_feedback, requested_at, reviewed_at, completed_at, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          newId,
+          email,
+          student_name || "Student",
+          course_id,
+          course_title || "Course",
+          module_id,
+          module_title || `Module ${module_number || 1}`,
+          module_number || 1,
+          'pending_approval',
+          student_notes || '',
+          student_submission_url || '',
+          null,
+          null,
+          null,
+          now,
+          null,
+          null,
+          now
+        ]
+      );
+      const created = await queryOne(db, "SELECT * FROM student_module_progress WHERE id = ?", [newId]);
+      return res.json({
+        success: true,
+        message: "Module submitted for teacher approval. Your course instructor will review your coursework.",
+        progress: created
+      });
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Teacher approves or requests revision on a student module
+app.post("/api/progress/review", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { progress_id, action, teacher_email, teacher_name, teacher_feedback } = req.body;
+
+    if (!progress_id || !action) {
+      return res.status(400).json({ error: "progress_id and action are required" });
+    }
+
+    const record = await queryOne(db, "SELECT * FROM student_module_progress WHERE id = ?", [progress_id]);
+    if (!record) {
+      return res.status(404).json({ error: "Module progress record not found" });
+    }
+
+    let nextStatus = 'approved';
+    let completedAt: string | null = null;
+    if (action === 'approve') {
+      nextStatus = 'approved';
+    } else if (action === 'approve_and_complete') {
+      nextStatus = 'completed';
+      completedAt = new Date().toISOString();
+    } else if (action === 'reject' || action === 'request_revision') {
+      nextStatus = 'revision_requested';
+    }
+
+    const now = new Date().toISOString();
+
+    if (completedAt) {
+      await db.run(
+        `UPDATE student_module_progress
+         SET status = ?, teacher_email = ?, teacher_name = ?, teacher_feedback = ?, reviewed_at = ?, completed_at = ?
+         WHERE id = ?`,
+        [nextStatus, teacher_email || 'instructor@codepointkenya.com', teacher_name || 'Brenda Wambui', teacher_feedback || '', now, completedAt, progress_id]
+      );
+    } else {
+      await db.run(
+        `UPDATE student_module_progress
+         SET status = ?, teacher_email = ?, teacher_name = ?, teacher_feedback = ?, reviewed_at = ?
+         WHERE id = ?`,
+        [nextStatus, teacher_email || 'instructor@codepointkenya.com', teacher_name || 'Brenda Wambui', teacher_feedback || '', now, progress_id]
+      );
+    }
+
+    const updated = await queryOne(db, "SELECT * FROM student_module_progress WHERE id = ?", [progress_id]);
+    res.json({
+      success: true,
+      message: action === 'approve'
+        ? "Module approved! The student can now mark this module as complete in their profile."
+        : action === 'approve_and_complete'
+        ? "Module approved and marked complete."
+        : "Revision feedback sent to the student.",
+      progress: updated
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Student marks a module as complete AFTER teacher approval
+app.post("/api/progress/mark-complete", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { student_email, course_id, module_id, progress_id } = req.body;
+
+    let record = null;
+    if (progress_id) {
+      record = await queryOne(db, "SELECT * FROM student_module_progress WHERE id = ?", [progress_id]);
+    } else if (student_email && course_id && module_id) {
+      const email = student_email.trim().toLowerCase();
+      record = await queryOne(
+        db,
+        "SELECT * FROM student_module_progress WHERE LOWER(student_email) = ? AND course_id = ? AND module_id = ?",
+        [email, course_id, module_id]
+      );
+    }
+
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        error: "No progress record found for this module. Please submit your module for teacher review first."
+      });
+    }
+
+    // REQUIREMENT: Student can mark module complete only after course teacher approval
+    if (record.status !== 'approved' && record.status !== 'completed') {
+      return res.status(403).json({
+        success: false,
+        error: `Teacher approval is required before you can mark this module as complete. Current status: ${record.status.replace('_', ' ')}.`
+      });
+    }
+
+    const now = new Date().toISOString();
+    await db.run(
+      `UPDATE student_module_progress
+       SET status = ?, completed_at = ?
+       WHERE id = ?`,
+      ['completed', now, record.id]
+    );
+
+    const updated = await queryOne(db, "SELECT * FROM student_module_progress WHERE id = ?", [record.id]);
+    res.json({
+      success: true,
+      message: "Module marked as complete! Your overall course percentage has been updated.",
+      progress: updated
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Instructor list of module requests
+app.get("/api/progress/instructor/requests", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const statusParam = typeof req.query.status === 'string' ? req.query.status.trim() : '';
+    const courseIdParam = typeof req.query.course_id === 'string' ? req.query.course_id.trim() : '';
+
+    let sql = "SELECT * FROM student_module_progress";
+    const conditions = [];
+    const params = [];
+
+    if (statusParam && statusParam !== 'all') {
+      conditions.push("status = ?");
+      params.push(statusParam);
+    }
+    if (courseIdParam) {
+      conditions.push("course_id = ?");
+      params.push(courseIdParam);
+    }
+
+    if (conditions.length > 0) {
+      sql += " WHERE " + conditions.join(" AND ");
+    }
+    sql += " ORDER BY requested_at DESC, created_at DESC";
+
+    const requests = await queryAll(db, sql, params);
+    res.json(requests);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

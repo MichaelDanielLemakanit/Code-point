@@ -73,6 +73,22 @@ export function convertSqlForPostgres(sql: string): string {
     ) + " ON CONFLICT (id) DO UPDATE SET course_title = EXCLUDED.course_title, upfront_kes = EXCLUDED.upfront_kes, monthly_installment_kes = EXCLUDED.monthly_installment_kes";
   }
 
+  // SQLite 'INSERT OR REPLACE INTO student_module_progress (...) VALUES (...)'
+  if (/INSERT\s+OR\s+REPLACE\s+INTO\s+student_module_progress/i.test(converted)) {
+    converted = converted.replace(
+      /INSERT\s+OR\s+REPLACE\s+INTO\s+student_module_progress/i,
+      "INSERT INTO student_module_progress"
+    ) + " ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status, student_notes = EXCLUDED.student_notes, student_submission_url = EXCLUDED.student_submission_url, teacher_email = EXCLUDED.teacher_email, teacher_name = EXCLUDED.teacher_name, teacher_feedback = EXCLUDED.teacher_feedback, requested_at = EXCLUDED.requested_at, reviewed_at = EXCLUDED.reviewed_at, completed_at = EXCLUDED.completed_at";
+  }
+
+  // SQLite 'INSERT OR REPLACE INTO student_fee_accounts (...) VALUES (...)'
+  if (/INSERT\s+OR\s+REPLACE\s+INTO\s+student_fee_accounts/i.test(converted)) {
+    converted = converted.replace(
+      /INSERT\s+OR\s+REPLACE\s+INTO\s+student_fee_accounts/i,
+      "INSERT INTO student_fee_accounts"
+    ) + " ON CONFLICT (id) DO UPDATE SET student_email = EXCLUDED.student_email, student_name = EXCLUDED.student_name, course_id = EXCLUDED.course_id, course_title = EXCLUDED.course_title, cohort = EXCLUDED.cohort, total_fee_kes = EXCLUDED.total_fee_kes, paid_fee_kes = EXCLUDED.paid_fee_kes, balance_kes = EXCLUDED.balance_kes, payment_status = EXCLUDED.payment_status, deadline_date = EXCLUDED.deadline_date, portal_access_granted = EXCLUDED.portal_access_granted, installment_plan = EXCLUDED.installment_plan, notes = EXCLUDED.notes, updated_at = EXCLUDED.updated_at";
+  }
+
   return converted;
 }
 
@@ -789,6 +805,144 @@ export const DEFAULT_LECTURES = [
   }
 ];
 
+export const DEFAULT_STUDENT_PROGRESS = [
+  {
+    id: "prog-brian-se-m1",
+    student_email: "student@codepointkenya.com",
+    student_name: "Brian Kipchumba",
+    course_id: "course-software-engineering",
+    course_title: "Full-Stack Software Engineering",
+    module_id: "module-1",
+    module_title: "Module 1: Modern Frontend & React UI Architecture",
+    module_number: 1,
+    status: "completed",
+    student_notes: "Finished building the interactive component library, tested all React hooks, and passed code review.",
+    student_submission_url: "https://github.com/codepoint-students/react-design-system",
+    teacher_email: "instructor@codepointkenya.com",
+    teacher_name: "Brenda Wambui",
+    teacher_feedback: "Excellent mastery of TypeScript generics, strict mode compiler options, and responsive UI components.",
+    requested_at: "2026-04-10T14:30:00.000Z",
+    reviewed_at: "2026-04-12T09:15:00.000Z",
+    completed_at: "2026-04-12T10:00:00.000Z",
+    created_at: "2026-04-01T08:00:00.000Z"
+  },
+  {
+    id: "prog-brian-se-m2",
+    student_email: "student@codepointkenya.com",
+    student_name: "Brian Kipchumba",
+    course_id: "course-software-engineering",
+    course_title: "Full-Stack Software Engineering",
+    module_id: "module-2",
+    module_title: "Module 2: Backend REST APIs & Relational Databases",
+    module_number: 2,
+    status: "approved",
+    student_notes: "Implemented Express and Flask REST endpoints, relational PostgreSQL migrations, and JWT authentication.",
+    student_submission_url: "https://github.com/codepoint-students/express-postgres-ecommerce-api",
+    teacher_email: "instructor@codepointkenya.com",
+    teacher_name: "Brenda Wambui",
+    teacher_feedback: "Well architected relational schema and clean controller endpoints. You are approved to mark this module as complete!",
+    requested_at: "2026-04-20T11:00:00.000Z",
+    reviewed_at: "2026-04-21T16:20:00.000Z",
+    completed_at: null,
+    created_at: "2026-04-12T10:30:00.000Z"
+  },
+  {
+    id: "prog-brian-se-m3",
+    student_email: "student@codepointkenya.com",
+    student_name: "Brian Kipchumba",
+    course_id: "course-software-engineering",
+    course_title: "Full-Stack Software Engineering",
+    module_id: "module-3",
+    module_title: "Module 3: Microservices & Cloud Infrastructure",
+    module_number: 3,
+    status: "pending_approval",
+    student_notes: "Containerized the services using Docker Compose, configured multi-stage builds and GitHub Actions CI workflow.",
+    student_submission_url: "https://github.com/codepoint-students/microservices-cloud-deploy",
+    teacher_email: "instructor@codepointkenya.com",
+    teacher_name: "Brenda Wambui",
+    teacher_feedback: null,
+    requested_at: "2026-04-23T10:00:00.000Z",
+    reviewed_at: null,
+    completed_at: null,
+    created_at: "2026-04-22T08:00:00.000Z"
+  }
+];
+
+export const DEFAULT_STUDENT_FEES = [
+  {
+    id: "fee-usr-student-01",
+    student_email: "student@codepointkenya.com",
+    student_name: "Brian Kipchumba",
+    course_id: "course-software-engineering",
+    course_title: "Full-Stack Software Engineering",
+    cohort: "Cohort 14 (Evening & Hybrid)",
+    total_fee_kes: 85000,
+    paid_fee_kes: 37000,
+    balance_kes: 48000,
+    payment_status: "pending",
+    deadline_date: "April 30, 2026",
+    portal_access_granted: 1,
+    installment_plan: "5-Month Flexible Installments",
+    notes: "Installment 1 & 2 paid via M-Pesa. Next installment KES 16,000 due April 30.",
+    updated_at: new Date().toISOString(),
+    created_at: "2026-03-01T08:00:00.000Z"
+  },
+  {
+    id: "fee-kevin-01",
+    student_email: "kevin.kiprono@gmail.com",
+    student_name: "Kevin Kiprono",
+    course_id: "course-software-engineering",
+    course_title: "Full-Stack Software Engineering",
+    cohort: "Cohort 14 (Evening & Hybrid)",
+    total_fee_kes: 85000,
+    paid_fee_kes: 85000,
+    balance_kes: 0,
+    payment_status: "cleared",
+    deadline_date: "March 15, 2026",
+    portal_access_granted: 1,
+    installment_plan: "Full Upfront Payment (5% Discount Applied)",
+    notes: "Tuition fully cleared prior to cohort kickoff. Unrestricted live access.",
+    updated_at: new Date().toISOString(),
+    created_at: "2026-02-15T08:00:00.000Z"
+  },
+  {
+    id: "fee-faith-01",
+    student_email: "faith.mutua@outlook.com",
+    student_name: "Faith Mutua",
+    course_id: "course-applied-ai",
+    course_title: "Applied AI & Large Language Models",
+    cohort: "Cohort 5 (Weekend Masterclass)",
+    total_fee_kes: 95000,
+    paid_fee_kes: 20000,
+    balance_kes: 75000,
+    payment_status: "overdue",
+    deadline_date: "April 10, 2026",
+    portal_access_granted: 0,
+    installment_plan: "5-Month Flexible Installments",
+    notes: "Initial deposit paid. Second installment was due April 10. Outstanding balance KES 75,000. Live class access locked.",
+    updated_at: new Date().toISOString(),
+    created_at: "2026-03-10T08:00:00.000Z"
+  },
+  {
+    id: "fee-cynthia-01",
+    student_email: "cynthia.njeri@example.com",
+    student_name: "Cynthia Njeri",
+    course_id: "course-data-science",
+    course_title: "Data Science & Machine Learning",
+    cohort: "Cohort 12 (Evening Online)",
+    total_fee_kes: 80000,
+    paid_fee_kes: 45000,
+    balance_kes: 35000,
+    payment_status: "pending",
+    deadline_date: "May 15, 2026",
+    portal_access_granted: 1,
+    installment_plan: "4-Month Installments",
+    notes: "Installment payments on track. Next installment due May 15.",
+    updated_at: new Date().toISOString(),
+    created_at: "2026-03-12T08:00:00.000Z"
+  }
+];
+
 /**
  * Initialize PostgreSQL Production Database
  */
@@ -1034,6 +1188,49 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
         notes TEXT DEFAULT '',
         created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
       );
+
+      CREATE TABLE IF NOT EXISTS student_module_progress (
+        id VARCHAR(255) PRIMARY KEY,
+        student_email VARCHAR(255) NOT NULL,
+        student_name VARCHAR(255) NOT NULL,
+        course_id VARCHAR(255) NOT NULL,
+        course_title VARCHAR(255) NOT NULL,
+        module_id VARCHAR(255) NOT NULL,
+        module_title VARCHAR(255) NOT NULL,
+        module_number INTEGER DEFAULT 1,
+        status VARCHAR(50) NOT NULL DEFAULT 'not_started',
+        student_notes TEXT DEFAULT '',
+        student_submission_url TEXT DEFAULT '',
+        teacher_email VARCHAR(255),
+        teacher_name VARCHAR(255),
+        teacher_feedback TEXT DEFAULT '',
+        requested_at VARCHAR(100),
+        reviewed_at VARCHAR(100),
+        completed_at VARCHAR(100),
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_smp_student ON student_module_progress(student_email, course_id);
+
+      CREATE TABLE IF NOT EXISTS student_fee_accounts (
+        id VARCHAR(255) PRIMARY KEY,
+        student_email VARCHAR(255) NOT NULL,
+        student_name VARCHAR(255) NOT NULL,
+        course_id VARCHAR(255) NOT NULL,
+        course_title VARCHAR(255) NOT NULL,
+        cohort VARCHAR(100) NOT NULL DEFAULT 'Current Cohort',
+        total_fee_kes NUMERIC NOT NULL DEFAULT 85000,
+        paid_fee_kes NUMERIC NOT NULL DEFAULT 0,
+        balance_kes NUMERIC NOT NULL DEFAULT 85000,
+        payment_status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        deadline_date VARCHAR(100) NOT NULL DEFAULT '',
+        portal_access_granted INTEGER NOT NULL DEFAULT 1,
+        installment_plan VARCHAR(255) DEFAULT '5-Month Flexible Installments',
+        notes TEXT DEFAULT '',
+        updated_at VARCHAR(100),
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_sfa_email ON student_fee_accounts(student_email);
+      CREATE INDEX IF NOT EXISTS idx_sfa_status ON student_fee_accounts(payment_status);
     `);
 
     // Ensure all required columns exist on courses if created earlier
@@ -1197,6 +1394,44 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       console.warn("[Database] PostgreSQL class_lectures seed warning:", e);
     }
 
+    // Seed default student module progress if empty
+    try {
+      const progCountRes = await pool.query("SELECT count(*) as count FROM student_module_progress");
+      const progCount = Number(progCountRes.rows[0]?.count || 0);
+      if (progCount === 0) {
+        console.log("[Database] Seeding initial student module progress in PostgreSQL...");
+        for (const p of DEFAULT_STUDENT_PROGRESS) {
+          await pool.query(
+            `INSERT INTO student_module_progress (id, student_email, student_name, course_id, course_title, module_id, module_title, module_number, status, student_notes, student_submission_url, teacher_email, teacher_name, teacher_feedback, requested_at, reviewed_at, completed_at, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+             ON CONFLICT (id) DO NOTHING`,
+            [p.id, p.student_email, p.student_name, p.course_id, p.course_title, p.module_id, p.module_title, p.module_number, p.status, p.student_notes, p.student_submission_url, p.teacher_email, p.teacher_name, p.teacher_feedback, p.requested_at, p.reviewed_at, p.completed_at, p.created_at]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] PostgreSQL student_module_progress seed warning:", e);
+    }
+
+    // Seed student_fee_accounts if empty
+    try {
+      const feeCountRes = await pool.query("SELECT count(*) as count FROM student_fee_accounts");
+      const feeCount = Number(feeCountRes.rows[0]?.count || 0);
+      if (feeCount === 0) {
+        console.log("[Database] Seeding initial student fee accounts in PostgreSQL...");
+        for (const f of DEFAULT_STUDENT_FEES) {
+          await pool.query(
+            `INSERT INTO student_fee_accounts (id, student_email, student_name, course_id, course_title, cohort, total_fee_kes, paid_fee_kes, balance_kes, payment_status, deadline_date, portal_access_granted, installment_plan, notes, updated_at, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+             ON CONFLICT (id) DO NOTHING`,
+            [f.id, f.student_email, f.student_name, f.course_id, f.course_title, f.cohort, f.total_fee_kes, f.paid_fee_kes, f.balance_kes, f.payment_status, f.deadline_date, f.portal_access_granted, f.installment_plan, f.notes, f.updated_at, f.created_at]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] PostgreSQL student_fee_accounts seed warning:", e);
+    }
+
     const appDb: AppDatabase = {
       type: "postgres",
       providerName: "PostgreSQL (Production Cloud Database)",
@@ -1245,7 +1480,9 @@ function createInMemoryDb(): AppDatabase {
     certificates: [],
     announcements: [...DEFAULT_ANNOUNCEMENTS],
     login_attempts: [...DEFAULT_LOGIN_ATTEMPTS],
-    class_lectures: [...DEFAULT_LECTURES]
+    class_lectures: [...DEFAULT_LECTURES],
+    student_module_progress: [...DEFAULT_STUDENT_PROGRESS],
+    student_fee_accounts: [...DEFAULT_STUDENT_FEES]
   };
 
   return {
@@ -1575,10 +1812,147 @@ function createInMemoryDb(): AppDatabase {
         tables.class_lectures = tables.class_lectures.filter(l => l.id !== id);
         return;
       }
+
+      // INSERT / REPLACE student_module_progress
+      if (lower.includes("insert into student_module_progress") || lower.includes("insert or replace into student_module_progress")) {
+        const id = params[0];
+        const existingIdx = tables.student_module_progress.findIndex(p => p.id === id);
+        const row = {
+          id: params[0],
+          student_email: params[1],
+          student_name: params[2],
+          course_id: params[3],
+          course_title: params[4],
+          module_id: params[5],
+          module_title: params[6],
+          module_number: Number(params[7]) || 1,
+          status: params[8] || 'not_started',
+          student_notes: params[9] || "",
+          student_submission_url: params[10] || "",
+          teacher_email: params[11] || null,
+          teacher_name: params[12] || null,
+          teacher_feedback: params[13] || null,
+          requested_at: params[14] || null,
+          reviewed_at: params[15] || null,
+          completed_at: params[16] || null,
+          created_at: params[17] || new Date().toISOString()
+        };
+        if (existingIdx >= 0) {
+          tables.student_module_progress[existingIdx] = { ...tables.student_module_progress[existingIdx], ...row };
+        } else {
+          tables.student_module_progress.push(row);
+        }
+        return;
+      }
+
+      // UPDATE student_module_progress
+      if (lower.includes("update student_module_progress")) {
+        const id = params[params.length - 1];
+        const row = tables.student_module_progress.find(p => p.id === id);
+        if (row) {
+          if (lower.includes("status = ?") && lower.includes("completed_at = ?")) {
+            row.status = params[0];
+            row.completed_at = params[1];
+          } else if (lower.includes("status = ?") && lower.includes("teacher_feedback = ?")) {
+            row.status = params[0];
+            row.teacher_email = params[1];
+            row.teacher_name = params[2];
+            row.teacher_feedback = params[3];
+            row.reviewed_at = params[4];
+          } else if (lower.includes("status = ?")) {
+            row.status = params[0];
+          }
+        }
+        return;
+      }
+
+      // INSERT / REPLACE student_fee_accounts
+      if (lower.includes("insert into student_fee_accounts") || lower.includes("insert or replace into student_fee_accounts")) {
+        const id = params[0];
+        const existingIdx = tables.student_fee_accounts.findIndex(f => f.id === id);
+        const row = {
+          id: params[0],
+          student_email: params[1],
+          student_name: params[2],
+          course_id: params[3],
+          course_title: params[4],
+          cohort: params[5] || 'Current Cohort',
+          total_fee_kes: Number(params[6] || 85000),
+          paid_fee_kes: Number(params[7] || 0),
+          balance_kes: Number(params[8] !== undefined ? params[8] : Math.max(0, Number(params[6] || 85000) - Number(params[7] || 0))),
+          payment_status: params[9] || 'pending',
+          deadline_date: params[10] || '',
+          portal_access_granted: params[11] !== undefined ? (Number(params[11]) || 0) : 1,
+          installment_plan: params[12] || '5-Month Flexible Installments',
+          notes: params[13] || '',
+          updated_at: params[14] || new Date().toISOString(),
+          created_at: params[15] || new Date().toISOString()
+        };
+        if (existingIdx >= 0) {
+          tables.student_fee_accounts[existingIdx] = { ...tables.student_fee_accounts[existingIdx], ...row };
+        } else {
+          tables.student_fee_accounts.push(row);
+        }
+        return;
+      }
+
+      // UPDATE student_fee_accounts
+      if (lower.includes("update student_fee_accounts")) {
+        const id = params[params.length - 1];
+        const row = tables.student_fee_accounts.find(f => f.id === id || String(f.student_email).toLowerCase() === String(id).toLowerCase());
+        if (row) {
+          if (lower.includes("portal_access_granted = ?")) {
+            row.portal_access_granted = Number(params[0]);
+            row.updated_at = new Date().toISOString();
+          } else if (lower.includes("total_fee_kes = ?")) {
+            row.total_fee_kes = Number(params[0]);
+            row.paid_fee_kes = Number(params[1]);
+            row.balance_kes = Number(params[2]);
+            row.payment_status = params[3];
+            row.deadline_date = params[4];
+            row.portal_access_granted = Number(params[5]);
+            row.installment_plan = params[6];
+            row.notes = params[7];
+            row.updated_at = params[8] || new Date().toISOString();
+          }
+        }
+        return;
+      }
+
+      // DELETE FROM student_fee_accounts
+      if (lower.includes("delete from student_fee_accounts")) {
+        const id = params[0];
+        tables.student_fee_accounts = tables.student_fee_accounts.filter(f => f.id !== id && String(f.student_email).toLowerCase() !== String(id).toLowerCase());
+        return;
+      }
     },
     async exec() {},
     async queryAll<T = any>(sql: string, params: any[] = []): Promise<T[]> {
       const lower = sql.toLowerCase();
+      if (lower.includes("from student_fee_accounts")) {
+        let list = [...tables.student_fee_accounts];
+        if (lower.includes("lower(student_email) = ?") || lower.includes("student_email = ?")) {
+          const email = String(params[0] || "").toLowerCase();
+          list = list.filter(f => String(f.student_email).toLowerCase() === email);
+        }
+        if (lower.includes("payment_status = ?")) {
+          const status = params[0];
+          list = list.filter(f => f.payment_status === status);
+        }
+        return list as unknown as T[];
+      }
+      if (lower.includes("from student_module_progress")) {
+        let list = [...tables.student_module_progress];
+        if (lower.includes("lower(student_email) = ?") || lower.includes("student_email = ?")) {
+          const email = String(params[0] || "").toLowerCase();
+          list = list.filter(p => String(p.student_email).toLowerCase() === email);
+        }
+        if (lower.includes("course_id = ?")) {
+          const courseId = params.length > 1 ? params[1] : params[0];
+          list = list.filter(p => p.course_id === courseId);
+        }
+        return list as unknown as T[];
+      }
       if (lower.includes("from courses")) {
         return [...tables.courses] as unknown as T[];
       }
@@ -1627,6 +2001,10 @@ function createInMemoryDb(): AppDatabase {
         }
         if (lower.includes("where lower(email) =")) {
           const matched = rows.find((r: any) => String(r.email).toLowerCase() === String(params[0]).toLowerCase());
+          return (matched as T) || null;
+        }
+        if (lower.includes("where lower(student_email) =") || lower.includes("where student_email =")) {
+          const matched = rows.find((r: any) => String(r.student_email).toLowerCase() === String(params[0]).toLowerCase());
           return (matched as T) || null;
         }
         if (lower.includes("where slug =")) {
@@ -1860,6 +2238,48 @@ async function initSqlite(): Promise<AppDatabase | null> {
         date TEXT,
         created_at TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS student_module_progress (
+        id TEXT PRIMARY KEY,
+        student_email TEXT NOT NULL,
+        student_name TEXT NOT NULL,
+        course_id TEXT NOT NULL,
+        course_title TEXT NOT NULL,
+        module_id TEXT NOT NULL,
+        module_title TEXT NOT NULL,
+        module_number INTEGER DEFAULT 1,
+        status TEXT NOT NULL DEFAULT 'not_started',
+        student_notes TEXT DEFAULT '',
+        student_submission_url TEXT DEFAULT '',
+        teacher_email TEXT,
+        teacher_name TEXT,
+        teacher_feedback TEXT DEFAULT '',
+        requested_at TEXT,
+        reviewed_at TEXT,
+        completed_at TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS student_fee_accounts (
+        id TEXT PRIMARY KEY,
+        student_email TEXT NOT NULL,
+        student_name TEXT NOT NULL,
+        course_id TEXT NOT NULL,
+        course_title TEXT NOT NULL,
+        cohort TEXT NOT NULL DEFAULT 'Current Cohort',
+        total_fee_kes REAL NOT NULL DEFAULT 85000,
+        paid_fee_kes REAL NOT NULL DEFAULT 0,
+        balance_kes REAL NOT NULL DEFAULT 85000,
+        payment_status TEXT NOT NULL DEFAULT 'pending',
+        deadline_date TEXT NOT NULL DEFAULT '',
+        portal_access_granted INTEGER NOT NULL DEFAULT 1,
+        installment_plan TEXT DEFAULT '5-Month Flexible Installments',
+        notes TEXT DEFAULT '',
+        updated_at TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_sfa_email ON student_fee_accounts(student_email);
+      CREATE INDEX IF NOT EXISTS idx_sfa_status ON student_fee_accounts(payment_status);
     `);
 
     // Seed courses if empty
@@ -2028,6 +2448,52 @@ async function initSqlite(): Promise<AppDatabase | null> {
       }
     } catch (e) {
       console.warn("[Database] SQLite class_lectures seed warning:", e);
+    }
+
+    // Seed student_module_progress if empty
+    try {
+      const stmtProg = sqliteInstance.prepare("SELECT COUNT(*) as count FROM student_module_progress");
+      let hasProg = false;
+      if (stmtProg.step()) {
+        const row = stmtProg.getAsObject();
+        hasProg = Number(row.count) > 0;
+      }
+      stmtProg.free();
+
+      if (!hasProg) {
+        for (const p of DEFAULT_STUDENT_PROGRESS) {
+          sqliteInstance.run(
+            `INSERT INTO student_module_progress (id, student_email, student_name, course_id, course_title, module_id, module_title, module_number, status, student_notes, student_submission_url, teacher_email, teacher_name, teacher_feedback, requested_at, reviewed_at, completed_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [p.id, p.student_email, p.student_name, p.course_id, p.course_title, p.module_id, p.module_title, p.module_number, p.status, p.student_notes, p.student_submission_url, p.teacher_email, p.teacher_name, p.teacher_feedback, p.requested_at, p.reviewed_at, p.completed_at, p.created_at]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] SQLite student_module_progress seed warning:", e);
+    }
+
+    // Seed student_fee_accounts if empty
+    try {
+      const stmtFees = sqliteInstance.prepare("SELECT COUNT(*) as count FROM student_fee_accounts");
+      let hasFees = false;
+      if (stmtFees.step()) {
+        const row = stmtFees.getAsObject();
+        hasFees = Number(row.count) > 0;
+      }
+      stmtFees.free();
+
+      if (!hasFees) {
+        for (const f of DEFAULT_STUDENT_FEES) {
+          sqliteInstance.run(
+            `INSERT INTO student_fee_accounts (id, student_email, student_name, course_id, course_title, cohort, total_fee_kes, paid_fee_kes, balance_kes, payment_status, deadline_date, portal_access_granted, installment_plan, notes, updated_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [f.id, f.student_email, f.student_name, f.course_id, f.course_title, f.cohort, f.total_fee_kes, f.paid_fee_kes, f.balance_kes, f.payment_status, f.deadline_date, f.portal_access_granted, f.installment_plan, f.notes, f.updated_at, f.created_at]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] SQLite student_fee_accounts seed warning:", e);
     }
 
     // Save initial state

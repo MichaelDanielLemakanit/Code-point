@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model announcements {
+  id           String  @id @db.VarChar(255)
+  title        String  @db.VarChar(255)
+  content      String
+  category     String  @default("Class Update") @db.VarChar(100)
+  cohort       String  @default("All Cohorts") @db.VarChar(100)
+  course_title String  @default("All Programs") @db.VarChar(255)
+  author_name  String  @default("Faculty Lead") @db.VarChar(255)
+  author_role  String  @default("Lead Instructor") @db.VarChar(100)
+  is_pinned    Int?    @default(0)
+  priority     String  @default("Normal") @db.VarChar(50)
+  action_url   String?
+  action_label String? @db.VarChar(100)
+  created_at   String  @db.VarChar(100)
+}
+
+model applications {
+  id               String  @id @db.VarChar(255)
+  tracking_code    String  @unique @db.VarChar(100)
+  full_name        String  @db.VarChar(255)
+  email            String  @db.VarChar(255)
+  phone            String  @db.VarChar(100)
+  course_id        String? @db.VarChar(255)
+  course_title     String  @db.VarChar(255)
+  intake           String  @db.VarChar(100)
+  experience_level String  @db.VarChar(255)
+  motivation       String?
+  status           String  @default("pending") @db.VarChar(50)
+  notes            String?
+  created_at       String  @db.VarChar(100)
+}
+
+model assignments {
+  id              String  @id @db.VarChar(255)
+  title           String  @db.VarChar(255)
+  course_title    String  @db.VarChar(255)
+  cohort          String  @default("Cohort 14") @db.VarChar(100)
+  description     String?
+  resource_url    String?
+  sheets_url      String?
+  due_date        String  @db.VarChar(100)
+  max_marks       Int?    @default(100)
+  instructor_name String? @db.VarChar(255)
+  created_at      String  @db.VarChar(100)
+}
+
+model certificates {
+  id              String  @id @db.VarChar(255)
+  verification_id String  @unique @db.VarChar(100)
+  student_name    String  @db.VarChar(255)
+  student_email   String  @db.VarChar(255)
+  course_title    String  @db.VarChar(255)
+  cohort          String  @db.VarChar(100)
+  completion_date String  @db.VarChar(100)
+  final_grade     String  @default("Distinction") @db.VarChar(50)
+  approved_by     String  @default("Academic Board") @db.VarChar(255)
+  approved_at     String  @db.VarChar(100)
+  qr_code_payload String?
+}
+
+model class_lectures {
+  id               String  @id @db.VarChar(255)
+  instructor_email String  @db.VarChar(255)
+  instructor_name  String  @db.VarChar(255)
+  course_id        String  @db.VarChar(100)
+  course_title     String  @db.VarChar(255)
+  cohort           String  @db.VarChar(100)
+  title            String  @db.VarChar(255)
+  description      String?
+  day_of_week      String  @db.VarChar(50)
+  start_time       String  @db.VarChar(50)
+  end_time         String  @db.VarChar(50)
+  recurrence       String  @default("Weekly") @db.VarChar(50)
+  location_type    String  @default("Online Google Meet") @db.VarChar(100)
+  meeting_link     String?
+  date             String? @db.VarChar(50)
+  created_at       String  @db.VarChar(100)
+}
+
+model course_modules {
+  id            String   @id @db.VarChar(255)
+  course_id     String?  @db.VarChar(255)
+  module_number Int?     @default(1)
+  title         String   @db.VarChar(255)
+  topics        String?  @default("[]")
+  created_at    String   @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
+  courses       courses? @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model courses {
+  id             String           @id @db.VarChar(255)
+  title          String           @db.VarChar(255)
+  slug           String           @unique @db.VarChar(255)
+  category       String           @db.VarChar(100)
+  duration_weeks Int              @default(12)
+  price_kes      Decimal          @default(0) @db.Decimal
+  monthly_kes    Decimal          @default(0) @db.Decimal
+  summary        String           @default("")
+  curriculum     String           @default("[]")
+  level          String           @default("Beginner to Intermediate") @db.VarChar(100)
+  delivery_mode  String           @default("Online-First + Ngong Rd Campus Lab Access") @db.VarChar(255)
+  schedule       String           @default("Mon-Thu 7:00 PM - 9:30 PM EAT") @db.VarChar(255)
+  next_intake    String           @default("Upcoming Cohort") @db.VarChar(100)
+  is_featured    Int?             @default(1)
+  created_at     String           @db.VarChar(100)
+  course_modules course_modules[]
+}
+
+model login_attempts {
+  id               String  @id @db.VarChar(255)
+  email            String  @db.VarChar(255)
+  requested_role   String  @default("student") @db.VarChar(50)
+  status           String  @default("pending") @db.VarChar(50)
+  assigned_role    String? @db.VarChar(50)
+  full_name        String? @db.VarChar(255)
+  attempt_count    Int?    @default(1)
+  last_attempt_at  String  @db.VarChar(100)
+  reviewed_at      String? @db.VarChar(100)
+  reviewed_by      String? @db.VarChar(255)
+  notes            String?
+  initial_password String? @db.VarChar(255)
+  setup_token      String? @db.VarChar(255)
+  created_at       String  @db.VarChar(100)
+}
+
+model messages {
+  id           String  @id @db.VarChar(255)
+  name         String  @db.VarChar(255)
+  email        String? @db.VarChar(255)
+  phone        String  @db.VarChar(100)
+  subject      String? @db.VarChar(255)
+  course_title String? @db.VarChar(255)
+  message      String
+  status       String  @default("pending") @db.VarChar(50)
+  notes        String?
+  created_at   String  @db.VarChar(100)
+}
+
+model modules {
+  id            String  @id @db.VarChar(255)
+  course_id     String? @db.VarChar(255)
+  module_number Int?    @default(1)
+  title         String  @db.VarChar(255)
+  topics        String? @default("[]")
+  created_at    String  @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
+}
+
+model programs {
+  id             String  @id @db.VarChar(255)
+  title          String  @db.VarChar(255)
+  slug           String? @db.VarChar(255)
+  category       String  @default("Software Development") @db.VarChar(100)
+  duration_weeks Int     @default(12)
+  price_kes      Decimal @default(0) @db.Decimal
+  monthly_kes    Decimal @default(0) @db.Decimal
+  summary        String  @default("")
+  curriculum     String  @default("[]")
+  level          String  @default("Beginner to Intermediate") @db.VarChar(100)
+  delivery_mode  String  @default("Online-First + Ngong Rd Campus Lab Access") @db.VarChar(255)
+  schedule       String  @default("Mon-Thu 7:00 PM - 9:30 PM EAT") @db.VarChar(255)
+  next_intake    String  @default("Upcoming Cohort") @db.VarChar(100)
+  is_featured    Int?    @default(1)
+  created_at     String  @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
+}
+
+model reviews {
+  id           String  @id @db.VarChar(255)
+  rating       Int
+  full_name    String  @db.VarChar(255)
+  role_program String  @db.VarChar(255)
+  organization String  @db.VarChar(255)
+  testimonial  String
+  avatar_url   String?
+  status       String  @default("pending") @db.VarChar(50)
+  is_featured  Int?    @default(0)
+  created_at   String  @db.VarChar(100)
+}
+
+model site_settings {
+  key   String @id @db.VarChar(255)
+  value String
+}
+
+model submissions {
+  id               String  @id @db.VarChar(255)
+  assignment_id    String  @db.VarChar(255)
+  assignment_title String  @db.VarChar(255)
+  student_name     String  @db.VarChar(255)
+  student_email    String  @db.VarChar(255)
+  course_title     String  @db.VarChar(255)
+  submission_url   String
+  notes            String?
+  marks            Int?
+  feedback         String?
+  status           String  @default("Pending") @db.VarChar(50)
+  submitted_at     String  @db.VarChar(100)
+  marked_at        String? @db.VarChar(100)
+}
+
+model tuition_fees {
+  id                      String  @id @db.VarChar(255)
+  course_id               String? @db.VarChar(255)
+  course_title            String  @db.VarChar(255)
+  upfront_kes             Decimal @default(0) @db.Decimal
+  monthly_installment_kes Decimal @default(0) @db.Decimal
+  installment_months      Int     @default(5)
+  currency                String  @default("KES") @db.VarChar(10)
+  discount_percent        Decimal @default(10) @db.Decimal
+  notes                   String? @default("")
+  created_at              String  @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
+}
+
+model users {
+  id                    String  @id @db.VarChar(255)
+  name                  String  @db.VarChar(255)
+  email                 String  @unique @db.VarChar(255)
+  password              String  @db.VarChar(255)
+  role                  String  @db.VarChar(50)
+  avatar                String?
+  enrolled_course_id    String? @db.VarChar(255)
+  enrolled_course_title String? @db.VarChar(255)
+  created_at            String  @db.VarChar(100)
+}
+
+model student_module_progress {
+  id                     String  @id @db.VarChar(255)
+  student_email          String  @db.VarChar(255)
+  student_name           String  @db.VarChar(255)
+  course_id              String  @db.VarChar(255)
+  course_title           String  @db.VarChar(255)
+  module_id              String  @db.VarChar(255)
+  module_title           String  @db.VarChar(255)
+  module_number          Int?    @default(1)
+  status                 String  @default("not_started") @db.VarChar(50)
+  student_notes          String? @default("")
+  student_submission_url String? @default("")
+  teacher_email          String? @db.VarChar(255)
+  teacher_name           String? @db.VarChar(255)
+  teacher_feedback       String?
+  requested_at           String? @db.VarChar(100)
+  reviewed_at            String? @db.VarChar(100)
+  completed_at           String? @db.VarChar(100)
+  created_at             String  @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
+
+  @@index([student_email, course_id], map: "idx_smp_student")
+  @@index([status], map: "idx_smp_status")
+}
