@@ -250,43 +250,42 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
   };
 
   return (
-    <section id="student-stories" className="py-20 bg-stone-950 text-stone-100 border-t border-stone-800 relative overflow-hidden">
+    <section id="student-stories" className="py-20 bg-slate-900 text-slate-100 border-b border-slate-800 relative overflow-hidden">
       
       {/* Background ambient accents dynamically bound to theme */}
       <div 
         className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] rounded-full blur-3xl pointer-events-none transition-colors duration-700" 
-        style={{ backgroundColor: 'rgba(var(--primary-rgb), 0.07)' }}
+        style={{ backgroundColor: 'rgba(var(--primary-rgb), 0.05)' }}
       />
       <div 
         className="absolute bottom-10 right-10 w-96 h-96 rounded-full blur-3xl pointer-events-none transition-colors duration-700" 
-        style={{ backgroundColor: 'rgba(var(--secondary-rgb), 0.07)' }}
+        style={{ backgroundColor: 'rgba(var(--secondary-rgb), 0.05)' }}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
+        <div className="text-center max-w-3xl mx-auto mb-10">
           <div 
-            className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider uppercase mb-3 transition-colors"
-            style={{ color: 'var(--primary-color)' }}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold mb-3"
           >
-            <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--primary-color)' }} />
+            <Sparkles className="w-3.5 h-3.5" />
             <span>Alumni Career Transformations</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-white tracking-tight leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
             Student Testimonials & Alumni Stories
           </h2>
 
-          <p className="mt-4 text-base sm:text-lg text-stone-400 leading-relaxed font-sans">
+          <p className="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed font-sans">
             Hear directly from Kenyans who transformed from coding beginners into professional software engineers, 
             data analysts, and cloud architects working at Safaricom, Equity Bank, Cellulant, and regional tech firms.
           </p>
 
           {/* Metric Bar with dynamic theme highlights */}
-          <div className="mt-8 pt-6 border-t border-stone-800/80 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm">
+          <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm">
             <div 
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all font-medium text-stone-200"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all font-medium text-slate-200"
               style={{
                 backgroundColor: 'rgba(var(--primary-rgb), 0.1)',
                 borderColor: 'rgba(var(--primary-rgb), 0.28)'
@@ -297,7 +296,7 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
             </div>
 
             <div 
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all font-medium text-stone-200"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all font-medium text-slate-200"
               style={{
                 backgroundColor: 'rgba(var(--secondary-rgb), 0.1)',
                 borderColor: 'rgba(var(--secondary-rgb), 0.28)'
@@ -308,7 +307,7 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
             </div>
 
             <div 
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all font-medium text-stone-200"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all font-medium text-slate-200"
               style={{
                 backgroundColor: 'rgba(var(--primary-rgb), 0.1)',
                 borderColor: 'rgba(var(--primary-rgb), 0.28)'
@@ -321,8 +320,8 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
         </div>
 
         {/* Interactive Track Filter Bar with Dynamic Active State */}
-        <div className="flex items-center justify-center mb-10 overflow-x-auto pb-2">
-          <div className="inline-flex p-1 bg-stone-900 border border-stone-800 rounded-xl">
+        <div className="flex items-center justify-center mb-8 overflow-x-auto pb-2">
+          <div className="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-xl">
             {[
               { id: 'all', label: 'All Alumni Stories' },
               { id: 'software', label: 'Software Engineering' },
@@ -340,10 +339,10 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
                     color: '#020617',
                     boxShadow: '0 4px 14px 0 rgba(var(--primary-rgb), 0.35)'
                   } : undefined}
-                  className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                     isActive
                       ? 'font-bold'
-                      : 'text-stone-400 hover:text-white hover:bg-stone-800/60'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
                   }`}
                 >
                   {tab.label}
@@ -353,8 +352,8 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
           </div>
         </div>
 
-        {/* Video Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+        {/* Video Cards Grid - Compact 3-column proportion matching Tuition/Pricing cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredList.map((item, index) => {
             const photoSrc = resolveStudentPhoto(item);
             const isFeatured = Number(item.is_featured) === 1;
@@ -364,14 +363,14 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
                 key={item.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.08 }}
-                className="group relative bg-stone-900/90 border border-stone-800 rounded-2xl overflow-hidden theme-card-hover transition-all duration-300 flex flex-col justify-between"
+                transition={{ duration: 0.35, delay: index * 0.06 }}
+                className="group relative bg-slate-950/80 hover:bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden theme-card-hover transition-all duration-300 flex flex-col justify-between shadow-xl"
               >
                 <div>
-                  {/* Playable Video Thumbnail Container */}
+                  {/* Playable Video Thumbnail Container - Sleek, compact height restricted to 190px–200px */}
                   <div 
                     onClick={() => handleOpenModal(item)}
-                    className="relative aspect-video w-full overflow-hidden bg-stone-950 cursor-pointer"
+                    className="relative h-48 max-h-[200px] w-full overflow-hidden bg-slate-950 cursor-pointer"
                   >
                     <img
                       src={photoSrc}
@@ -381,34 +380,29 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
                     />
 
                     {/* Dark gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
 
                     {/* Play Button Overlay with Dynamic Theme Fill and Glow */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div 
-                        className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:brightness-110 transition-all duration-300"
+                        className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:brightness-110 transition-all duration-300"
                         style={{
                           backgroundColor: 'var(--primary-color)',
                           color: '#020617',
-                          boxShadow: '0 8px 24px rgba(var(--primary-rgb), 0.45)'
+                          boxShadow: '0 6px 20px rgba(var(--primary-rgb), 0.45)'
                         }}
                       >
-                        <Play className="w-7 h-7 fill-current ml-1" />
+                        <Play className="w-5 h-5 fill-current ml-0.5" />
                       </div>
                     </div>
 
-                    {/* Featured Story Badge - dynamically inherits theme badge variables */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                    {/* Featured Story Badge */}
+                    <div className="absolute top-2.5 left-2.5 flex items-center gap-2">
                       {isFeatured && (
                         <span 
-                          className="text-[11px] font-bold tracking-wide px-2.5 py-1 rounded-md border backdrop-blur-xs flex items-center gap-1.5 shadow-xs"
-                          style={{
-                            backgroundColor: 'var(--badge-bg)',
-                            color: 'var(--primary-color)',
-                            borderColor: 'var(--badge-border)'
-                          }}
+                          className="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-md border backdrop-blur-xs flex items-center gap-1 shadow-xs theme-badge"
                         >
-                          <Sparkles className="w-3 h-3" style={{ color: 'var(--primary-color)' }} />
+                          <Sparkles className="w-3 h-3" />
                           <span>Featured Story</span>
                         </span>
                       )}
@@ -416,16 +410,15 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
 
                     {/* Duration badge dynamically bound to primary theme */}
                     <div 
-                      className="absolute bottom-3 right-3 flex items-center gap-2 text-[11px] font-medium text-stone-200 bg-stone-950/85 px-2.5 py-1 rounded-md border"
-                      style={{ borderColor: 'rgba(var(--primary-rgb), 0.28)' }}
+                      className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 text-[10px] font-medium text-slate-200 bg-slate-950/90 px-2 py-0.5 rounded-md border border-slate-800"
                     >
-                      <Clock className="w-3 h-3" style={{ color: 'var(--primary-color)' }} />
-                      <span style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{item.duration || '3:00'}</span>
+                      <Clock className="w-3 h-3 theme-text-primary" />
+                      <span className="theme-text-primary font-bold">{item.duration || '3:00'}</span>
                       {item.views_count ? (
                         <>
-                          <span className="text-stone-600" aria-hidden="true">·</span>
-                          <span className="flex items-center gap-1 text-stone-400">
-                            <Eye className="w-3 h-3 text-stone-400" />
+                          <span className="text-slate-600" aria-hidden="true">·</span>
+                          <span className="flex items-center gap-1 text-slate-400">
+                            <Eye className="w-3 h-3 text-slate-400" />
                             {item.views_count.toLocaleString()}
                           </span>
                         </>
@@ -433,37 +426,36 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
                     </div>
                   </div>
 
-                  {/* Card Content Area */}
-                  <div className="p-6">
+                  {/* Card Content Area - Compact proportions */}
+                  <div className="p-5">
                     {/* Track & Cohort (Unboxed metadata with theme color) */}
-                    <div className="flex items-center gap-2 text-xs text-stone-400 mb-2">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1.5">
                       <span 
-                        className="font-semibold tracking-wide"
-                        style={{ color: 'var(--primary-color)' }}
+                        className="font-semibold tracking-wide theme-text-primary uppercase text-[10px]"
                       >
                         {item.course_program}
                       </span>
                       {item.cohort && (
                         <>
-                          <span className="text-stone-600" aria-hidden="true">·</span>
-                          <span className="text-stone-400">{item.cohort}</span>
+                          <span className="text-slate-600" aria-hidden="true">·</span>
+                          <span className="text-slate-400 font-mono text-[10px]">{item.cohort}</span>
                         </>
                       )}
                     </div>
 
                     {/* Student Name */}
-                    <h3 className="text-xl font-serif font-bold text-white theme-group-hover-title transition-colors">
+                    <h3 className="text-base sm:text-lg font-bold text-white theme-group-hover-title transition-colors">
                       {item.student_name}
                     </h3>
 
                     {/* Career Role & Company */}
-                    <div className="mt-1 flex items-center gap-1.5 text-xs text-stone-300 font-medium">
-                      <Briefcase className="w-3.5 h-3.5 text-stone-400" />
-                      <span>{item.career_role}</span>
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                      <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{item.career_role}</span>
                       {item.company && (
                         <>
-                          <span className="text-stone-500">at</span>
-                          <span className="font-semibold" style={{ color: 'var(--secondary-color)' }}>
+                          <span className="text-slate-500">at</span>
+                          <span className="font-semibold theme-text-secondary truncate">
                             {item.company}
                           </span>
                         </>
@@ -472,7 +464,7 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
 
                     {/* Key Quote / Short Highlight */}
                     <blockquote 
-                      className="mt-4 text-sm text-stone-300 leading-relaxed italic border-l-2 pl-3 transition-colors"
+                      className="mt-3 text-xs text-slate-300 leading-relaxed italic border-l-2 pl-2.5 transition-colors line-clamp-3"
                       style={{ borderColor: 'var(--primary-color)' }}
                     >
                       "{item.quote_highlight}"
@@ -481,22 +473,21 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
                 </div>
 
                 {/* Bottom Actions */}
-                <div className="px-6 pb-6 pt-2 border-t border-stone-800/80 flex items-center justify-between">
+                <div className="px-5 py-3 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between text-xs">
                   <button
                     onClick={() => handleOpenModal(item)}
-                    className="text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer hover:opacity-85"
-                    style={{ color: 'var(--primary-color)' }}
+                    className="font-bold flex items-center gap-1.5 transition-all cursor-pointer hover:opacity-85 theme-text-primary"
                   >
-                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <Play className="w-3 h-3 fill-current" />
                     <span>Watch Full Story</span>
                   </button>
 
                   {onApplyForCourse && (
                     <button
                       onClick={() => onApplyForCourse(item.course_program)}
-                      className="text-xs text-stone-400 hover:text-white transition-colors cursor-pointer"
+                      className="text-[11px] text-slate-400 hover:text-white transition-colors cursor-pointer"
                     >
-                      Explore {item.course_program.split(' ')[0]} Track &rarr;
+                      {item.course_program.split(' ')[0]} Track &rarr;
                     </button>
                   )}
                 </div>
@@ -506,17 +497,17 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
         </div>
 
         {/* CTA Strip underneath the gallery */}
-        <div className="mt-16 p-8 rounded-2xl bg-gradient-to-r from-stone-900 via-stone-900/90 to-stone-900 border border-stone-800 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="mt-14 p-6 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
-            <h4 className="text-xl font-serif font-bold text-white">
+            <h4 className="text-lg sm:text-xl font-bold text-white">
               Ready to write your own Kenya tech success story?
             </h4>
-            <p className="text-xs sm:text-sm text-stone-400 mt-1">
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
               Join the next cohort on Ngong Road or attend live online evening sessions. Applications are open for upcoming intakes.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
             {onApplyForCourse && (
               <button
                 onClick={() => onApplyForCourse()}
@@ -525,7 +516,7 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
                   color: '#020617',
                   boxShadow: '0 8px 20px -4px rgba(var(--primary-rgb), 0.35)'
                 }}
-                className="w-full md:w-auto px-6 py-3 rounded-xl hover:brightness-110 text-xs sm:text-sm font-bold transition-all cursor-pointer text-center"
+                className="w-full md:w-auto px-5 py-2.5 rounded-xl hover:brightness-110 text-xs sm:text-sm font-bold transition-all cursor-pointer text-center"
               >
                 Apply for Next Cohort
               </button>
@@ -533,7 +524,7 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
             {onExplorePrograms && (
               <button
                 onClick={onExplorePrograms}
-                className="w-full md:w-auto px-5 py-3 rounded-xl border border-stone-700 hover:border-stone-500 text-stone-300 hover:text-white text-xs sm:text-sm font-semibold transition-all cursor-pointer text-center"
+                className="w-full md:w-auto px-4 py-2.5 rounded-xl border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-xs sm:text-sm font-semibold transition-all cursor-pointer text-center bg-slate-900"
               >
                 Browse Syllabus
               </button>
@@ -547,7 +538,7 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
       <AnimatePresence>
         {activeModalVideo && (
           <div 
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-stone-950/85 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-slate-950/85 backdrop-blur-md"
             onClick={handleCloseModal}
           >
             <motion.div
@@ -556,13 +547,13 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-4xl bg-stone-900 border border-stone-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/80 flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/80 flex flex-col max-h-[90vh]"
             >
               
               {/* Modal Header */}
-              <div className="p-4 sm:px-6 py-3 border-b border-stone-800 flex items-center justify-between bg-stone-950">
+              <div className="p-4 sm:px-6 py-3 border-b border-slate-800 flex items-center justify-between bg-slate-950">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-stone-800 border border-stone-700">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-800 border border-slate-700">
                     <img
                       src={resolveStudentPhoto(activeModalVideo)}
                       alt={activeModalVideo.student_name}
@@ -574,7 +565,7 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
                     <h3 className="text-sm font-bold text-white">
                       {activeModalVideo.student_name}
                     </h3>
-                    <p className="text-[11px] text-stone-400">
+                    <p className="text-[11px] text-slate-400">
                       {activeModalVideo.career_role} {activeModalVideo.company ? `at ${activeModalVideo.company}` : ''}
                     </p>
                   </div>
@@ -583,21 +574,21 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handlePrevVideo}
-                    className="p-1.5 rounded-lg border border-stone-800 hover:bg-stone-800 text-stone-400 hover:text-stone-200 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                     title="Previous Story (Left Arrow)"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleNextVideo}
-                    className="p-1.5 rounded-lg border border-stone-800 hover:bg-stone-800 text-stone-400 hover:text-stone-200 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                     title="Next Story (Right Arrow)"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleCloseModal}
-                    className="p-1.5 rounded-lg border border-stone-800 hover:bg-stone-800 text-stone-400 hover:text-white transition-colors cursor-pointer ml-2"
+                    className="p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer ml-2"
                     title="Close (Escape)"
                   >
                     <X className="w-5 h-5" />
@@ -636,7 +627,7 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
 
                   // Simulated video playback container fallback
                   return (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-stone-950">
+                    <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-slate-950">
                       <div 
                         className="w-16 h-16 rounded-full flex items-center justify-center mb-4 border"
                         style={{
@@ -648,7 +639,7 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
                         <Volume2 className="w-8 h-8" />
                       </div>
                       <h4 className="text-lg font-bold text-white mb-2">Video Testimonial Recording</h4>
-                      <p className="text-xs text-stone-400 max-w-md mb-4">
+                      <p className="text-xs text-slate-400 max-w-md mb-4">
                         Direct video stream for {activeModalVideo.student_name} ({activeModalVideo.duration || '3:12'}).
                       </p>
                       <a
@@ -670,23 +661,22 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
               </div>
 
               {/* Modal Footer / Highlight & Application Action */}
-              <div className="p-4 sm:p-6 bg-stone-950 border-t border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-4 sm:p-5 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="max-w-xl">
-                  <div className="flex items-center gap-2 text-xs text-stone-400 mb-1">
+                  <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
                     <span 
-                      className="font-semibold"
-                      style={{ color: 'var(--primary-color)' }}
+                      className="font-semibold theme-text-primary"
                     >
                       {activeModalVideo.course_program}
                     </span>
                     {activeModalVideo.cohort && (
                       <>
-                        <span className="text-stone-600" aria-hidden="true">·</span>
+                        <span className="text-slate-600" aria-hidden="true">·</span>
                         <span>{activeModalVideo.cohort}</span>
                       </>
                     )}
                   </div>
-                  <p className="text-xs sm:text-sm text-stone-300 italic">
+                  <p className="text-xs sm:text-sm text-slate-300 italic">
                     "{activeModalVideo.quote_highlight}"
                   </p>
                 </div>
@@ -702,7 +692,7 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
                       color: '#020617',
                       boxShadow: '0 8px 16px -4px rgba(var(--primary-rgb), 0.3)'
                     }}
-                    className="px-4 py-2.5 rounded-xl hover:brightness-110 text-xs font-bold transition-all whitespace-nowrap cursor-pointer self-start sm:self-auto"
+                    className="px-4 py-2 rounded-xl hover:brightness-110 text-xs font-bold transition-all whitespace-nowrap cursor-pointer self-start sm:self-auto"
                   >
                     Apply for {activeModalVideo.course_program.split(' ')[0]} Track
                   </button>

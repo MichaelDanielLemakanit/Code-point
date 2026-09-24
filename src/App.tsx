@@ -177,22 +177,6 @@ export default function App() {
           onApplyCourse={(courseId) => handleOpenApply(courseId)}
         />
 
-        {/* 2.5 Student Video Testimonials & Alumni Stories */}
-        <VideoTestimonialsGallery
-          onApplyForCourse={(courseTitle) => {
-            if (courseTitle) {
-              const match = courses.find(c => 
-                c.title.toLowerCase().includes(courseTitle.toLowerCase()) || 
-                courseTitle.toLowerCase().includes(c.title.toLowerCase())
-              );
-              handleOpenApply(match ? match.id : undefined);
-            } else {
-              handleOpenApply();
-            }
-          }}
-          onExplorePrograms={() => handleNavigateSection('programs')}
-        />
-
         {/* 3. Technologies You Will Master */}
         <TechnologiesSection />
 
@@ -218,7 +202,23 @@ export default function App() {
           siteSettings={siteSettings}
         />
 
-        {/* 5. Contact & Ngong Road Campus Location Section */}
+        {/* 6. Student Video Testimonials & Alumni Stories */}
+        <VideoTestimonialsGallery
+          onApplyForCourse={(courseTitle) => {
+            if (courseTitle) {
+              const match = courses.find(c => 
+                c.title.toLowerCase().includes(courseTitle.toLowerCase()) || 
+                courseTitle.toLowerCase().includes(c.title.toLowerCase())
+              );
+              handleOpenApply(match ? match.id : undefined);
+            } else {
+              handleOpenApply();
+            }
+          }}
+          onExplorePrograms={() => handleNavigateSection('programs')}
+        />
+
+        {/* 7. Contact & Ngong Road Campus Location Section */}
         <ContactSection siteSettings={siteSettings} />
       </main>
 
