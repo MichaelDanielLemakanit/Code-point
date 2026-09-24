@@ -22,15 +22,18 @@ import {
   ExternalLink,
   Send,
   AlertTriangle,
-  Lock
+  Lock,
+  CreditCard
 } from 'lucide-react';
 import { LoginAttempt, UserRole, AccessStatus } from '../../types';
+import { StudentFeeManager } from './StudentFeeManager';
 
 interface AccessControlManagerProps {
   onRefreshStats?: () => void;
 }
 
 export const AccessControlManager: React.FC<AccessControlManagerProps> = ({ onRefreshStats }) => {
+  const [subTab, setSubTab] = useState<'auth' | 'fees'>('auth');
   const [attempts, setAttempts] = useState<LoginAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -229,6 +232,42 @@ export const AccessControlManager: React.FC<AccessControlManagerProps> = ({ onRe
 
   return (
     <div id="access-control-manager" className="space-y-6">
+      
+      {/* Sub-navigation Switcher: User Auth vs Student Fees & Access Control */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-slate-900 border border-slate-800">
+        <button
+          type="button"
+          onClick={() => setSubTab('auth')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            subTab === 'auth'
+              ? 'bg-slate-800 text-white shadow-sm border border-slate-700'
+              : 'text-slate-400 hover:text-white hover:bg-slate-850'
+          }`}
+        >
+          <ShieldCheck className={`w-4 h-4 ${subTab === 'auth' ? 'text-amber-400' : 'text-slate-500'}`} />
+          <span>User Authentication & Login Oversight</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSubTab('fees')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            subTab === 'fees'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950/50'
+              : 'text-slate-400 hover:text-emerald-300 hover:bg-slate-850'
+          }`}
+        >
+          <CreditCard className="w-4 h-4" />
+          <span>Student Tuition Ledger & Live Class Access Control</span>
+        </button>
+      </div>
+
+      {subTab === 'fees' ? (
+        <div className="animate-in fade-in">
+          <StudentFeeManager onRefreshStats={onRefreshStats} />
+        </div>
+      ) : (
+        <>
       {/* Toast Notification */}
       {notification && (
         <div 
@@ -947,6 +986,8 @@ export const AccessControlManager: React.FC<AccessControlManagerProps> = ({ onRe
             </form>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

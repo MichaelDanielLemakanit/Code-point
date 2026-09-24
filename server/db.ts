@@ -86,7 +86,7 @@ export function convertSqlForPostgres(sql: string): string {
     converted = converted.replace(
       /INSERT\s+OR\s+REPLACE\s+INTO\s+student_fee_accounts/i,
       "INSERT INTO student_fee_accounts"
-    ) + " ON CONFLICT (id) DO UPDATE SET student_email = EXCLUDED.student_email, student_name = EXCLUDED.student_name, course_id = EXCLUDED.course_id, course_title = EXCLUDED.course_title, cohort = EXCLUDED.cohort, total_fee_kes = EXCLUDED.total_fee_kes, paid_fee_kes = EXCLUDED.paid_fee_kes, balance_kes = EXCLUDED.balance_kes, payment_status = EXCLUDED.payment_status, deadline_date = EXCLUDED.deadline_date, portal_access_granted = EXCLUDED.portal_access_granted, installment_plan = EXCLUDED.installment_plan, notes = EXCLUDED.notes, updated_at = EXCLUDED.updated_at";
+    ) + " ON CONFLICT (id) DO UPDATE SET student_email = EXCLUDED.student_email, student_name = EXCLUDED.student_name, student_phone = EXCLUDED.student_phone, course_id = EXCLUDED.course_id, course_title = EXCLUDED.course_title, cohort = EXCLUDED.cohort, total_fee_kes = EXCLUDED.total_fee_kes, paid_fee_kes = EXCLUDED.paid_fee_kes, balance_kes = EXCLUDED.balance_kes, payment_status = EXCLUDED.payment_status, deadline_date = EXCLUDED.deadline_date, portal_access_granted = EXCLUDED.portal_access_granted, installment_plan = EXCLUDED.installment_plan, notes = EXCLUDED.notes, updated_at = EXCLUDED.updated_at";
   }
 
   return converted;
@@ -873,6 +873,7 @@ export const DEFAULT_STUDENT_FEES = [
     id: "fee-usr-student-01",
     student_email: "student@codepointkenya.com",
     student_name: "Brian Kipchumba",
+    student_phone: "+254 712 345 678",
     course_id: "course-software-engineering",
     course_title: "Full-Stack Software Engineering",
     cohort: "Cohort 14 (Evening & Hybrid)",
@@ -884,6 +885,8 @@ export const DEFAULT_STUDENT_FEES = [
     portal_access_granted: 1,
     installment_plan: "5-Month Flexible Installments",
     notes: "Installment 1 & 2 paid via M-Pesa. Next installment KES 16,000 due April 30.",
+    last_alert_sent_at: "2026-04-20T09:00:00.000Z",
+    last_alert_type: "deadline_approaching",
     updated_at: new Date().toISOString(),
     created_at: "2026-03-01T08:00:00.000Z"
   },
@@ -891,6 +894,7 @@ export const DEFAULT_STUDENT_FEES = [
     id: "fee-kevin-01",
     student_email: "kevin.kiprono@gmail.com",
     student_name: "Kevin Kiprono",
+    student_phone: "+254 722 890 123",
     course_id: "course-software-engineering",
     course_title: "Full-Stack Software Engineering",
     cohort: "Cohort 14 (Evening & Hybrid)",
@@ -902,6 +906,8 @@ export const DEFAULT_STUDENT_FEES = [
     portal_access_granted: 1,
     installment_plan: "Full Upfront Payment (5% Discount Applied)",
     notes: "Tuition fully cleared prior to cohort kickoff. Unrestricted live access.",
+    last_alert_sent_at: null,
+    last_alert_type: null,
     updated_at: new Date().toISOString(),
     created_at: "2026-02-15T08:00:00.000Z"
   },
@@ -909,6 +915,7 @@ export const DEFAULT_STUDENT_FEES = [
     id: "fee-faith-01",
     student_email: "faith.mutua@outlook.com",
     student_name: "Faith Mutua",
+    student_phone: "+254 733 456 789",
     course_id: "course-applied-ai",
     course_title: "Applied AI & Large Language Models",
     cohort: "Cohort 5 (Weekend Masterclass)",
@@ -920,6 +927,8 @@ export const DEFAULT_STUDENT_FEES = [
     portal_access_granted: 0,
     installment_plan: "5-Month Flexible Installments",
     notes: "Initial deposit paid. Second installment was due April 10. Outstanding balance KES 75,000. Live class access locked.",
+    last_alert_sent_at: "2026-04-11T08:30:00.000Z",
+    last_alert_type: "status_overdue",
     updated_at: new Date().toISOString(),
     created_at: "2026-03-10T08:00:00.000Z"
   },
@@ -927,6 +936,7 @@ export const DEFAULT_STUDENT_FEES = [
     id: "fee-cynthia-01",
     student_email: "cynthia.njeri@example.com",
     student_name: "Cynthia Njeri",
+    student_phone: "+254 798 654 321",
     course_id: "course-data-science",
     course_title: "Data Science & Machine Learning",
     cohort: "Cohort 12 (Evening Online)",
@@ -938,6 +948,8 @@ export const DEFAULT_STUDENT_FEES = [
     portal_access_granted: 1,
     installment_plan: "4-Month Installments",
     notes: "Installment payments on track. Next installment due May 15.",
+    last_alert_sent_at: null,
+    last_alert_type: null,
     updated_at: new Date().toISOString(),
     created_at: "2026-03-12T08:00:00.000Z"
   }
@@ -2264,6 +2276,7 @@ async function initSqlite(): Promise<AppDatabase | null> {
         id TEXT PRIMARY KEY,
         student_email TEXT NOT NULL,
         student_name TEXT NOT NULL,
+        student_phone TEXT DEFAULT '',
         course_id TEXT NOT NULL,
         course_title TEXT NOT NULL,
         cohort TEXT NOT NULL DEFAULT 'Current Cohort',
@@ -2275,12 +2288,60 @@ async function initSqlite(): Promise<AppDatabase | null> {
         portal_access_granted INTEGER NOT NULL DEFAULT 1,
         installment_plan TEXT DEFAULT '5-Month Flexible Installments',
         notes TEXT DEFAULT '',
+        last_alert_sent_at TEXT,
+        last_alert_type TEXT,
         updated_at TEXT,
         created_at TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_sfa_email ON student_fee_accounts(student_email);
       CREATE INDEX IF NOT EXISTS idx_sfa_status ON student_fee_accounts(payment_status);
+
+      CREATE TABLE IF NOT EXISTS fee_notifications (
+        id TEXT PRIMARY KEY,
+        student_fee_id TEXT,
+        student_name TEXT NOT NULL,
+        student_email TEXT NOT NULL,
+        student_phone TEXT NOT NULL DEFAULT '',
+        course_title TEXT NOT NULL DEFAULT '',
+        channel TEXT NOT NULL,
+        alert_type TEXT NOT NULL,
+        recipient TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        message_body TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'delivered',
+        balance_kes REAL NOT NULL DEFAULT 0,
+        deadline_date TEXT NOT NULL DEFAULT '',
+        triggered_by TEXT NOT NULL DEFAULT 'automated_rule',
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_fn_email ON fee_notifications(student_email);
+      CREATE INDEX IF NOT EXISTS idx_fn_type ON fee_notifications(alert_type);
+      CREATE INDEX IF NOT EXISTS idx_fn_time ON fee_notifications(created_at);
+
+      CREATE TABLE IF NOT EXISTS fee_notification_settings (
+        id TEXT PRIMARY KEY,
+        auto_deadline_alerts_enabled INTEGER DEFAULT 1,
+        deadline_days_threshold INTEGER DEFAULT 5,
+        auto_overdue_alerts_enabled INTEGER DEFAULT 1,
+        preferred_channel TEXT DEFAULT 'both',
+        sms_sender_id TEXT DEFAULT 'CODEPOINT',
+        email_sender_name TEXT DEFAULT 'Code Point Kenya Finance',
+        paybill_number TEXT DEFAULT '522522',
+        whatsapp_finance_phone TEXT DEFAULT '+254 756 295 128',
+        updated_at TEXT
+      );
     `);
+
+    // Ensure columns in student_fee_accounts if table already existed
+    try {
+      sqliteInstance.run("ALTER TABLE student_fee_accounts ADD COLUMN student_phone TEXT DEFAULT ''");
+    } catch (_) {}
+    try {
+      sqliteInstance.run("ALTER TABLE student_fee_accounts ADD COLUMN last_alert_sent_at TEXT");
+    } catch (_) {}
+    try {
+      sqliteInstance.run("ALTER TABLE student_fee_accounts ADD COLUMN last_alert_type TEXT");
+    } catch (_) {}
 
     // Seed courses if empty
     const stmtCourses = sqliteInstance.prepare("SELECT COUNT(*) as count FROM courses");
@@ -2486,11 +2547,85 @@ async function initSqlite(): Promise<AppDatabase | null> {
       if (!hasFees) {
         for (const f of DEFAULT_STUDENT_FEES) {
           sqliteInstance.run(
-            `INSERT INTO student_fee_accounts (id, student_email, student_name, course_id, course_title, cohort, total_fee_kes, paid_fee_kes, balance_kes, payment_status, deadline_date, portal_access_granted, installment_plan, notes, updated_at, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [f.id, f.student_email, f.student_name, f.course_id, f.course_title, f.cohort, f.total_fee_kes, f.paid_fee_kes, f.balance_kes, f.payment_status, f.deadline_date, f.portal_access_granted, f.installment_plan, f.notes, f.updated_at, f.created_at]
+            `INSERT INTO student_fee_accounts (id, student_email, student_name, student_phone, course_id, course_title, cohort, total_fee_kes, paid_fee_kes, balance_kes, payment_status, deadline_date, portal_access_granted, installment_plan, notes, last_alert_sent_at, last_alert_type, updated_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [f.id, f.student_email, f.student_name, f.student_phone || '', f.course_id, f.course_title, f.cohort, f.total_fee_kes, f.paid_fee_kes, f.balance_kes, f.payment_status, f.deadline_date, f.portal_access_granted, f.installment_plan, f.notes, f.last_alert_sent_at || null, f.last_alert_type || null, f.updated_at, f.created_at]
           );
         }
+      }
+
+      // Seed fee_notification_settings
+      const stmtSettings = sqliteInstance.prepare("SELECT COUNT(*) as count FROM fee_notification_settings");
+      let hasSettings = false;
+      if (stmtSettings.step()) {
+        const row = stmtSettings.getAsObject();
+        hasSettings = Number(row.count) > 0;
+      }
+      stmtSettings.free();
+
+      if (!hasSettings) {
+        sqliteInstance.run(
+          `INSERT INTO fee_notification_settings (id, auto_deadline_alerts_enabled, deadline_days_threshold, auto_overdue_alerts_enabled, preferred_channel, sms_sender_id, email_sender_name, paybill_number, whatsapp_finance_phone, updated_at)
+           VALUES ('default', 1, 5, 1, 'both', 'CODEPOINT', 'Code Point Kenya Finance', '522522', '+254 756 295 128', ?)`,
+          [new Date().toISOString()]
+        );
+      }
+
+      // Seed initial sample fee_notifications if empty
+      const stmtNotifs = sqliteInstance.prepare("SELECT COUNT(*) as count FROM fee_notifications");
+      let hasNotifs = false;
+      if (stmtNotifs.step()) {
+        const row = stmtNotifs.getAsObject();
+        hasNotifs = Number(row.count) > 0;
+      }
+      stmtNotifs.free();
+
+      if (!hasNotifs) {
+        sqliteInstance.run(
+          `INSERT INTO fee_notifications (id, student_fee_id, student_name, student_email, student_phone, course_title, channel, alert_type, recipient, subject, message_body, status, balance_kes, deadline_date, triggered_by, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            'notif-init-01',
+            'fee-faith-01',
+            'Faith Mutua',
+            'faith.mutua@outlook.com',
+            '+254 733 456 789',
+            'Applied AI & Large Language Models',
+            'both',
+            'status_overdue',
+            'faith.mutua@outlook.com / +254 733 456 789',
+            'URGENT: Tuition Balance Overdue & Live Access Restricted',
+            'CODEPOINT KENYA ALERT: Dear Faith Mutua, your tuition balance of KES 75,000 is OVERDUE. Live lectures and campus lab access have been restricted. Clear balance via Paybill 522522, Acc: CPK-FAITH or contact +254 756 295 128 to restore access.',
+            'delivered',
+            75000,
+            'April 10, 2026',
+            'status_change',
+            '2026-04-11T08:30:00.000Z'
+          ]
+        );
+
+        sqliteInstance.run(
+          `INSERT INTO fee_notifications (id, student_fee_id, student_name, student_email, student_phone, course_title, channel, alert_type, recipient, subject, message_body, status, balance_kes, deadline_date, triggered_by, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            'notif-init-02',
+            'fee-usr-student-01',
+            'Brian Kipchumba',
+            'student@codepointkenya.com',
+            '+254 712 345 678',
+            'Full-Stack Software Engineering',
+            'both',
+            'deadline_approaching',
+            'student@codepointkenya.com / +254 712 345 678',
+            'Upcoming Tuition Installment Reminder: KES 48,000 Due April 30',
+            'CODEPOINT KENYA: Dear Brian Kipchumba, your tuition installment of KES 48,000 for Full-Stack Software Engineering is due on April 30, 2026. Pay via M-Pesa Paybill: 522522, Acc: CPK-BRIAN. Queries: +254 756 295 128.',
+            'delivered',
+            48000,
+            'April 30, 2026',
+            'automated_rule',
+            '2026-04-20T09:00:00.000Z'
+          ]
+        );
       }
     } catch (e) {
       console.warn("[Database] SQLite student_fee_accounts seed warning:", e);

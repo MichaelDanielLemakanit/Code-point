@@ -13,7 +13,8 @@ import {
   HelpCircle,
   Award,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Lock
 } from 'lucide-react';
 import { CourseProgressSummary, StudentModuleProgress } from '../../types';
 
@@ -21,12 +22,16 @@ interface CourseProgressTrackerProps {
   studentEmail: string;
   studentName: string;
   onProgressUpdated?: (percentage: number) => void;
+  isLockedOut?: boolean;
+  balanceKes?: number;
 }
 
 export const CourseProgressTracker: React.FC<CourseProgressTrackerProps> = ({
   studentEmail,
   studentName,
-  onProgressUpdated
+  onProgressUpdated,
+  isLockedOut = false,
+  balanceKes = 0
 }) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{
@@ -310,6 +315,26 @@ export const CourseProgressTracker: React.FC<CourseProgressTrackerProps> = ({
         </div>
       )}
 
+      {/* Prominent Overdue Lockout Banner for Curriculum Materials */}
+      {isLockedOut && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-950/80 via-slate-900 to-rose-950/60 border-2 border-rose-500/70 text-xs flex items-start gap-3.5 shadow-xl">
+          <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 shrink-0">
+            <Lock className="w-5 h-5 animate-pulse" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white text-sm">Course Curriculum & Submission Engine Locked</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/30 text-rose-200 border border-rose-500/40">
+                OVERDUE
+              </span>
+            </div>
+            <p className="text-slate-300 text-xs leading-relaxed">
+              Curriculum project reviews, syllabus materials, and graduation checkpoints are locked because of an outstanding balance of <span className="text-rose-300 font-mono font-bold">KES {balanceKes ? balanceKes.toLocaleString() : 'due'}</span>. Please settle your fee balance to submit modules for teacher review.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Individual Modules List with Approval & Completion Controls */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -413,72 +438,82 @@ export const CourseProgressTracker: React.FC<CourseProgressTrackerProps> = ({
                   {/* Actions Area */}
                   <div className="flex flex-wrap items-center gap-2 lg:self-center">
                     
-                    {/* CASE 1: Teacher Approved -> Student can mark as Complete! */}
-                    {isApproved && (
-                      <button
-                        onClick={() => handleMarkComplete(m.moduleId, activeCourse.courseId)}
-                        disabled={markingCompleteId === m.moduleId}
-                        className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
-                      >
-                        {markingCompleteId === m.moduleId ? (
-                          <>
-                            <RotateCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>Updating...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Check className="w-4 h-4 stroke-[3]" />
-                            <span>Mark Module as Complete</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-
-                    {/* CASE 2: Already Completed */}
-                    {isCompleted && (
-                      <div className="text-right">
-                        <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          <span>Module Completed</span>
-                        </span>
-                        {m.progressRecord?.completed_at && (
-                          <span className="text-[10px] text-slate-500 block font-mono">
-                            {new Date(m.progressRecord.completed_at).toLocaleDateString()}
-                          </span>
-                        )}
+                    {/* If student is locked out due to overdue balance */}
+                    {isLockedOut ? (
+                      <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950 border border-rose-500/40 text-rose-300 text-xs font-semibold select-none cursor-not-allowed shadow-inner">
+                        <Lock className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Module Locked (Tuition Due)</span>
                       </div>
-                    )}
+                    ) : (
+                      <>
+                        {/* CASE 1: Teacher Approved -> Student can mark as Complete! */}
+                        {isApproved && (
+                          <button
+                            onClick={() => handleMarkComplete(m.moduleId, activeCourse.courseId)}
+                            disabled={markingCompleteId === m.moduleId}
+                            className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                          >
+                            {markingCompleteId === m.moduleId ? (
+                              <>
+                                <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Updating...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-4 h-4 stroke-[3]" />
+                                <span>Mark Module as Complete</span>
+                              </>
+                            )}
+                          </button>
+                        )}
 
-                    {/* CASE 3: Pending Teacher Review */}
-                    {isPending && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-amber-300 font-medium flex items-center gap-1.5 bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/30">
-                          <Clock className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Under Review</span>
-                        </span>
-                        <button
-                          onClick={() => handleOpenSubmitModal(m, activeCourse)}
-                          className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800"
-                          title="Update submission notes"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    )}
+                        {/* CASE 2: Already Completed */}
+                        {isCompleted && (
+                          <div className="text-right">
+                            <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                              <span>Module Completed</span>
+                            </span>
+                            {m.progressRecord?.completed_at && (
+                              <span className="text-[10px] text-slate-500 block font-mono">
+                                {new Date(m.progressRecord.completed_at).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
-                    {/* CASE 4: Not Started / Revision / In Progress -> Submit for approval */}
-                    {(!isCompleted && !isApproved && !isPending) && (
-                      <button
-                        onClick={() => handleOpenSubmitModal(m, activeCourse)}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                          isRevision 
-                            ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40' 
-                            : 'bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-750'
-                        }`}
-                      >
-                        <Send className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>{isRevision ? 'Re-submit for Review' : 'Request Teacher Approval'}</span>
-                      </button>
+                        {/* CASE 3: Pending Teacher Review */}
+                        {isPending && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-amber-300 font-medium flex items-center gap-1.5 bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/30">
+                              <Clock className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Under Review</span>
+                            </span>
+                            <button
+                              onClick={() => handleOpenSubmitModal(m, activeCourse)}
+                              className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800"
+                              title="Update submission notes"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        )}
+
+                        {/* CASE 4: Not Started / Revision / In Progress -> Submit for approval */}
+                        {(!isCompleted && !isApproved && !isPending) && (
+                          <button
+                            onClick={() => handleOpenSubmitModal(m, activeCourse)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                              isRevision 
+                                ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40' 
+                                : 'bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-750'
+                            }`}
+                          >
+                            <Send className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{isRevision ? 'Re-submit for Review' : 'Request Teacher Approval'}</span>
+                          </button>
+                        )}
+                      </>
                     )}
 
                     {/* Toggle Details dropdown */}

@@ -35,7 +35,10 @@ import {
   Award,
   CheckCircle,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  CreditCard,
+  UserCheck,
+  Pencil
 } from 'lucide-react';
 import { SiteSettings, Application, Course, AdminStats, ApplicationStatus, User, ContactMessage, Certificate, AssignmentSubmission } from '../../types';
 import { ProgramsManager } from './ProgramsManager';
@@ -43,6 +46,7 @@ import { ThemeCustomizer } from './ThemeCustomizer';
 import { ContentEditor } from './ContentEditor';
 import { ReviewsModerator } from './ReviewsModerator';
 import { AccessControlManager } from './AccessControlManager';
+import { StudentFeeManager } from './StudentFeeManager';
 import { CertificateModal } from './CertificateModal';
 import { NextIntakeManager } from './NextIntakeManager';
 
@@ -93,8 +97,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onAdminLoginSuccess,
   onAdminLogout
 }) => {
-  // Navigation tabs: dashboard | intake | programs | content | theme | reviews | inbox | certificates | access
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'intake' | 'programs' | 'content' | 'theme' | 'reviews' | 'inbox' | 'certificates' | 'access'>('dashboard');
+  // Navigation tabs: dashboard | intake | programs | fees | content | theme | reviews | inbox | certificates | access
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'intake' | 'programs' | 'fees' | 'content' | 'theme' | 'reviews' | 'inbox' | 'certificates' | 'access'>('dashboard');
   const [contentSubTab, setContentSubTab] = useState<'site_details' | 'programs'>('site_details');
 
   // Local authenticated state so the session transitions immediately without getting stuck
@@ -517,7 +521,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         if (selectedApp && selectedApp.id === appId) {
           setSelectedApp(prev => prev ? { ...prev, status: newStatus } : null);
         }
-        showToast(`Application marked as ${newStatus.replace('_', ' ')}.`);
+        if (newStatus === 'enrolled') {
+          showToast('Student enrolled! Active financial record created in Tuition & Fees.');
+        } else if (newStatus === 'accepted') {
+          showToast('Application accepted! Student portal access and fee record initialized.');
+        } else {
+          showToast(`Application marked as ${newStatus.replace('_', ' ')}.`);
+        }
       }
     } catch (e) {
       console.error('Error updating status:', e);
@@ -841,6 +851,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-stone-300 font-mono font-bold">
                     {courses.length}
+                  </span>
+                </button>
+
+                {/* Tuition & Fees Access Control Tab */}
+                <button
+                  onClick={() => setActiveTab('fees')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition-colors cursor-pointer text-left ${
+                    activeTab === 'fees'
+                      ? 'bg-emerald-500/20 text-white font-semibold border-l-2 border-emerald-400 shadow-sm'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <CreditCard className={`w-4 h-4 ${activeTab === 'fees' ? 'text-emerald-400' : 'text-slate-400'}`} />
+                    <span>Tuition & Fees</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold border border-emerald-500/30">
+                    KES Ledger
                   </span>
                 </button>
 
@@ -1226,6 +1254,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 )}
 
                 {/* ------------------------------------------------------------- */}
+                {/* TAB: TUITION & FEES ACCESS CONTROL                            */}
+                {/* ------------------------------------------------------------- */}
+                {activeTab === 'fees' && (
+                  <div className="animate-in fade-in">
+                    <StudentFeeManager onRefreshStats={fetchStats} showToast={showToast} />
+                  </div>
+                )}
+
+                {/* ------------------------------------------------------------- */}
                 {/* TAB: ACCESS CONTROL & LOGIN OVERSIGHT                         */}
                 {/* ------------------------------------------------------------- */}
                 {activeTab === 'access' && (
@@ -1536,7 +1573,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                       </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                                      {/* Quick Enroll Button */}
+                                      {app.status !== 'enrolled' && (
+                                        <button
+                                          onClick={() => handleUpdateStatus(app.id, 'enrolled')}
+                                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                                          title="Enroll student and automatically create tuition account in Tuition & Fees"
+                                        >
+                                          <UserCheck className="w-3.5 h-3.5" />
+                                          <span>Enroll Student</span>
+                                        </button>
+                                      )}
+
                                       {/* Status Selector */}
                                       <select
                                         value={app.status}
@@ -1620,16 +1669,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   </div>
 
                                   {(app.status === 'accepted' || app.status === 'enrolled') && (
-                                    <div className="py-2 px-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
+                                    <div className="py-2.5 px-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex flex-wrap items-center justify-between gap-3">
+                                      <div className="flex items-center gap-2.5">
                                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                                        <span>
-                                          <strong className="font-semibold">Student Portal Access Active:</strong> Authorized for login via <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-emerald-200 text-[11px]">{app.email}</code>
-                                        </span>
+                                        <div>
+                                          <div>
+                                            <strong className="font-semibold">Student Portal & Financial Record Active:</strong> Authorized for login via <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-emerald-200 text-[11px] font-bold text-emerald-950">{app.email}</code>
+                                          </div>
+                                          <div className="text-[11px] text-emerald-700 mt-0.5">
+                                            Enrolled in <span className="font-medium text-emerald-900">{app.course_title}</span> • Tuition Ledger Synced & Online Access Granted
+                                          </div>
+                                        </div>
                                       </div>
-                                      <span className="text-[10px] font-mono text-emerald-700 font-bold uppercase hidden sm:inline">
-                                        Status: {app.status}
-                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => {
+                                            setActiveTab('fees');
+                                            showToast(`Navigated to Tuition & Fees for ${app.full_name}`);
+                                          }}
+                                          className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                                          title="Open Tuition & Fees page to edit student fee record"
+                                        >
+                                          <CreditCard className="w-3.5 h-3.5" />
+                                          <span>Manage Tuition Record</span>
+                                          <ArrowRight className="w-3 h-3" />
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
 
@@ -1823,6 +1888,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
+
+                      <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-sm flex flex-col justify-between space-y-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">
+                            <CreditCard className="w-4 h-4 text-emerald-600" />
+                            <span>Tuition & Portal Access</span>
+                          </div>
+                          <p className="text-xs text-stone-500">
+                            Manage student fees, track KES balances, and enforce overdue class lockouts.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setActiveTab('fees')}
+                          className="w-full py-2 px-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-emerald-200"
+                        >
+                          <span>Manage Student Fees & Access</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
                       <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-sm flex flex-col justify-between space-y-3">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">

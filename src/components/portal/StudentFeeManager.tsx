@@ -10,6 +10,7 @@ import {
   Lock, 
   Unlock, 
   Edit3, 
+  Pencil,
   Trash2, 
   ArrowUpRight, 
   Download, 
@@ -22,9 +23,19 @@ import {
   ShieldAlert,
   Calendar,
   Layers,
-  BookOpen
+  BookOpen,
+  Send,
+  Mail,
+  Smartphone,
+  Bell,
+  Settings,
+  History,
+  Zap
 } from 'lucide-react';
 import { StudentFeeAccount, FeePaymentStatus } from '../../types';
+import { FeeAlertDispatcherModal } from './FeeAlertDispatcherModal';
+import { FeeNotificationSettingsModal } from './FeeNotificationSettingsModal';
+import { FeeNotificationLogsModal } from './FeeNotificationLogsModal';
 
 interface StudentFeeManagerProps {
   onRefreshStats?: () => void;
@@ -66,10 +77,39 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
   const [editingAccount, setEditingAccount] = useState<Partial<StudentFeeAccount> | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [sendAlertOnSave, setSendAlertOnSave] = useState(false);
 
   // Delete Confirmation Modal
   const [deleteTarget, setDeleteTarget] = useState<StudentFeeAccount | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Fee Notification Modals State
+  const [alertTargetStudent, setAlertTargetStudent] = useState<StudentFeeAccount | null>(null);
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+  const [isRunningSweep, setIsRunningSweep] = useState(false);
+
+  const handleRunNotificationSweep = async () => {
+    try {
+      setIsRunningSweep(true);
+      const res = await fetch('/api/admin/fee-notifications/check-and-dispatch', {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showNotification(data.message || 'Automated fee alert check completed.');
+        fetchFees();
+        if (onRefreshStats) onRefreshStats();
+      } else {
+        showNotification(data.error || 'Failed to execute automated check', 'error');
+      }
+    } catch (err: any) {
+      showNotification(err.message || 'Error executing automated check', 'error');
+    } finally {
+      setIsRunningSweep(false);
+    }
+  };
 
   const fetchFees = async () => {
     try {
@@ -161,6 +201,7 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
       id: '',
       student_name: '',
       student_email: '',
+      student_phone: '+254 712 345 678',
       course_id: 'course-software-engineering',
       course_title: 'Full-Stack Software Engineering',
       cohort: 'Cohort 14 (Evening & Hybrid)',
@@ -173,17 +214,20 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
       installment_plan: '5-Month Flexible Installments',
       notes: ''
     });
+    setSendAlertOnSave(false);
     setIsModalOpen(true);
   };
 
   const openEditModal = (account: StudentFeeAccount) => {
     setEditingAccount({
       ...account,
+      student_phone: account.student_phone || '+254 712 345 678',
       total_fee_kes: Number(account.total_fee_kes),
       paid_fee_kes: Number(account.paid_fee_kes),
       balance_kes: Number(account.balance_kes),
       portal_access_granted: (account.portal_access_granted === 1 || account.portal_access_granted === true || String(account.portal_access_granted) === '1') ? 1 : 0
     });
+    setSendAlertOnSave(account.payment_status === 'overdue' || !account.portal_access_granted);
     setIsModalOpen(true);
   };
 
@@ -204,7 +248,8 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
         ...editingAccount,
         total_fee_kes: total,
         paid_fee_kes: paid,
-        balance_kes: balance
+        balance_kes: balance,
+        send_alert: sendAlertOnSave
       };
 
       const res = await fetch('/api/admin/student-fees', {
@@ -214,7 +259,7 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
       });
 
       if (res.ok) {
-        showNotification(`Student fee account for ${editingAccount.student_name} successfully saved.`);
+        showNotification(`Student fee account for ${editingAccount.student_name} successfully saved.${sendAlertOnSave ? ' Automated notification dispatched.' : ''}`);
         setIsModalOpen(false);
         setEditingAccount(null);
         fetchFees();
@@ -301,26 +346,56 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
           </div>
           <h2 className="text-2xl font-bold text-white mt-1">Student Tuition & Access Restriction Control</h2>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-            Manage total program fees, payments to date, auto-calculated balances, and real-time live lecture / portal lockouts. Students with overdue balances or revoked access are immediately barred from joining online class calls and lab sessions.
+            Manage total program fees, payments to date, auto-calculated balances, automated SMS & Email alerts, and real-time live lecture / portal lockouts.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Run Automated Notification Sweep */}
+          <button
+            onClick={handleRunNotificationSweep}
+            disabled={isRunningSweep}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60 text-xs font-semibold cursor-pointer transition-all shadow-sm"
+            title="Scan upcoming payment deadlines and overdue accounts, and dispatch automated alerts"
+          >
+            <Zap className={`w-3.5 h-3.5 text-emerald-400 ${isRunningSweep ? 'animate-bounce' : ''}`} />
+            <span>{isRunningSweep ? 'Evaluating Rules...' : 'Run Auto-Alert Check'}</span>
+          </button>
+
+          {/* View Notification Audit Logs */}
+          <button
+            onClick={() => setIsLogsModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer transition-colors"
+            title="View dispatched SMS & Email logs"
+          >
+            <History className="w-3.5 h-3.5 text-blue-400" />
+            <span>Alert History</span>
+          </button>
+
+          {/* Notification Engine Settings */}
+          <button
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium cursor-pointer transition-colors"
+            title="Configure Automated Alert Rules & Sender IDs"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
           <button
             onClick={fetchFees}
             disabled={loading}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer transition-colors"
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium cursor-pointer transition-colors"
+            title="Refresh Ledger"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh Ledger</span>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-950/40 cursor-pointer transition-all"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-950/40 cursor-pointer transition-all"
           >
             <Plus className="w-4 h-4" />
-            <span>New Student Fee Record</span>
+            <span>New Student</span>
           </button>
         </div>
       </div>
@@ -494,8 +569,22 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
                     >
                       {/* Student Info */}
                       <td className="py-4 px-4">
-                        <div className="font-semibold text-white text-sm">{fee.student_name}</div>
-                        <div className="text-slate-400 font-mono text-[11px] mt-0.5">{fee.student_email}</div>
+                        <button
+                          onClick={() => openEditModal(fee)}
+                          className="text-left group cursor-pointer"
+                          title="Click to edit student details and fees"
+                        >
+                          <div className="font-semibold text-white text-sm group-hover:text-emerald-400 transition-colors flex items-center gap-1.5">
+                            <span>{fee.student_name}</span>
+                            <Pencil className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </button>
+                        <div className="text-slate-400 font-mono text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <span>{fee.student_email}</span>
+                          {fee.student_phone && (
+                            <span className="text-slate-500">• {fee.student_phone}</span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-emerald-400/90 mt-1 font-sans">
                           {fee.course_title} • <span className="text-slate-400">{fee.cohort}</span>
                         </div>
@@ -571,6 +660,14 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
                             Payment past due
                           </span>
                         )}
+                        {fee.last_alert_sent_at && (
+                          <div className="mt-1 flex items-center gap-1 text-[10px] font-mono text-emerald-400">
+                            <Bell className="w-3 h-3 text-emerald-400" />
+                            <span>
+                              {fee.last_alert_type === 'status_overdue' ? 'Overdue notice' : 'Deadline alert'} sent
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Access Status & Manual Toggle */}
@@ -619,12 +716,26 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
                       {/* Actions */}
                       <td className="py-4 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
+                          {/* Send Notification Alert Button */}
+                          <button
+                            onClick={() => {
+                              setAlertTargetStudent(fee);
+                              setIsAlertModalOpen(true);
+                            }}
+                            className="p-1.5 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60 transition-colors cursor-pointer"
+                            title="Dispatch Email & SMS Notification to Student"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Edit Action Button with Pencil Icon */}
                           <button
                             onClick={() => openEditModal(fee)}
-                            className="p-1.5 rounded-lg bg-slate-850 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                            title="Edit Student Financials & Access"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-950/50 hover:bg-blue-900/70 text-blue-300 hover:text-white border border-blue-800/60 transition-colors cursor-pointer text-xs font-semibold shadow-xs"
+                            title="Edit Student Personal Details, Financials & Access"
                           >
-                            <Edit3 className="w-3.5 h-3.5" />
+                            <Pencil className="w-3.5 h-3.5 text-blue-400" />
+                            <span>Edit</span>
                           </button>
                           <button
                             onClick={() => setDeleteTarget(fee)}
@@ -674,7 +785,7 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
             <form onSubmit={handleSaveAccount} className="p-6 overflow-y-auto space-y-4 text-xs">
               
               {/* Student Identity */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">Student Full Name *</label>
                   <input
@@ -688,7 +799,7 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Student Email Address *</label>
+                  <label className="block text-slate-300 font-medium mb-1">Student Email *</label>
                   <input
                     type="email"
                     required
@@ -698,30 +809,113 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
                     placeholder="student@codepointkenya.com"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1 flex items-center gap-1">
+                    <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Phone (SMS Alerts)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editingAccount.student_phone || ''}
+                    onChange={(e) => setEditingAccount({ ...editingAccount, student_phone: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-mono focus:outline-none focus:border-emerald-500"
+                    placeholder="+254 712 345 678"
+                  />
+                </div>
               </div>
 
               {/* Course & Cohort */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Enrolled Program</label>
+                  <label className="block text-slate-300 font-medium mb-1">Enrolled Program *</label>
+                  <select
+                    value={
+                      ['Full-Stack Software Engineering', 'Data Science & Machine Learning', 'Cloud DevOps & Cybersecurity', 'Mobile App Development'].includes(editingAccount.course_title || '')
+                        ? editingAccount.course_title
+                        : 'custom'
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'Full-Stack Software Engineering') {
+                        setEditingAccount({
+                          ...editingAccount,
+                          course_title: val,
+                          course_id: 'course-software-engineering',
+                          total_fee_kes: editingAccount.total_fee_kes || 85000,
+                          balance_kes: Math.max(0, (editingAccount.total_fee_kes || 85000) - (Number(editingAccount.paid_fee_kes) || 0))
+                        });
+                      } else if (val === 'Data Science & Machine Learning') {
+                        setEditingAccount({
+                          ...editingAccount,
+                          course_title: val,
+                          course_id: 'course-data-science',
+                          total_fee_kes: editingAccount.total_fee_kes || 95000,
+                          balance_kes: Math.max(0, (editingAccount.total_fee_kes || 95000) - (Number(editingAccount.paid_fee_kes) || 0))
+                        });
+                      } else if (val === 'Cloud DevOps & Cybersecurity') {
+                        setEditingAccount({
+                          ...editingAccount,
+                          course_title: val,
+                          course_id: 'course-cloud-cybersecurity',
+                          total_fee_kes: editingAccount.total_fee_kes || 80000,
+                          balance_kes: Math.max(0, (editingAccount.total_fee_kes || 80000) - (Number(editingAccount.paid_fee_kes) || 0))
+                        });
+                      } else if (val === 'Mobile App Development') {
+                        setEditingAccount({
+                          ...editingAccount,
+                          course_title: val,
+                          course_id: 'course-mobile-dev',
+                          total_fee_kes: editingAccount.total_fee_kes || 75000,
+                          balance_kes: Math.max(0, (editingAccount.total_fee_kes || 75000) - (Number(editingAccount.paid_fee_kes) || 0))
+                        });
+                      }
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-500 mb-1.5 cursor-pointer"
+                  >
+                    <option value="Full-Stack Software Engineering">Full-Stack Software Engineering (KES 85,000)</option>
+                    <option value="Data Science & Machine Learning">Data Science & Machine Learning (KES 95,000)</option>
+                    <option value="Cloud DevOps & Cybersecurity">Cloud DevOps & Cybersecurity (KES 80,000)</option>
+                    <option value="Mobile App Development">Mobile App Development (KES 75,000)</option>
+                    <option value="custom">Other / Custom Program Title</option>
+                  </select>
                   <input
                     type="text"
+                    required
                     value={editingAccount.course_title || ''}
                     onChange={(e) => setEditingAccount({ ...editingAccount, course_title: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-500"
-                    placeholder="Full-Stack Software Engineering"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white text-[11px] focus:outline-none focus:border-emerald-500"
+                    placeholder="Program Title"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Cohort</label>
+                  <label className="block text-slate-300 font-medium mb-1">Assigned Cohort *</label>
                   <input
                     type="text"
+                    required
                     value={editingAccount.cohort || ''}
                     onChange={(e) => setEditingAccount({ ...editingAccount, cohort: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-500"
-                    placeholder="Cohort 14 (Evening & Hybrid)"
+                    placeholder="e.g. Cohort 14 (Evening & Hybrid)"
                   />
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[10px]">
+                    <span className="text-slate-500">Quick presets:</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditingAccount({ ...editingAccount, cohort: 'Cohort 14 (Evening & Hybrid)' })}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                    >
+                      Cohort 14
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingAccount({ ...editingAccount, cohort: 'Cohort 15 (May 2026 Intake)' })}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                    >
+                      Cohort 15
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -923,6 +1117,28 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
                 </div>
               </div>
 
+              {/* Automated Alert Dispatch Option */}
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                    <Bell className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Send Automated Email & SMS Notification</span>
+                  </span>
+                  <p className="text-[11px] text-slate-400">
+                    Immediately dispatch updated fee statement, deadline notice, or lockout status to student's contacts.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={sendAlertOnSave}
+                    onChange={(e) => setSendAlertOnSave(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
+
               {/* Modal Actions */}
               <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
                 <button
@@ -980,6 +1196,41 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* FEE NOTIFICATION ALERT DISPATCH MODAL */}
+      {isAlertModalOpen && alertTargetStudent && (
+        <FeeAlertDispatcherModal
+          isOpen={isAlertModalOpen}
+          fee={alertTargetStudent}
+          onClose={() => {
+            setIsAlertModalOpen(false);
+            setAlertTargetStudent(null);
+          }}
+          onSuccess={(msg) => {
+            showNotification(msg);
+            fetchFees();
+          }}
+        />
+      )}
+
+      {/* FEE NOTIFICATION SETTINGS MODAL */}
+      {isSettingsModalOpen && (
+        <FeeNotificationSettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          onSuccess={(msg) => {
+            showNotification(msg);
+          }}
+        />
+      )}
+
+      {/* FEE NOTIFICATION AUDIT LOGS MODAL */}
+      {isLogsModalOpen && (
+        <FeeNotificationLogsModal
+          isOpen={isLogsModalOpen}
+          onClose={() => setIsLogsModalOpen(false)}
+        />
       )}
 
     </div>

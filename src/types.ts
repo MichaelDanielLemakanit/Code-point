@@ -400,6 +400,7 @@ export interface StudentFeeAccount {
   id: string;
   student_email: string;
   student_name: string;
+  student_phone?: string;
   course_id: string;
   course_title: string;
   cohort: string;
@@ -411,7 +412,43 @@ export interface StudentFeeAccount {
   portal_access_granted: number | boolean;
   installment_plan?: string;
   notes?: string;
+  last_alert_sent_at?: string;
+  last_alert_type?: string;
   updated_at?: string;
   created_at: string;
+}
+
+export type FeeNotificationChannel = 'email' | 'sms' | 'both';
+export type FeeNotificationType = 'deadline_approaching' | 'status_overdue' | 'custom_reminder';
+export type FeeNotificationStatus = 'delivered' | 'sent' | 'queued' | 'failed';
+
+export interface FeeNotification {
+  id: string;
+  student_fee_id?: string;
+  student_name: string;
+  student_email: string;
+  student_phone?: string;
+  course_title?: string;
+  channel: FeeNotificationChannel;
+  alert_type: FeeNotificationType;
+  recipient: string;
+  subject: string;
+  message_body: string;
+  status: FeeNotificationStatus;
+  balance_kes: number;
+  deadline_date: string;
+  triggered_by: 'automated_rule' | 'status_change' | 'admin_manual';
+  created_at: string;
+}
+
+export interface FeeNotificationSettings {
+  auto_deadline_alerts_enabled: boolean;
+  deadline_days_threshold: number;
+  auto_overdue_alerts_enabled: boolean;
+  preferred_channel: FeeNotificationChannel;
+  sms_sender_id: string;
+  email_sender_name: string;
+  paybill_number: string;
+  whatsapp_finance_phone: string;
 }
 

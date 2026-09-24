@@ -1963,9 +1963,11 @@ app.patch("/api/applications/:id", async (req: Request, res: Response) => {
 
     await db.run("UPDATE applications SET status = ?, notes = ? WHERE id = ?", [newStatus, newNotes, req.params.id]);
 
-    // Student Portal Access Logic:
+    // Student Portal Access & Tuition Account Sync Logic:
     // When an Admin changes application status to "Accepted" or "Enrolled",
-    // automatically create or authorize their student account using their application email
+    // 1. Automatically create or authorize their student login account in `users`
+    // 2. Automatically create or update their financial record in `student_fee_accounts`
+    let syncedFeeAccount: any = null;
     if (newStatus === "accepted" || newStatus === "enrolled") {
       const cleanEmail = existing.email.trim().toLowerCase();
       const existingUser = await queryOne(db, "SELECT * FROM users WHERE LOWER(email) = ?", [cleanEmail]);
@@ -1991,12 +1993,135 @@ app.patch("/api/applications/:id", async (req: Request, res: Response) => {
           [existing.full_name, existing.course_id, existing.course_title, cleanEmail]
         );
       }
+
+      // Automatically pull and assign their Total Program Fee based on the selected course
+      let courseFee = 85000;
+      let courseTitle = existing.course_title || 'Full-Stack Software Engineering';
+      let courseId = existing.course_id || 'course-software-engineering';
+
+      try {
+        let course = await queryOne(
+          db,
+          "SELECT id, title, price_kes FROM courses WHERE id = ? OR LOWER(title) = ? OR LOWER(slug) = ?",
+          [courseId, courseTitle.toLowerCase(), courseId.toLowerCase()]
+        );
+        if (!course) {
+          const fallback = DEFAULT_COURSES.find(c =>
+            c.id === courseId ||
+            c.title.toLowerCase() === courseTitle.toLowerCase() ||
+            c.slug.toLowerCase() === courseId.toLowerCase()
+          );
+          if (fallback) {
+            course = fallback;
+          }
+        }
+        if (course && course.price_kes) {
+          courseFee = Number(course.price_kes);
+          courseTitle = course.title || courseTitle;
+          courseId = course.id || courseId;
+        }
+      } catch (err) {
+        console.warn("Course fee lookup fallback:", err);
+      }
+
+      const existingFee = await queryOne(
+        db,
+        "SELECT * FROM student_fee_accounts WHERE LOWER(student_email) = ?",
+        [cleanEmail]
+      );
+
+      const now = new Date().toISOString();
+      const defaultDeadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+
+      const phone = existing.phone ? String(existing.phone).trim() : '+254 712 345 678';
+      const cohort = existing.intake || 'Cohort 14 (Evening & Hybrid)';
+      const downPayment = req.body.down_payment !== undefined 
+        ? Number(req.body.down_payment) 
+        : (req.body.paid_fee_kes !== undefined ? Number(req.body.paid_fee_kes) : 0);
+
+      if (!existingFee) {
+        const newFeeId = `fee-app-${Date.now()}`;
+        const totalFee = Number(req.body.total_fee_kes) > 0 ? Number(req.body.total_fee_kes) : courseFee;
+        const paidFee = Math.max(0, downPayment);
+        const balanceFee = Math.max(0, totalFee - paidFee);
+        const paymentStatus = balanceFee === 0 ? 'cleared' : 'pending';
+
+        await db.run(
+          `INSERT INTO student_fee_accounts (
+            id, student_email, student_name, student_phone, course_id, course_title, cohort,
+            total_fee_kes, paid_fee_kes, balance_kes, payment_status,
+            deadline_date, portal_access_granted, installment_plan, notes, updated_at, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            newFeeId,
+            cleanEmail,
+            existing.full_name.trim(),
+            phone,
+            courseId,
+            courseTitle,
+            cohort,
+            totalFee,
+            paidFee,
+            balanceFee,
+            paymentStatus,
+            defaultDeadline,
+            1, // Online & Live Class Access = Access Granted
+            '5-Month Flexible Installments',
+            `Auto-created upon ${newStatus} from application (${existing.tracking_code})`,
+            now,
+            now
+          ]
+        );
+
+        syncedFeeAccount = await queryOne(db, "SELECT * FROM student_fee_accounts WHERE id = ?", [newFeeId]);
+      } else {
+        // If fee account already exists, guarantee live class access is restored / granted
+        const totalFee = Number(req.body.total_fee_kes) > 0 ? Number(req.body.total_fee_kes) : (Number(existingFee.total_fee_kes) || courseFee);
+        const paidFee = downPayment > 0 ? Number(existingFee.paid_fee_kes) + downPayment : Number(existingFee.paid_fee_kes);
+        const balanceFee = Math.max(0, totalFee - paidFee);
+        const paymentStatus = balanceFee === 0 ? 'cleared' : (existingFee.payment_status === 'overdue' ? 'pending' : existingFee.payment_status);
+
+        await db.run(
+          `UPDATE student_fee_accounts SET
+            portal_access_granted = 1,
+            student_name = COALESCE(NULLIF(?, ''), student_name),
+            student_phone = COALESCE(NULLIF(?, ''), student_phone),
+            course_id = COALESCE(NULLIF(?, ''), course_id),
+            course_title = COALESCE(NULLIF(?, ''), course_title),
+            cohort = COALESCE(NULLIF(?, ''), cohort),
+            total_fee_kes = ?,
+            paid_fee_kes = ?,
+            balance_kes = ?,
+            payment_status = ?,
+            updated_at = ?
+          WHERE id = ?`,
+          [
+            existing.full_name.trim(),
+            phone,
+            courseId,
+            courseTitle,
+            cohort,
+            totalFee,
+            paidFee,
+            balanceFee,
+            paymentStatus,
+            now,
+            existingFee.id
+          ]
+        );
+
+        syncedFeeAccount = await queryOne(db, "SELECT * FROM student_fee_accounts WHERE id = ?", [existingFee.id]);
+      }
     }
 
     await saveDatabase(db);
 
     const updated = await queryOne(db, "SELECT * FROM applications WHERE id = ?", [req.params.id]);
-    res.json({ success: true, application: updated });
+    res.json({ success: true, application: updated, fee_account: syncedFeeAccount });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -2150,6 +2275,30 @@ app.get("/api/student/data", async (req: Request, res: Response) => {
       }
     }
 
+    // Fetch live fee account early to ensure student identity consistency
+    let feeRecord: any = null;
+    try {
+      feeRecord = await queryOne(
+        db,
+        "SELECT * FROM student_fee_accounts WHERE LOWER(student_email) = ? LIMIT 1",
+        [effectiveEmail]
+      );
+    } catch (e) {
+      console.warn("Could not query student_fee_accounts in /api/student/data:", e);
+    }
+
+    if (feeRecord) {
+      if (feeRecord.student_name && (!studentName || studentName === "Brian Kipchumba" && emailParam !== "student@codepointkenya.com")) {
+        studentName = feeRecord.student_name;
+      }
+      if (feeRecord.course_title && (!program || program === "Full-Stack Software Engineering" && emailParam !== "student@codepointkenya.com")) {
+        program = feeRecord.course_title;
+      }
+      if (feeRecord.cohort && (!cohort || cohort === "Cohort 14 (April 2026 - July 2026)" && emailParam !== "student@codepointkenya.com")) {
+        cohort = feeRecord.cohort;
+      }
+    }
+
     // Fetch real assignments and submissions from database
     const dbAssignments = await queryAll(db, "SELECT * FROM assignments ORDER BY created_at DESC");
     const dbSubmissions = emailParam 
@@ -2193,18 +2342,7 @@ app.get("/api/student/data", async (req: Request, res: Response) => {
     const summaries = courses.map((c: any) => buildCourseProgress(c, progressRecords));
     const activeSummary = summaries[0] || { percentage: 0, modules: [] };
 
-    // Fetch student live fee account
-    let feeRecord: any = null;
-    try {
-      feeRecord = await queryOne(
-        db,
-        "SELECT * FROM student_fee_accounts WHERE LOWER(student_email) = ? LIMIT 1",
-        [effectiveEmail]
-      );
-    } catch (e) {
-      console.warn("Could not query student_fee_accounts in /api/student/data:", e);
-    }
-
+    // Ensure fallback if fee account was not found earlier
     if (!feeRecord) {
       const fallbackFee = DEFAULT_STUDENT_FEES.find(f => f.student_email.toLowerCase() === effectiveEmail);
       if (fallbackFee) {
@@ -2408,6 +2546,7 @@ app.post("/api/admin/student-fees", async (req: Request, res: Response) => {
       id,
       student_email,
       student_name,
+      student_phone,
       course_id,
       course_title,
       cohort,
@@ -2417,7 +2556,9 @@ app.post("/api/admin/student-fees", async (req: Request, res: Response) => {
       deadline_date,
       portal_access_granted,
       installment_plan,
-      notes
+      notes,
+      send_alert,
+      notification_channel
     } = req.body;
 
     if (!student_email || !student_name) {
@@ -2442,18 +2583,20 @@ app.post("/api/admin/student-fees", async (req: Request, res: Response) => {
       accessGranted = 0;
     }
 
+    const phone = student_phone ? String(student_phone).trim() : '+254 712 345 678';
     const now = new Date().toISOString();
 
     await db.run(
       `INSERT OR REPLACE INTO student_fee_accounts (
-        id, student_email, student_name, course_id, course_title, cohort,
+        id, student_email, student_name, student_phone, course_id, course_title, cohort,
         total_fee_kes, paid_fee_kes, balance_kes, payment_status,
         deadline_date, portal_access_granted, installment_plan, notes, updated_at, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         recordId,
         student_email.trim().toLowerCase(),
         student_name.trim(),
+        phone,
         course_id || 'course-software-engineering',
         course_title || 'Full-Stack Software Engineering',
         cohort || 'Cohort 14 (Evening & Hybrid)',
@@ -2476,10 +2619,42 @@ app.post("/api/admin/student-fees", async (req: Request, res: Response) => {
       [recordId]
     );
 
+    // Synchronize student personal details (Name, Course) with user profile if exists
+    try {
+      const cleanEmail = student_email.trim().toLowerCase();
+      await db.run(
+        `UPDATE users SET name = ?, enrolled_course_title = ? WHERE LOWER(email) = ?`,
+        [student_name.trim(), course_title || 'Full-Stack Software Engineering', cleanEmail]
+      );
+    } catch (uErr) {
+      console.warn("User sync notice on fee account save:", uErr);
+    }
+
+    let alertDispatched = null;
+    if (send_alert) {
+      try {
+        const notifSettings = await getFeeNotificationSettings(db);
+        alertDispatched = await dispatchFeeAlert(db, {
+          fee: savedRecord,
+          alertType: status === 'overdue' ? 'status_overdue' : 'deadline_approaching',
+          channel: notification_channel || notifSettings.preferred_channel || 'both',
+          triggeredBy: 'admin_manual'
+        });
+      } catch (e) {
+        console.warn("Failed to dispatch alert on creation:", e);
+      }
+    }
+
+    const finalRecord = await queryOne(
+      db,
+      "SELECT * FROM student_fee_accounts WHERE id = ?",
+      [recordId]
+    );
+
     res.json({
       success: true,
       message: `Fee record for ${student_name} saved successfully.`,
-      fee: savedRecord || {
+      fee: finalRecord || {
         id: recordId,
         student_email,
         student_name,
@@ -2488,10 +2663,159 @@ app.post("/api/admin/student-fees", async (req: Request, res: Response) => {
         balance_kes: balance,
         payment_status: status,
         portal_access_granted: accessGranted
-      }
+      },
+      alertDispatched
     });
   } catch (error: any) {
     console.error("Failed to save student fee account:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PATCH update student fee account details
+app.patch("/api/admin/student-fees/:id", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { id } = req.params;
+    const {
+      total_fee_kes,
+      paid_fee_kes,
+      balance_kes,
+      payment_status,
+      deadline_date,
+      portal_access_granted,
+      installment_plan,
+      notes,
+      student_name,
+      course_title,
+      cohort
+    } = req.body;
+
+    const existing = await queryOne(
+      db,
+      "SELECT * FROM student_fee_accounts WHERE id = ? OR LOWER(student_email) = ?",
+      [id, id.toLowerCase()]
+    );
+
+    if (!existing) {
+      return res.status(404).json({ error: "Student fee account not found" });
+    }
+
+    const total = total_fee_kes !== undefined ? Number(total_fee_kes) : Number(existing.total_fee_kes);
+    const paid = paid_fee_kes !== undefined ? Number(paid_fee_kes) : Number(existing.paid_fee_kes);
+    const calculatedBalance = Math.max(0, total - paid);
+    const balance = balance_kes !== undefined ? Number(balance_kes) : calculatedBalance;
+
+    let finalStatus = payment_status !== undefined ? String(payment_status) : existing.payment_status;
+    let finalAccess = portal_access_granted !== undefined 
+      ? (portal_access_granted === true || portal_access_granted === 1 ? 1 : 0)
+      : existing.portal_access_granted;
+
+    // Automatic status determination if not explicitly overridden
+    if (payment_status === undefined) {
+      if (finalAccess === 0) {
+        finalStatus = 'overdue';
+      } else if (balance <= 0) {
+        finalStatus = 'cleared';
+      } else {
+        finalStatus = 'pending';
+      }
+    }
+
+    const finalDeadline = deadline_date !== undefined ? deadline_date : existing.deadline_date;
+    const finalPlan = installment_plan !== undefined ? installment_plan : existing.installment_plan;
+    const finalNotes = notes !== undefined ? notes : existing.notes;
+    const finalName = student_name !== undefined ? student_name : existing.student_name;
+    const finalEmail = req.body.student_email !== undefined ? req.body.student_email.trim().toLowerCase() : existing.student_email;
+    const finalCourse = course_title !== undefined ? course_title : existing.course_title;
+    const finalCohort = cohort !== undefined ? cohort : existing.cohort;
+    const now = new Date().toISOString();
+
+    const studentPhone = req.body.student_phone !== undefined ? req.body.student_phone : (existing.student_phone || '');
+
+    await db.run(
+      `UPDATE student_fee_accounts SET
+        student_name = ?,
+        student_email = ?,
+        student_phone = ?,
+        course_title = ?,
+        cohort = ?,
+        total_fee_kes = ?,
+        paid_fee_kes = ?,
+        balance_kes = ?,
+        payment_status = ?,
+        deadline_date = ?,
+        portal_access_granted = ?,
+        installment_plan = ?,
+        notes = ?,
+        updated_at = ?
+      WHERE id = ?`,
+      [
+        finalName,
+        finalEmail,
+        studentPhone,
+        finalCourse,
+        finalCohort,
+        total,
+        paid,
+        balance,
+        finalStatus,
+        finalDeadline,
+        finalAccess,
+        finalPlan,
+        finalNotes,
+        now,
+        existing.id
+      ]
+    );
+
+    // Sync student personal details with user account
+    try {
+      await db.run(
+        `UPDATE users SET name = ?, enrolled_course_title = ?, email = ? WHERE LOWER(email) = ? OR LOWER(email) = ?`,
+        [finalName, finalCourse, finalEmail, existing.student_email.toLowerCase(), finalEmail]
+      );
+    } catch (uErr) {
+      console.warn("User account sync notice:", uErr);
+    }
+
+    const updated = await queryOne(
+      db,
+      "SELECT * FROM student_fee_accounts WHERE id = ?",
+      [existing.id]
+    );
+
+    // Automated trigger: If status became 'overdue' or access locked, or explicit send_alert requested
+    let alertSent = null;
+    const isNowOverdue = finalStatus === 'overdue' || finalAccess === 0;
+    const wasOverdue = existing.payment_status === 'overdue' && (existing.portal_access_granted === 0 || existing.portal_access_granted === false);
+    
+    if ((isNowOverdue && !wasOverdue) || req.body.send_alert === true) {
+      try {
+        const notifSettings = await getFeeNotificationSettings(db);
+        if (notifSettings.auto_overdue_alerts_enabled || req.body.send_alert === true) {
+          alertSent = await dispatchFeeAlert(db, {
+            fee: updated,
+            alertType: isNowOverdue ? 'status_overdue' : 'custom_reminder',
+            channel: req.body.notification_channel || notifSettings.preferred_channel || 'both',
+            triggeredBy: req.body.send_alert ? 'admin_manual' : 'status_change',
+            customSubject: req.body.alert_subject,
+            customBody: req.body.alert_message
+          });
+        }
+      } catch (alertErr) {
+        console.warn("[Automated Notification] Status change alert error:", alertErr);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Fee record for ${finalName} updated successfully.${alertSent ? ' Automated notification dispatched.' : ''}`,
+      fee: updated,
+      alertDispatched: alertSent
+    });
+  } catch (error: any) {
+    console.error("Failed to update student fee account:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2501,7 +2825,7 @@ app.patch("/api/admin/student-fees/:id/toggle-access", async (req: Request, res:
   try {
     const db = await getDatabase();
     const { id } = req.params;
-    const { portal_access_granted, payment_status } = req.body;
+    const { portal_access_granted, payment_status, send_alert } = req.body;
 
     const existing = await queryOne(
       db,
@@ -2528,10 +2852,29 @@ app.patch("/api/admin/student-fees/:id/toggle-access", async (req: Request, res:
       [existing.id]
     );
 
+    // Automated trigger: If access was revoked/locked and student is overdue, send alert
+    let alertSent = null;
+    if (newAccess === 0 || newStatus === 'overdue' || send_alert === true) {
+      try {
+        const notifSettings = await getFeeNotificationSettings(db);
+        if (notifSettings.auto_overdue_alerts_enabled || send_alert === true) {
+          alertSent = await dispatchFeeAlert(db, {
+            fee: updated,
+            alertType: 'status_overdue',
+            channel: notifSettings.preferred_channel || 'both',
+            triggeredBy: 'status_change'
+          });
+        }
+      } catch (notifErr) {
+        console.warn("[Automated Notification] Toggle access alert error:", notifErr);
+      }
+    }
+
     res.json({
       success: true,
-      message: `Access for ${existing.student_name} has been ${newAccess === 1 ? 'GRANTED' : 'RESTRICTED / LOCKED OUT'}.`,
-      fee: updated
+      message: `Access for ${existing.student_name} has been ${newAccess === 1 ? 'GRANTED' : 'RESTRICTED / LOCKED OUT'}.${alertSent ? ' Overdue alert notification dispatched.' : ''}`,
+      fee: updated,
+      alertDispatched: alertSent
     });
   } catch (error: any) {
     console.error("Failed to toggle student access:", error);
@@ -2547,6 +2890,567 @@ app.delete("/api/admin/student-fees/:id", async (req: Request, res: Response) =>
     await db.run("DELETE FROM student_fee_accounts WHERE id = ?", [id]);
     res.json({ success: true, message: "Student fee record removed." });
   } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// AUTOMATED TUITION NOTIFICATION & ALERT DISPATCH SYSTEM
+// ============================================================================
+
+async function getFeeNotificationSettings(db: any) {
+  try {
+    const row = await queryOne(db, "SELECT * FROM fee_notification_settings WHERE id = 'default'");
+    if (row) {
+      return {
+        id: 'default',
+        auto_deadline_alerts_enabled: Boolean(row.auto_deadline_alerts_enabled === 1 || row.auto_deadline_alerts_enabled === true),
+        deadline_days_threshold: Number(row.deadline_days_threshold) || 5,
+        auto_overdue_alerts_enabled: Boolean(row.auto_overdue_alerts_enabled === 1 || row.auto_overdue_alerts_enabled === true),
+        preferred_channel: row.preferred_channel || 'both',
+        sms_sender_id: row.sms_sender_id || 'CODEPOINT',
+        email_sender_name: row.email_sender_name || 'Code Point Kenya Finance',
+        paybill_number: row.paybill_number || '522522',
+        whatsapp_finance_phone: row.whatsapp_finance_phone || '+254 756 295 128'
+      };
+    }
+  } catch (e) {
+    console.warn("Could not query fee_notification_settings table:", e);
+  }
+
+  return {
+    id: 'default',
+    auto_deadline_alerts_enabled: true,
+    deadline_days_threshold: 5,
+    auto_overdue_alerts_enabled: true,
+    preferred_channel: 'both',
+    sms_sender_id: 'CODEPOINT',
+    email_sender_name: 'Code Point Kenya Finance',
+    paybill_number: '522522',
+    whatsapp_finance_phone: '+254 756 295 128'
+  };
+}
+
+function parseDateSafely(dateStr: string): Date | null {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) return d;
+  // Try clean "April 30, 2026"
+  const cleaned = dateStr.replace(/(\d+)(st|nd|rd|th)/, '$1');
+  const d2 = new Date(cleaned);
+  if (!isNaN(d2.getTime())) return d2;
+  return null;
+}
+
+function generateFeeAlertContent(options: {
+  fee: any;
+  alertType: 'deadline_approaching' | 'status_overdue' | 'custom_reminder';
+  channel: 'email' | 'sms' | 'both';
+  settings: any;
+  customSubject?: string;
+  customBody?: string;
+}) {
+  const { fee, alertType, channel, settings, customSubject, customBody } = options;
+  const studentName = fee.student_name || 'Student';
+  const balanceStr = Number(fee.balance_kes || 0).toLocaleString();
+  const totalStr = Number(fee.total_fee_kes || 0).toLocaleString();
+  const paidStr = Number(fee.paid_fee_kes || 0).toLocaleString();
+  const deadline = fee.deadline_date || 'Upcoming';
+  const courseTitle = fee.course_title || 'Enrolled Course';
+  const cohort = fee.cohort || 'Current Cohort';
+  const paybill = settings.paybill_number || '522522';
+  const firstWord = (studentName.split(' ')[0] || 'STU').replace(/[^a-zA-Z]/g, '').toUpperCase();
+  const accNo = `CPK-${firstWord}`;
+  const financePhone = settings.whatsapp_finance_phone || '+254 756 295 128';
+
+  let subject = customSubject || '';
+  let smsText = '';
+  let emailHtml = '';
+
+  if (alertType === 'deadline_approaching') {
+    if (!subject) subject = `Reminder: Tuition Installment of KES ${balanceStr} Due ${deadline} - Code Point Kenya`;
+    smsText = `CODEPOINT KENYA: Dear ${studentName}, your tuition installment of KES ${balanceStr} for ${courseTitle} is due on ${deadline}. Pay via M-Pesa Paybill: ${paybill}, Acc: ${accNo}. Queries: ${financePhone}.`;
+  } else if (alertType === 'status_overdue') {
+    if (!subject) subject = `URGENT NOTICE: Tuition Balance Overdue & Access Restricted - Code Point Kenya`;
+    smsText = `CODEPOINT ALERT: Dear ${studentName}, your tuition balance of KES ${balanceStr} is OVERDUE. Live lectures & campus lab access have been restricted. Settle via Paybill: ${paybill}, Acc: ${accNo} or call ${financePhone} to restore access.`;
+  } else {
+    if (!subject) subject = `Tuition Statement & Payment Update - Code Point Kenya`;
+    smsText = `CODEPOINT KENYA: Dear ${studentName}, ${customBody || `your current tuition balance is KES ${balanceStr} due ${deadline}.`} Paybill: ${paybill}, Acc: ${accNo}.`;
+  }
+
+  const alertColor = alertType === 'status_overdue' ? '#e11d48' : '#059669';
+  const alertBadge = alertType === 'status_overdue' ? 'PAYMENT OVERDUE • ACCESS RESTRICTED' : 'PAYMENT DEADLINE APPROACHING';
+
+  emailHtml = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/><title>${subject}</title></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0b0f19; color: #e2e8f0; margin: 0; padding: 24px;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #0f172a; border-radius: 16px; border: 1px solid #1e293b; overflow: hidden;">
+    <tr>
+      <td style="padding: 24px 32px; background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border-bottom: 1px solid #334155;">
+        <div style="font-size: 11px; font-weight: 700; color: #10b981; letter-spacing: 1.5px; text-transform: uppercase;">CODE POINT KENYA • STUDENT FINANCE</div>
+        <h1 style="color: #ffffff; font-size: 20px; font-weight: 800; margin: 6px 0 0 0;">${subject}</h1>
+      </td>
+    </tr>
+    
+    <tr>
+      <td style="padding: 20px 32px 10px 32px;">
+        <span style="display: inline-block; padding: 5px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; background-color: ${alertColor}20; color: ${alertColor}; border: 1px solid ${alertColor}50;">
+          ● ${alertBadge}
+        </span>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding: 10px 32px 20px 32px; font-size: 14px; line-height: 1.6; color: #cbd5e1;">
+        <p style="margin: 0 0 16px 0;">Dear <strong>${studentName}</strong>,</p>
+        <p style="margin: 0 0 16px 0;">
+          ${alertType === 'status_overdue'
+            ? `Our records indicate that your tuition balance of <strong style="color: #f43f5e; font-size: 15px;">KES ${balanceStr}</strong> is past its scheduled deadline of <strong>${deadline}</strong>. As per academic policy, online live lectures (Zoom / Google Meet) and physical campus lab access have been restricted until this balance is settled.`
+            : `This is an official reminder that your tuition installment of <strong style="color: #10b981; font-size: 15px;">KES ${balanceStr}</strong> for <strong>${courseTitle}</strong> is scheduled for payment on <strong>${deadline}</strong>.`
+          }
+        </p>
+
+        <table width="100%" style="background-color: #0b0f19; border: 1px solid #1e293b; border-radius: 12px; margin: 20px 0; font-size: 13px; text-align: left; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #1e293b;">
+            <td style="padding: 10px 14px; color: #94a3b8;">Program & Cohort:</td>
+            <td style="padding: 10px 14px; color: #f8fafc; font-weight: 600; text-align: right;">${courseTitle} (${cohort})</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1e293b;">
+            <td style="padding: 10px 14px; color: #94a3b8;">Total Program Fee:</td>
+            <td style="padding: 10px 14px; color: #f8fafc; font-weight: 600; text-align: right;">KES ${totalStr}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1e293b;">
+            <td style="padding: 10px 14px; color: #94a3b8;">Amount Paid to Date:</td>
+            <td style="padding: 10px 14px; color: #10b981; font-weight: 600; text-align: right;">KES ${paidStr}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #1e293b; background-color: #1e1b4b30;">
+            <td style="padding: 12px 14px; color: #cbd5e1; font-weight: 700;">Outstanding Balance Due:</td>
+            <td style="padding: 12px 14px; color: ${alertColor}; font-weight: 800; font-size: 16px; text-align: right;">KES ${balanceStr}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 14px; color: #94a3b8;">Payment Deadline:</td>
+            <td style="padding: 10px 14px; color: #f8fafc; font-weight: 600; text-align: right;">${deadline}</td>
+          </tr>
+        </table>
+
+        <div style="background-color: #064e3b20; border: 1px solid #05966950; border-radius: 12px; padding: 16px; margin: 20px 0;">
+          <div style="font-size: 13px; font-weight: 700; color: #34d399; margin-bottom: 8px;">Lipa na M-Pesa Payment Instructions:</div>
+          <ol style="margin: 0; padding-left: 20px; font-size: 12px; color: #e2e8f0; line-height: 1.6;">
+            <li>Go to <strong>M-Pesa</strong> &rarr; <strong>Lipa na M-Pesa</strong> &rarr; <strong>Paybill</strong></li>
+            <li>Enter Business No: <strong style="color: #34d399; font-size: 13px;">${paybill}</strong></li>
+            <li>Enter Account No: <strong style="color: #ffffff; font-size: 13px;">${accNo}</strong></li>
+            <li>Enter Amount: <strong style="color: #fbbf24; font-size: 13px;">KES ${balanceStr}</strong></li>
+            <li>Enter your M-Pesa PIN and complete the transaction.</li>
+          </ol>
+        </div>
+
+        <p style="margin: 16px 0 0 0; font-size: 12px; color: #94a3b8;">
+          Once payment is confirmed, please reply to this email or send your M-Pesa reference code to our Finance WhatsApp desk at <strong style="color: #f8fafc;">${financePhone}</strong> for instant portal access reactivation.
+        </p>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding: 20px 32px; background-color: #090d16; border-top: 1px solid #1e293b; font-size: 11px; color: #64748b; text-align: center;">
+        <div>Code Point Kenya • Teamshark 5th Floor, Ngong Road, Nairobi, Kenya</div>
+        <div style="margin-top: 4px;">Finance Helpdesk: ${financePhone} | admissions@codepointkenya.com</div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  return { subject, smsText, emailHtml };
+}
+
+async function dispatchFeeAlert(db: any, params: {
+  fee: any;
+  alertType: 'deadline_approaching' | 'status_overdue' | 'custom_reminder';
+  channel?: 'email' | 'sms' | 'both';
+  triggeredBy?: 'automated_rule' | 'status_change' | 'admin_manual';
+  customSubject?: string;
+  customBody?: string;
+  recipientOverride?: string;
+}) {
+  const settings = await getFeeNotificationSettings(db);
+  const channel = params.channel || settings.preferred_channel || 'both';
+  const triggeredBy = params.triggeredBy || 'automated_rule';
+  const { fee, alertType, customSubject, customBody, recipientOverride } = params;
+
+  const content = generateFeeAlertContent({
+    fee,
+    alertType,
+    channel,
+    settings,
+    customSubject,
+    customBody
+  });
+
+  const studentPhone = fee.student_phone || '+254 712 345 678';
+  const studentEmail = fee.student_email || 'student@codepointkenya.com';
+  const recipient = recipientOverride || (
+    channel === 'both' ? `${studentEmail} / ${studentPhone}` :
+    channel === 'sms' ? studentPhone : studentEmail
+  );
+
+  const messageBody = channel === 'sms' 
+    ? content.smsText 
+    : (channel === 'email' ? content.emailHtml : `[SMS ALERT]\n${content.smsText}\n\n[EMAIL HTML]\n${content.emailHtml}`);
+
+  const notifId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const now = new Date().toISOString();
+
+  await db.run(
+    `INSERT INTO fee_notifications (
+      id, student_fee_id, student_name, student_email, student_phone,
+      course_title, channel, alert_type, recipient, subject,
+      message_body, status, balance_kes, deadline_date, triggered_by, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      notifId,
+      fee.id || '',
+      fee.student_name || '',
+      studentEmail,
+      studentPhone,
+      fee.course_title || '',
+      channel,
+      alertType,
+      recipient,
+      content.subject,
+      messageBody,
+      'delivered',
+      fee.balance_kes || 0,
+      fee.deadline_date || '',
+      triggeredBy,
+      now
+    ]
+  );
+
+  // Update last alert info on student fee account
+  if (fee.id) {
+    try {
+      await db.run(
+        "UPDATE student_fee_accounts SET last_alert_sent_at = ?, last_alert_type = ? WHERE id = ?",
+        [now, alertType, fee.id]
+      );
+    } catch (_) {}
+  }
+
+  console.log(`[Fee Notification Engine] ${alertType.toUpperCase()} alert sent via ${channel.toUpperCase()} to ${fee.student_name} (${recipient}) [Triggered by: ${triggeredBy}]`);
+  if (channel === 'sms' || channel === 'both') {
+    console.log(`[SMS Gateway Simulator -> ${studentPhone}]: "${content.smsText}"`);
+  }
+  if (channel === 'email' || channel === 'both') {
+    console.log(`[Email Gateway Simulator -> ${studentEmail}]: Subject: "${content.subject}"`);
+  }
+
+  return {
+    id: notifId,
+    student_fee_id: fee.id,
+    student_name: fee.student_name,
+    student_email: studentEmail,
+    student_phone: studentPhone,
+    channel,
+    alert_type: alertType,
+    recipient,
+    subject: content.subject,
+    smsText: content.smsText,
+    status: 'delivered',
+    balance_kes: fee.balance_kes,
+    deadline_date: fee.deadline_date,
+    triggered_by: triggeredBy,
+    created_at: now
+  };
+}
+
+async function runAutomatedDeadlineAndOverdueCheck(db: any) {
+  const settings = await getFeeNotificationSettings(db);
+  const now = new Date();
+  const summary = {
+    checkedCount: 0,
+    deadlineAlertsSent: 0,
+    overdueAlertsSent: 0,
+    newlyMarkedOverdue: 0,
+    dispatchedList: [] as any[]
+  };
+
+  if (!settings.auto_deadline_alerts_enabled && !settings.auto_overdue_alerts_enabled) {
+    return { ...summary, message: "Automated alerts are currently disabled in settings." };
+  }
+
+  const fees = await queryAll(db, "SELECT * FROM student_fee_accounts");
+  summary.checkedCount = fees.length;
+
+  for (const fee of fees) {
+    const balance = Number(fee.balance_kes) || 0;
+    if (balance <= 0 || fee.payment_status === 'cleared') {
+      continue;
+    }
+
+    const deadline = parseDateSafely(fee.deadline_date);
+    if (!deadline) continue;
+
+    // Calculate diff in days
+    const diffMs = deadline.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    // 1. Check for OVERDUE: deadline is past (diffDays < 0)
+    if (diffDays < 0) {
+      const wasOverdue = fee.payment_status === 'overdue' && (fee.portal_access_granted === 0 || fee.portal_access_granted === false);
+      if (!wasOverdue && settings.auto_overdue_alerts_enabled) {
+        // Automatically mark as overdue and restrict portal access
+        await db.run(
+          "UPDATE student_fee_accounts SET payment_status = 'overdue', portal_access_granted = 0, updated_at = ? WHERE id = ?",
+          [now.toISOString(), fee.id]
+        );
+        summary.newlyMarkedOverdue++;
+
+        const dispatched = await dispatchFeeAlert(db, {
+          fee: { ...fee, payment_status: 'overdue', portal_access_granted: 0 },
+          alertType: 'status_overdue',
+          channel: settings.preferred_channel || 'both',
+          triggeredBy: 'automated_rule'
+        });
+        summary.overdueAlertsSent++;
+        summary.dispatchedList.push(dispatched);
+      }
+    } 
+    // 2. Check for APPROACHING DEADLINE (0 <= diffDays <= threshold)
+    else if (diffDays >= 0 && diffDays <= settings.deadline_days_threshold) {
+      if (settings.auto_deadline_alerts_enabled) {
+        // Avoid sending more than once every 48 hours for the same deadline
+        let shouldSend = true;
+        if (fee.last_alert_sent_at && fee.last_alert_type === 'deadline_approaching') {
+          const lastSentTime = new Date(fee.last_alert_sent_at).getTime();
+          const hoursSince = (now.getTime() - lastSentTime) / (1000 * 60 * 60);
+          if (hoursSince < 48) {
+            shouldSend = false;
+          }
+        }
+
+        if (shouldSend) {
+          const dispatched = await dispatchFeeAlert(db, {
+            fee,
+            alertType: 'deadline_approaching',
+            channel: settings.preferred_channel || 'both',
+            triggeredBy: 'automated_rule'
+          });
+          summary.deadlineAlertsSent++;
+          summary.dispatchedList.push(dispatched);
+        }
+      }
+    }
+  }
+
+  return summary;
+}
+
+// Background scheduler sweep every 30 minutes
+setInterval(async () => {
+  try {
+    const db = await getDatabase();
+    await runAutomatedDeadlineAndOverdueCheck(db);
+  } catch (err) {
+    console.warn("[Automated Notifications Sweep Error]:", err);
+  }
+}, 30 * 60 * 1000);
+
+// API: GET Fee Notification History Log
+app.get("/api/admin/fee-notifications", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    let notifications: any[] = [];
+    try {
+      notifications = await queryAll(db, "SELECT * FROM fee_notifications ORDER BY created_at DESC LIMIT 100");
+    } catch (e) {
+      console.warn("Could not query fee_notifications table:", e);
+    }
+
+    const emailCount = notifications.filter(n => n.channel === 'email' || n.channel === 'both').length;
+    const smsCount = notifications.filter(n => n.channel === 'sms' || n.channel === 'both').length;
+    const deadlineCount = notifications.filter(n => n.alert_type === 'deadline_approaching').length;
+    const overdueCount = notifications.filter(n => n.alert_type === 'status_overdue').length;
+
+    res.json({
+      notifications,
+      summary: {
+        total: notifications.length,
+        emailCount,
+        smsCount,
+        deadlineCount,
+        overdueCount
+      }
+    });
+  } catch (error: any) {
+    console.error("Failed to query fee notifications:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: Check & Dispatch Automated Alerts (Triggered manually from CMS or scheduled)
+app.post("/api/admin/fee-notifications/check-and-dispatch", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const result = await runAutomatedDeadlineAndOverdueCheck(db);
+    res.json({
+      success: true,
+      message: `Evaluated ${result.checkedCount} student fee accounts. Dispatched ${result.deadlineAlertsSent} deadline approaching alert(s) and ${result.overdueAlertsSent} overdue alert(s).`,
+      result
+    });
+  } catch (error: any) {
+    console.error("Automated fee notification check failed:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: Send Single Alert to a Student
+app.post("/api/admin/fee-notifications/send-single", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const {
+      student_fee_id,
+      alert_type,
+      channel,
+      custom_subject,
+      custom_message,
+      recipient_override
+    } = req.body;
+
+    if (!student_fee_id) {
+      return res.status(400).json({ error: "student_fee_id is required." });
+    }
+
+    const fee = await queryOne(
+      db,
+      "SELECT * FROM student_fee_accounts WHERE id = ? OR LOWER(student_email) = ?",
+      [student_fee_id, student_fee_id.toLowerCase()]
+    );
+
+    if (!fee) {
+      return res.status(404).json({ error: "Student fee account not found." });
+    }
+
+    const notif = await dispatchFeeAlert(db, {
+      fee,
+      alertType: alert_type || 'deadline_approaching',
+      channel: channel || 'both',
+      triggeredBy: 'admin_manual',
+      customSubject: custom_subject,
+      customBody: custom_message,
+      recipientOverride: recipient_override
+    });
+
+    res.json({
+      success: true,
+      message: `Alert successfully dispatched to ${fee.student_name} via ${notif.channel.toUpperCase()}.`,
+      notification: notif
+    });
+  } catch (error: any) {
+    console.error("Failed to send single fee notification:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: Preview Alert Content
+app.post("/api/admin/fee-notifications/preview", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { student_fee_id, alert_type, custom_subject, custom_message } = req.body;
+
+    let fee = null;
+    if (student_fee_id) {
+      fee = await queryOne(db, "SELECT * FROM student_fee_accounts WHERE id = ?", [student_fee_id]);
+    }
+    if (!fee) {
+      fee = {
+        student_name: "Brian Kipchumba",
+        student_email: "student@codepointkenya.com",
+        student_phone: "+254 712 345 678",
+        course_title: "Full-Stack Software Engineering",
+        cohort: "Cohort 14 (Evening & Hybrid)",
+        total_fee_kes: 85000,
+        paid_fee_kes: 37000,
+        balance_kes: 48000,
+        deadline_date: "April 30, 2026"
+      };
+    }
+
+    const settings = await getFeeNotificationSettings(db);
+    const content = generateFeeAlertContent({
+      fee,
+      alertType: alert_type || 'deadline_approaching',
+      channel: 'both',
+      settings,
+      customSubject: custom_subject,
+      customBody: custom_message
+    });
+
+    res.json({
+      success: true,
+      fee,
+      settings,
+      preview: content
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: GET & UPDATE Fee Notification Settings
+app.get("/api/admin/fee-notification-settings", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const settings = await getFeeNotificationSettings(db);
+    res.json(settings);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put("/api/admin/fee-notification-settings", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const {
+      auto_deadline_alerts_enabled,
+      deadline_days_threshold,
+      auto_overdue_alerts_enabled,
+      preferred_channel,
+      sms_sender_id,
+      email_sender_name,
+      paybill_number,
+      whatsapp_finance_phone
+    } = req.body;
+
+    const autoDeadline = auto_deadline_alerts_enabled ? 1 : 0;
+    const threshold = Number(deadline_days_threshold) || 5;
+    const autoOverdue = auto_overdue_alerts_enabled ? 1 : 0;
+    const channel = preferred_channel || 'both';
+    const smsId = sms_sender_id || 'CODEPOINT';
+    const emailName = email_sender_name || 'Code Point Kenya Finance';
+    const paybill = paybill_number || '522522';
+    const phone = whatsapp_finance_phone || '+254 756 295 128';
+    const now = new Date().toISOString();
+
+    await db.run(
+      `INSERT OR REPLACE INTO fee_notification_settings (
+        id, auto_deadline_alerts_enabled, deadline_days_threshold,
+        auto_overdue_alerts_enabled, preferred_channel, sms_sender_id,
+        email_sender_name, paybill_number, whatsapp_finance_phone, updated_at
+      ) VALUES ('default', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [autoDeadline, threshold, autoOverdue, channel, smsId, emailName, paybill, phone, now]
+    );
+
+    const updated = await getFeeNotificationSettings(db);
+    res.json({
+      success: true,
+      message: "Automated alert notification settings updated successfully.",
+      settings: updated
+    });
+  } catch (error: any) {
+    console.error("Failed to update fee notification settings:", error);
     res.status(500).json({ error: error.message });
   }
 });
