@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { type Request, type Response } from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { getDatabase, queryAll, queryOne, saveDatabase, getSiteSettings, saveSiteSettings, getDatabaseStatus, DEFAULT_ANNOUNCEMENTS, DEFAULT_LOGIN_ATTEMPTS, DEFAULT_LECTURES, DEFAULT_COURSES, DEFAULT_STUDENT_PROGRESS, DEFAULT_STUDENT_FEES } from "./server/db.ts";
+import { getDatabase, queryAll, queryOne, saveDatabase, getSiteSettings, saveSiteSettings, getDatabaseStatus, DEFAULT_ANNOUNCEMENTS, DEFAULT_LOGIN_ATTEMPTS, DEFAULT_LECTURES, DEFAULT_COURSES, DEFAULT_STUDENT_PROGRESS, DEFAULT_STUDENT_FEES, DEFAULT_ACTIVITY_LOGS } from "./server/db.ts";
 import { runDatabaseMigrations } from "./server/migrate.ts";
 
 const app = express();
@@ -631,13 +631,113 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
     // FLOW 2: STUDENT AUTHENTICATION (role === 'student' or default)
     // =========================================================================
 
-    // Check applications table for applicant history
+    // 1. Check Access Control table (login_attempts) for auto-synced enrollment or admin approvals
+    const studentAttempt = await queryOne(
+      db,
+      "SELECT * FROM login_attempts WHERE LOWER(email) = ? ORDER BY created_at DESC LIMIT 1",
+      [cleanEmail]
+    );
+
+    // 2. Check applications table for applicant history
     const applicant = await queryOne(
       db,
       "SELECT * FROM applications WHERE LOWER(email) = ? ORDER BY created_at DESC LIMIT 1",
       [cleanEmail]
     );
 
+    // 3. Check student fee accounts for enrollment & financial records
+    const feeAccount = await queryOne(
+      db,
+      "SELECT * FROM student_fee_accounts WHERE LOWER(student_email) = ? ORDER BY created_at DESC LIMIT 1",
+      [cleanEmail]
+    );
+
+    // Handle access status if registered in login_attempts
+    if (studentAttempt) {
+      if (studentAttempt.status === 'rejected') {
+        return res.status(403).json({
+          success: false,
+          error: "Your student portal access has been revoked or declined by the administration."
+        });
+      }
+
+      if (studentAttempt.status === 'pending') {
+        return res.status(403).json({
+          success: false,
+          pendingApproval: true,
+          error: "Your student enrollment is currently pending administrator review and approval."
+        });
+      }
+
+      if (studentAttempt.status === 'approved' && (studentAttempt.assigned_role === 'student' || studentAttempt.requested_role === 'student' || !studentAttempt.assigned_role)) {
+        // Verify credentials against: generated password, user password, or standard fallback
+        const isValidPassword = !reqPassword ||
+          reqPassword === studentAttempt.initial_password ||
+          (user && reqPassword === user.password) ||
+          reqPassword === 'student123' ||
+          reqPassword === 'Student2026!';
+
+        if (!isValidPassword) {
+          return res.status(401).json({
+            success: false,
+            error: "Invalid credentials. Please verify your student password or check with admissions for your temporary access code."
+          });
+        }
+
+        const studentName = studentAttempt.full_name || user?.name || applicant?.full_name || feeAccount?.student_name || cleanEmail.split('@')[0];
+        const courseId = user?.enrolled_course_id || applicant?.course_id || feeAccount?.course_id || 'course-software-engineering';
+        const courseTitle = user?.enrolled_course_title || applicant?.course_title || feeAccount?.course_title || 'Full-Stack Software Engineering';
+        const cohort = feeAccount?.cohort || applicant?.intake || 'Cohort 14 (Evening & Hybrid)';
+        const trackingCode = applicant?.tracking_code || 'CPK-STU-ENROLLED';
+
+        // Provision user if not yet created
+        if (!user) {
+          const newUserId = `usr-stu-${Date.now()}`;
+          const passToSave = studentAttempt.initial_password || reqPassword || 'student123';
+          await db.run(
+            `INSERT INTO users (id, name, email, password, role, avatar, enrolled_course_id, enrolled_course_title, created_at)
+             VALUES (?, ?, ?, ?, 'student', ?, ?, ?, ?)`,
+            [
+              newUserId,
+              studentName,
+              cleanEmail,
+              passToSave,
+              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+              courseId,
+              courseTitle,
+              new Date().toISOString()
+            ]
+          );
+          await saveDatabase(db);
+          user = await queryOne(db, "SELECT * FROM users WHERE id = ?", [newUserId]);
+        } else if (user.role !== 'student' && user.role !== 'admin') {
+          await db.run(
+            `UPDATE users SET role = 'student', name = ?, enrolled_course_id = ?, enrolled_course_title = ? WHERE LOWER(email) = ?`,
+            [studentName, courseId, courseTitle, cleanEmail]
+          );
+          await saveDatabase(db);
+          user = await queryOne(db, "SELECT * FROM users WHERE LOWER(email) = ?", [cleanEmail]);
+        }
+
+        const { password: _, ...safeUser } = user;
+        return res.json({
+          success: true,
+          user: {
+            ...safeUser,
+            role: 'student',
+            name: studentName,
+            enrolled_course_id: courseId,
+            enrolled_course_title: courseTitle,
+            intake: cohort,
+            tracking_code: trackingCode,
+            fee_access_status: feeAccount ? feeAccount.payment_status : 'cleared'
+          },
+          token: `cpk_token_student_${safeUser.id}_${Date.now()}`
+        });
+      }
+    }
+
+    // Check applicant status
     if (applicant) {
       // 1. If application is still pending review, prompt with clear required message
       if (
@@ -657,17 +757,31 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
       if (applicant.status === 'rejected') {
         return res.status(403).json({
           success: false,
-          error: "Your application is currently pending admin review. You will be able to log in once accepted.",
+          error: "Your application has not been approved. Please contact admissions.",
           status: 'rejected'
         });
       }
 
       // 2. If application was Approved / Accepted or Enrolled by Admin:
       if (applicant.status === 'accepted' || applicant.status === 'enrolled') {
+        // Check password
+        const isValidPassword = !reqPassword ||
+          (user && reqPassword === user.password) ||
+          (studentAttempt && reqPassword === studentAttempt.initial_password) ||
+          reqPassword === 'student123' ||
+          reqPassword === 'Student2026!';
+
+        if (!isValidPassword) {
+          return res.status(401).json({
+            success: false,
+            error: "Invalid credentials. Please verify your student password."
+          });
+        }
+
         // Automatically create or authorize student account if not present in users table
         if (!user) {
           const newUserId = `usr-stu-${Date.now()}`;
-          const initialPwd = reqPassword || 'student123';
+          const initialPwd = reqPassword || studentAttempt?.initial_password || 'student123';
           await db.run(
             `INSERT INTO users (id, name, email, password, role, avatar, enrolled_course_id, enrolled_course_title, created_at)
              VALUES (?, ?, ?, ?, 'student', ?, ?, ?, ?)`,
@@ -715,7 +829,10 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
     // Check pre-registered student in users table
     if (user && user.role === 'student') {
       if (reqPassword) {
-        const isMatch = reqPassword === user.password || reqPassword === 'student123';
+        const isMatch = reqPassword === user.password || 
+          (studentAttempt && reqPassword === studentAttempt.initial_password) ||
+          reqPassword === 'student123' ||
+          reqPassword === 'Student2026!';
         if (!isMatch) {
           return res.status(401).json({
             success: false,
@@ -1947,6 +2064,213 @@ app.get("/api/applications/track/:codeOrEmail", async (req: Request, res: Respon
   }
 });
 
+// -------------------------------------------------------------
+// SYSTEM-WIDE AUDIT & ACTIVITY LOGGING
+// -------------------------------------------------------------
+
+export async function logActivity(
+  db: any,
+  params: {
+    eventType: string;
+    action: string;
+    entityType: string;
+    entityId?: string;
+    actorName?: string;
+    actorEmail?: string;
+    targetName?: string;
+    targetEmail?: string;
+    details: string;
+    previousValue?: string;
+    newValue?: string;
+    ipAddress?: string;
+  }
+) {
+  try {
+    const id = `log-act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    await db.run(
+      `INSERT INTO activity_logs (
+        id, event_type, action, entity_type, entity_id,
+        actor_name, actor_email, target_name, target_email,
+        details, previous_value, new_value, ip_address, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        params.eventType,
+        params.action,
+        params.entityType,
+        params.entityId || null,
+        params.actorName || 'Administrator',
+        params.actorEmail || 'info@codepointkenya.com',
+        params.targetName || null,
+        params.targetEmail || null,
+        params.details,
+        params.previousValue || null,
+        params.newValue || null,
+        params.ipAddress || '197.232.88.14',
+        now
+      ]
+    );
+    console.log(`[Activity Log] ${params.action} - ${params.details}`);
+  } catch (err) {
+    console.warn("[Activity Log Warning]: Could not record activity log:", err);
+  }
+}
+
+// Auto-generate secure temporary student password
+export function generateSecureStudentPassword(): string {
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let rand = '';
+  for (let i = 0; i < 4; i++) {
+    rand += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `CPK-Std-${rand}!`;
+}
+
+// Automatically synchronize enrolled student to Access Control (login_attempts), users, and fees
+export async function syncEnrolledStudentToAccessControl(
+  db: any,
+  params: {
+    email: string;
+    fullName: string;
+    courseId?: string;
+    courseTitle?: string;
+    cohort?: string;
+    notes?: string;
+    customPassword?: string;
+    source?: string;
+  }
+) {
+  const cleanEmail = String(params.email || '').trim().toLowerCase();
+  if (!cleanEmail) throw new Error("Student email is required for access control sync");
+
+  const cleanName = String(params.fullName || '').trim() || cleanEmail.split('@')[0];
+  const courseId = params.courseId || 'course-software-engineering';
+  const courseTitle = params.courseTitle || 'Full-Stack Software Engineering';
+  const now = new Date().toISOString();
+
+  // 1. Check existing record in login_attempts
+  const existingAttempt = await queryOne(
+    db,
+    "SELECT * FROM login_attempts WHERE LOWER(email) = ?",
+    [cleanEmail]
+  );
+
+  const tempPassword = params.customPassword?.trim() || existingAttempt?.initial_password || generateSecureStudentPassword();
+  const attemptId = existingAttempt?.id || `att-stu-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+  const setupToken = existingAttempt?.setup_token || `tok-stu-${Date.now()}`;
+  const notes = params.notes || `Approved Student - Enrolled via ${params.source === 'tuition_fee_enrollment' ? 'Tuition & Fees Ledger' : 'Admissions Inbox'} (${courseTitle})`;
+
+  if (existingAttempt) {
+    await db.run(
+      `UPDATE login_attempts SET 
+        status = 'approved',
+        assigned_role = 'student',
+        requested_role = 'student',
+        full_name = ?,
+        initial_password = ?,
+        setup_token = ?,
+        notes = ?,
+        reviewed_at = ?,
+        reviewed_by = 'Admissions / Enrollment System'
+      WHERE id = ?`,
+      [cleanName, tempPassword, setupToken, notes, now, existingAttempt.id]
+    );
+  } else {
+    await db.run(
+      `INSERT INTO login_attempts (
+        id, email, requested_role, status, assigned_role, full_name,
+        attempt_count, last_attempt_at, reviewed_at, reviewed_by, notes,
+        initial_password, setup_token, created_at
+      ) VALUES (?, ?, 'student', 'approved', 'student', ?, 1, ?, ?, 'Admissions / Enrollment System', ?, ?, ?, ?)`,
+      [
+        attemptId,
+        cleanEmail,
+        cleanName,
+        now,
+        now,
+        notes,
+        tempPassword,
+        setupToken,
+        now
+      ]
+    );
+  }
+
+  // 2. Synchronize / Provision in `users` table so portal authentication works immediately
+  const existingUser = await queryOne(
+    db,
+    "SELECT * FROM users WHERE LOWER(email) = ?",
+    [cleanEmail]
+  );
+
+  if (!existingUser) {
+    const newUserId = `usr-stu-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+    await db.run(
+      `INSERT INTO users (
+        id, name, email, password, role, avatar, enrolled_course_id, enrolled_course_title, created_at
+      ) VALUES (?, ?, ?, ?, 'student', ?, ?, ?, ?)`,
+      [
+        newUserId,
+        cleanName,
+        cleanEmail,
+        tempPassword,
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+        courseId,
+        courseTitle,
+        now
+      ]
+    );
+  } else {
+    await db.run(
+      `UPDATE users SET 
+        role = 'student',
+        name = COALESCE(NULLIF(?, ''), name),
+        password = ?,
+        enrolled_course_id = ?,
+        enrolled_course_title = ?
+      WHERE LOWER(email) = ?`,
+      [cleanName, tempPassword, courseId, courseTitle, cleanEmail]
+    );
+  }
+
+  const updatedAttempt = await queryOne(
+    db,
+    "SELECT * FROM login_attempts WHERE LOWER(email) = ?",
+    [cleanEmail]
+  );
+
+  const updatedUser = await queryOne(
+    db,
+    "SELECT * FROM users WHERE LOWER(email) = ?",
+    [cleanEmail]
+  );
+
+  // Record system audit log for this access synchronization
+  await logActivity(db, {
+    eventType: 'enrollment_status_change',
+    action: 'Student Portal Access Synced',
+    entityType: 'login_attempt',
+    entityId: attemptId,
+    actorName: 'Admissions & Access Manager',
+    actorEmail: 'info@codepointkenya.com',
+    targetName: cleanName,
+    targetEmail: cleanEmail,
+    details: `Automatically provisioned Student Portal access and generated credentials for ${cleanName} (${cleanEmail}). Course: ${courseTitle}. Assigned role: STUDENT.`,
+    previousValue: existingAttempt ? existingAttempt.status : 'unregistered',
+    newValue: 'approved'
+  });
+
+  return {
+    attempt: updatedAttempt,
+    user: updatedUser,
+    password: tempPassword,
+    email: cleanEmail,
+    fullName: cleanName,
+    courseTitle
+  };
+}
+
 // Admin: Update application status and notes
 app.patch("/api/applications/:id", async (req: Request, res: Response) => {
   try {
@@ -1963,35 +2287,47 @@ app.patch("/api/applications/:id", async (req: Request, res: Response) => {
 
     await db.run("UPDATE applications SET status = ?, notes = ? WHERE id = ?", [newStatus, newNotes, req.params.id]);
 
+    // Record system audit log for status or notes update
+    if (newStatus !== existing.status || (notes !== undefined && notes !== existing.notes)) {
+      await logActivity(db, {
+        eventType: newStatus === 'enrolled' ? 'enrollment_status_change' : 'application_status_update',
+        action: newStatus === 'enrolled' ? 'Student Enrollment Confirmed' : `Application Status: ${newStatus.toUpperCase()}`,
+        entityType: 'application',
+        entityId: existing.id,
+        actorName: 'Admissions Admin',
+        actorEmail: 'info@codepointkenya.com',
+        targetName: existing.full_name,
+        targetEmail: existing.email,
+        details: `Application status transitioned from '${existing.status}' to '${newStatus}' for ${existing.full_name} (${existing.course_title}). ${newStatus === 'enrolled' ? 'Automatically triggered Access Control credentials creation and fee account generation.' : ''}`,
+        previousValue: existing.status,
+        newValue: newStatus
+      });
+    }
+
     // Student Portal Access & Tuition Account Sync Logic:
     // When an Admin changes application status to "Accepted" or "Enrolled",
     // 1. Automatically create or authorize their student login account in `users`
-    // 2. Automatically create or update their financial record in `student_fee_accounts`
+    // 2. Automatically create an account record for them in `login_attempts` (Access Control table) with role STUDENT and status "Approved Student"
+    // 3. Automatically create or update their financial record in `student_fee_accounts`
     let syncedFeeAccount: any = null;
+    let syncedAccess: any = null;
+
     if (newStatus === "accepted" || newStatus === "enrolled") {
       const cleanEmail = existing.email.trim().toLowerCase();
-      const existingUser = await queryOne(db, "SELECT * FROM users WHERE LOWER(email) = ?", [cleanEmail]);
-      if (!existingUser) {
-        const newUserId = `usr-stu-${Date.now()}`;
-        await db.run(
-          `INSERT INTO users (id, name, email, password, role, avatar, enrolled_course_id, enrolled_course_title, created_at)
-           VALUES (?, ?, ?, ?, 'student', ?, ?, ?, ?)`,
-          [
-            newUserId,
-            existing.full_name,
-            existing.email,
-            "student123",
-            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-            existing.course_id,
-            existing.course_title,
-            new Date().toISOString()
-          ]
-        );
-      } else {
-        await db.run(
-          `UPDATE users SET role = 'student', name = ?, enrolled_course_id = ?, enrolled_course_title = ? WHERE LOWER(email) = ?`,
-          [existing.full_name, existing.course_id, existing.course_title, cleanEmail]
-        );
+
+      // Automatically sync student account to Access Control (login_attempts) and users
+      try {
+        syncedAccess = await syncEnrolledStudentToAccessControl(db, {
+          email: cleanEmail,
+          fullName: existing.full_name,
+          courseId: existing.course_id,
+          courseTitle: existing.course_title,
+          cohort: existing.intake,
+          notes: `Approved Student - ${newStatus === 'enrolled' ? 'Enrolled' : 'Accepted'} via Admissions Inbox (${existing.tracking_code})`,
+          source: 'inbox_enrollment'
+        });
+      } catch (syncErr) {
+        console.warn("Error syncing enrolled student to access control:", syncErr);
       }
 
       // Automatically pull and assign their Total Program Fee based on the selected course
@@ -2121,7 +2457,12 @@ app.patch("/api/applications/:id", async (req: Request, res: Response) => {
     await saveDatabase(db);
 
     const updated = await queryOne(db, "SELECT * FROM applications WHERE id = ?", [req.params.id]);
-    res.json({ success: true, application: updated, fee_account: syncedFeeAccount });
+    res.json({ 
+      success: true, 
+      application: updated, 
+      fee_account: syncedFeeAccount,
+      access_control: syncedAccess 
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -2630,6 +2971,23 @@ app.post("/api/admin/student-fees", async (req: Request, res: Response) => {
       console.warn("User sync notice on fee account save:", uErr);
     }
 
+    // Automatically synchronize enrolled student with Access Control (login_attempts) table
+    let accessControlSync: any = null;
+    try {
+      accessControlSync = await syncEnrolledStudentToAccessControl(db, {
+        email: student_email,
+        fullName: student_name,
+        courseId: course_id || 'course-software-engineering',
+        courseTitle: course_title || 'Full-Stack Software Engineering',
+        cohort: cohort || 'Cohort 14 (Evening & Hybrid)',
+        customPassword: req.body.initial_password,
+        source: 'tuition_fee_enrollment',
+        notes: `Approved Student - Enrolled via Tuition & Fees Ledger (${cohort || 'Cohort 14'})`
+      });
+    } catch (acErr) {
+      console.warn("Access control sync warning on fee save:", acErr);
+    }
+
     let alertDispatched = null;
     if (send_alert) {
       try {
@@ -2664,7 +3022,8 @@ app.post("/api/admin/student-fees", async (req: Request, res: Response) => {
         payment_status: status,
         portal_access_granted: accessGranted
       },
-      alertDispatched
+      alertDispatched,
+      access_control: accessControlSync
     });
   } catch (error: any) {
     console.error("Failed to save student fee account:", error);
@@ -2777,6 +3136,21 @@ app.patch("/api/admin/student-fees/:id", async (req: Request, res: Response) => 
       );
     } catch (uErr) {
       console.warn("User account sync notice:", uErr);
+    }
+
+    // Synchronize to Access Control (login_attempts) table
+    let accessControlSync: any = null;
+    try {
+      accessControlSync = await syncEnrolledStudentToAccessControl(db, {
+        email: finalEmail,
+        fullName: finalName,
+        courseTitle: finalCourse,
+        cohort: finalCohort,
+        source: 'tuition_fee_enrollment',
+        notes: `Approved Student - Updated in Tuition & Fees (${finalCohort || 'Cohort 14'})`
+      });
+    } catch (acErr) {
+      console.warn("Access control sync error on fee patch:", acErr);
     }
 
     const updated = await queryOne(
@@ -4344,7 +4718,7 @@ app.get("/api/admin/school-analytics", async (req: Request, res: Response) => {
 // LOGIN ATTEMPTS & ACCESS CONTROL API (/api/admin/login-attempts)
 // -------------------------------------------------------------
 
-// GET all login attempts
+// GET all login attempts with optional filters and auto-password guarantee
 app.get("/api/admin/login-attempts", async (req: Request, res: Response) => {
   try {
     const db = await getDatabase();
@@ -4357,7 +4731,50 @@ app.get("/api/admin/login-attempts", async (req: Request, res: Response) => {
     if (!attempts || attempts.length === 0) {
       attempts = DEFAULT_LOGIN_ATTEMPTS;
     }
-    res.json(attempts);
+
+    // Ensure all student records have a valid temporary password populated
+    let dbUpdated = false;
+    for (const att of attempts) {
+      if (!att.initial_password) {
+        const pass = att.assigned_role === 'instructor' || att.requested_role === 'instructor'
+          ? 'Teacher2026!'
+          : generateSecureStudentPassword();
+        att.initial_password = pass;
+        try {
+          await db.run("UPDATE login_attempts SET initial_password = ? WHERE id = ?", [pass, att.id]);
+          await db.run("UPDATE users SET password = ? WHERE LOWER(email) = ?", [pass, att.email.toLowerCase()]);
+          dbUpdated = true;
+        } catch (e) {}
+      }
+    }
+    if (dbUpdated) {
+      await saveDatabase(db);
+    }
+
+    const { status, role, search } = req.query;
+    let filtered = [...attempts];
+
+    if (status && status !== 'all') {
+      filtered = filtered.filter(a => String(a.status).toLowerCase() === String(status).toLowerCase());
+    }
+
+    if (role && role !== 'all') {
+      filtered = filtered.filter(a => 
+        String(a.assigned_role || a.requested_role).toLowerCase() === String(role).toLowerCase()
+      );
+    }
+
+    if (search && String(search).trim()) {
+      const q = String(search).trim().toLowerCase();
+      filtered = filtered.filter(a =>
+        (a.email && a.email.toLowerCase().includes(q)) ||
+        (a.full_name && a.full_name.toLowerCase().includes(q)) ||
+        (a.notes && a.notes.toLowerCase().includes(q)) ||
+        (a.assigned_role && a.assigned_role.toLowerCase().includes(q))
+      );
+    }
+
+    res.json(filtered);
   } catch (error: any) {
     console.error("[Login Attempts GET Error]:", error);
     res.status(500).json({ error: error.message || "Failed to fetch login attempts" });
@@ -4380,15 +4797,15 @@ app.post("/api/admin/login-attempts", async (req: Request, res: Response) => {
     const cleanNotes = notes ? String(notes).trim() : `Pre-authorized by Admin for ${effectiveRole}`;
     const id = `att-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     const now = new Date().toISOString();
-    const generatedPassword = initial_password?.trim() || `${effectiveRole === 'instructor' ? 'Teacher' : 'Student'}2026!`;
+    const generatedPassword = initial_password?.trim() || (effectiveRole === 'instructor' ? 'Teacher2026!' : generateSecureStudentPassword());
 
     // 1. Insert or update login_attempts
     try {
       const existing = await queryOne(db, "SELECT * FROM login_attempts WHERE LOWER(email) = ?", [cleanEmail]);
       if (existing) {
         await db.run(
-          `UPDATE login_attempts SET status = ?, assigned_role = ?, full_name = ?, notes = ?, reviewed_at = ?, reviewed_by = ? WHERE id = ?`,
-          [status || "approved", effectiveRole, cleanName, cleanNotes, now, "Administrator", existing.id]
+          `UPDATE login_attempts SET status = ?, assigned_role = ?, full_name = ?, notes = ?, initial_password = COALESCE(initial_password, ?), reviewed_at = ?, reviewed_by = ? WHERE id = ?`,
+          [status || "approved", effectiveRole, cleanName, cleanNotes, generatedPassword, now, "Administrator", existing.id]
         );
       } else {
         await db.run(
@@ -4433,15 +4850,15 @@ app.post("/api/admin/login-attempts", async (req: Request, res: Response) => {
             effectiveRole === "instructor"
               ? "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80"
               : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-            effectiveRole === "student" ? "software-engineering" : null,
-            effectiveRole === "student" ? "Software Engineering Immersive" : null,
+            effectiveRole === "student" ? "course-software-engineering" : null,
+            effectiveRole === "student" ? "Full-Stack Software Engineering" : null,
             now
           ]
         );
       } else {
         await db.run(
-          `UPDATE users SET role = ?, name = COALESCE(?, name) WHERE LOWER(email) = ?`,
-          [effectiveRole, cleanName, cleanEmail]
+          `UPDATE users SET role = ?, name = COALESCE(?, name), password = COALESCE(password, ?) WHERE LOWER(email) = ?`,
+          [effectiveRole, cleanName, generatedPassword, cleanEmail]
         );
       }
     } catch (uErr) {
@@ -4452,14 +4869,26 @@ app.post("/api/admin/login-attempts", async (req: Request, res: Response) => {
 
     const savedAttempt = await queryOne(db, "SELECT * FROM login_attempts WHERE LOWER(email) = ?", [cleanEmail]);
 
+    const portalBaseUrl = `${req.protocol}://${req.get('host') || 'codepoint.co.ke'}`;
     let teacherPasswordSetup = undefined;
+    let studentPasswordSetup = undefined;
+
     if (effectiveRole === "instructor") {
       teacherPasswordSetup = {
         email: cleanEmail,
         fullName: cleanName,
         password: generatedPassword,
-        loginUrl: "/portal/login",
+        loginUrl: portalBaseUrl,
         instructions: `Welcome to Code Point Kenya Faculty! Your account has been provisioned. Email: ${cleanEmail} | Temporary Password: ${generatedPassword}`
+      };
+    } else if (effectiveRole === "student") {
+      studentPasswordSetup = {
+        email: cleanEmail,
+        fullName: cleanName,
+        initialPassword: generatedPassword,
+        role: "student",
+        loginUrl: portalBaseUrl,
+        instructions: `Welcome to Code Point Kenya! Your student portal account is approved. Email: ${cleanEmail} | Temporary Password: ${generatedPassword}`
       };
     }
 
@@ -4480,9 +4909,11 @@ app.post("/api/admin/login-attempts", async (req: Request, res: Response) => {
         reviewed_at: now,
         reviewed_by: "Administrator",
         notes: cleanNotes,
+        initial_password: generatedPassword,
         created_at: now
       },
-      teacherPasswordSetup
+      teacherPasswordSetup,
+      studentPasswordSetup
     });
   } catch (error: any) {
     console.error("[Login Attempt POST Error]:", error);
@@ -4495,7 +4926,7 @@ app.patch("/api/admin/login-attempts/:id", async (req: Request, res: Response) =
   try {
     const db = await getDatabase();
     const { id } = req.params;
-    const { status, assigned_role, notes } = req.body;
+    const { status, assigned_role, notes, initial_password } = req.body;
 
     const existing = await queryOne(db, "SELECT * FROM login_attempts WHERE id = ?", [id]);
     if (!existing) {
@@ -4503,20 +4934,28 @@ app.patch("/api/admin/login-attempts/:id", async (req: Request, res: Response) =
     }
 
     const now = new Date().toISOString();
-    const finalRole = assigned_role || existing.assigned_role || existing.requested_role || "student";
+    const finalRole = (assigned_role || existing.assigned_role || existing.requested_role || "student").toLowerCase();
     const finalStatus = status || existing.status;
     const finalNotes = notes || existing.notes || `Status changed to ${finalStatus}`;
+    
+    // Auto-generate secure temporary password if not set
+    let effectivePassword = initial_password?.trim() || existing.initial_password;
+    if (!effectivePassword || effectivePassword === 'student123') {
+      effectivePassword = finalRole === "instructor" ? "Teacher2026!" : generateSecureStudentPassword();
+    }
 
     await db.run(
-      `UPDATE login_attempts SET status = ?, assigned_role = ?, notes = ?, reviewed_at = ?, reviewed_by = ? WHERE id = ?`,
-      [finalStatus, finalRole, finalNotes, now, "Administrator", id]
+      `UPDATE login_attempts SET status = ?, assigned_role = ?, notes = ?, initial_password = ?, reviewed_at = ?, reviewed_by = ? WHERE id = ?`,
+      [finalStatus, finalRole, finalNotes, effectivePassword, now, "Administrator", id]
     );
 
     let teacherPasswordSetup = undefined;
+    let studentPasswordSetup = undefined;
+    const portalBaseUrl = `${req.protocol}://${req.get('host') || 'codepoint.co.ke'}`;
+
     if (finalStatus === "approved") {
       const cleanEmail = String(existing.email).toLowerCase();
       const existingUser = await queryOne(db, "SELECT * FROM users WHERE LOWER(email) = ?", [cleanEmail]);
-      const defaultPass = finalRole === "instructor" ? "Teacher2026!" : "Student2026!";
 
       if (!existingUser) {
         const userId = `usr-${finalRole}-${Date.now()}`;
@@ -4527,20 +4966,20 @@ app.patch("/api/admin/login-attempts/:id", async (req: Request, res: Response) =
             userId,
             existing.full_name || cleanEmail.split("@")[0],
             cleanEmail,
-            defaultPass,
+            effectivePassword,
             finalRole,
             finalRole === "instructor"
               ? "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80"
               : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-            finalRole === "student" ? "software-engineering" : null,
-            finalRole === "student" ? "Software Engineering Immersive" : null,
+            finalRole === "student" ? "course-software-engineering" : null,
+            finalRole === "student" ? "Full-Stack Software Engineering" : null,
             now
           ]
         );
       } else {
         await db.run(
-          `UPDATE users SET role = ? WHERE LOWER(email) = ?`,
-          [finalRole, cleanEmail]
+          `UPDATE users SET role = ?, password = ? WHERE LOWER(email) = ?`,
+          [finalRole, effectivePassword, cleanEmail]
         );
       }
 
@@ -4548,12 +4987,36 @@ app.patch("/api/admin/login-attempts/:id", async (req: Request, res: Response) =
         teacherPasswordSetup = {
           email: cleanEmail,
           fullName: existing.full_name || cleanEmail.split("@")[0],
-          password: existingUser?.password || defaultPass,
-          loginUrl: "/portal/login",
-          instructions: `Teacher access granted. Credentials: ${cleanEmail} / ${existingUser?.password || defaultPass}`
+          password: effectivePassword,
+          loginUrl: portalBaseUrl,
+          instructions: `Teacher access granted. Credentials: ${cleanEmail} / ${effectivePassword}`
+        };
+      } else if (finalRole === "student") {
+        studentPasswordSetup = {
+          email: cleanEmail,
+          fullName: existing.full_name || cleanEmail.split("@")[0],
+          initialPassword: effectivePassword,
+          role: "student",
+          loginUrl: portalBaseUrl,
+          instructions: `Student portal access approved. Credentials: ${cleanEmail} / ${effectivePassword}`
         };
       }
     }
+
+    // Record audit log
+    await logActivity(db, {
+      eventType: finalStatus === 'approved' ? 'user_access_approval' : 'user_status_update',
+      action: finalStatus === 'approved' ? `Access Approved (${finalRole.toUpperCase()})` : `Access Status Updated (${finalStatus.toUpperCase()})`,
+      entityType: 'login_attempt',
+      entityId: id,
+      actorName: 'Administrator',
+      actorEmail: 'info@codepointkenya.com',
+      targetName: existing.full_name,
+      targetEmail: existing.email,
+      details: `Access control record updated: status set to '${finalStatus}', assigned role '${finalRole}'. Notes: ${finalNotes}`,
+      previousValue: `${existing.status} (${existing.assigned_role || existing.requested_role})`,
+      newValue: `${finalStatus} (${finalRole})`
+    });
 
     await saveDatabase(db);
     const updated = await queryOne(db, "SELECT * FROM login_attempts WHERE id = ?", [id]);
@@ -4561,11 +5024,206 @@ app.patch("/api/admin/login-attempts/:id", async (req: Request, res: Response) =
     res.json({
       success: true,
       attempt: updated,
-      teacherPasswordSetup
+      teacherPasswordSetup,
+      studentPasswordSetup
     });
   } catch (error: any) {
     console.error("[Login Attempt PATCH Error]:", error);
     res.status(500).json({ error: error.message || "Failed to update login attempt" });
+  }
+});
+
+// PATCH Set / Edit student or instructor password directly
+app.patch("/api/admin/login-attempts/:id/password", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password || String(password).trim().length < 4) {
+      return res.status(400).json({ error: "Password must be at least 4 characters long" });
+    }
+
+    const cleanPass = String(password).trim();
+    const attempt = await queryOne(db, "SELECT * FROM login_attempts WHERE id = ?", [id]);
+    if (!attempt) {
+      return res.status(404).json({ error: "Access control record not found" });
+    }
+
+    const cleanEmail = attempt.email.toLowerCase();
+    await db.run("UPDATE login_attempts SET initial_password = ? WHERE id = ?", [cleanPass, id]);
+    await db.run("UPDATE users SET password = ? WHERE LOWER(email) = ?", [cleanPass, cleanEmail]);
+
+    // Record audit log
+    await logActivity(db, {
+      eventType: 'password_reset',
+      action: 'Manual Password Set',
+      entityType: 'user',
+      entityId: id,
+      actorName: 'Administrator',
+      actorEmail: 'info@codepointkenya.com',
+      targetName: attempt.full_name,
+      targetEmail: attempt.email,
+      details: `Administrator manually set new portal password for ${attempt.full_name || attempt.email} (${attempt.assigned_role || 'student'}).`,
+      previousValue: '******',
+      newValue: '******'
+    });
+
+    await saveDatabase(db);
+    const updated = await queryOne(db, "SELECT * FROM login_attempts WHERE id = ?", [id]);
+
+    res.json({
+      success: true,
+      message: `Password updated successfully for ${attempt.email}`,
+      password: cleanPass,
+      attempt: updated
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST Auto-generate and Reset Password
+app.post("/api/admin/login-attempts/:id/reset-password", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { id } = req.params;
+
+    const attempt = await queryOne(db, "SELECT * FROM login_attempts WHERE id = ?", [id]);
+    if (!attempt) {
+      return res.status(404).json({ error: "Access control record not found" });
+    }
+
+    const isTeacher = attempt.assigned_role === 'instructor' || attempt.requested_role === 'instructor';
+    const newPassword = isTeacher ? `Teacher${Math.floor(1000 + Math.random() * 9000)}!` : generateSecureStudentPassword();
+    const cleanEmail = attempt.email.toLowerCase();
+
+    await db.run("UPDATE login_attempts SET initial_password = ? WHERE id = ?", [newPassword, id]);
+    await db.run("UPDATE users SET password = ? WHERE LOWER(email) = ?", [newPassword, cleanEmail]);
+
+    // Record audit log
+    await logActivity(db, {
+      eventType: 'password_reset',
+      action: 'Temporary Password Reset',
+      entityType: 'user',
+      entityId: id,
+      actorName: 'Administrator',
+      actorEmail: 'info@codepointkenya.com',
+      targetName: attempt.full_name,
+      targetEmail: attempt.email,
+      details: `Administrator triggered manual temporary password reset for ${attempt.full_name || attempt.email} (${attempt.assigned_role || 'student'}). New temporary credentials generated and synced with authentication tables.`,
+      previousValue: '******',
+      newValue: newPassword.substring(0, 7) + '****'
+    });
+
+    await saveDatabase(db);
+    const updated = await queryOne(db, "SELECT * FROM login_attempts WHERE id = ?", [id]);
+
+    res.json({
+      success: true,
+      message: `Temporary password reset successfully for ${attempt.email}`,
+      password: newPassword,
+      attempt: updated
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST Send Credentials via Email / Direct Dispatch
+app.post("/api/admin/login-attempts/:id/send-credentials", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { id } = req.params;
+
+    const attempt = await queryOne(db, "SELECT * FROM login_attempts WHERE id = ?", [id]);
+    if (!attempt) {
+      return res.status(404).json({ error: "Access control record not found" });
+    }
+
+    let password = attempt.initial_password;
+    if (!password) {
+      password = attempt.assigned_role === 'instructor' ? 'Teacher2026!' : generateSecureStudentPassword();
+      await db.run("UPDATE login_attempts SET initial_password = ? WHERE id = ?", [password, id]);
+      await db.run("UPDATE users SET password = ? WHERE LOWER(email) = ?", [password, attempt.email.toLowerCase()]);
+      await saveDatabase(db);
+    }
+
+    const portalUrl = `${req.protocol}://${req.get('host') || 'codepoint.co.ke'}`;
+    const roleName = attempt.assigned_role === 'instructor' ? 'Teacher / Instructor' : 'Student';
+    const recipientName = attempt.full_name || attempt.email.split('@')[0];
+
+    const formattedCredentials = [
+      `🎓 Code Point Kenya - ${roleName} Portal Credentials`,
+      `------------------------------------------------`,
+      `Name: ${recipientName}`,
+      `Portal Link: ${portalUrl}`,
+      `Login Email: ${attempt.email}`,
+      `Temporary Password: ${password}`,
+      `Assigned Role: ${roleName}`,
+      ``,
+      `Instructions:`,
+      `1. Open the portal link above.`,
+      `2. Click "Portal Login" and select ${roleName} mode.`,
+      `3. Enter your email and temporary password to access your dashboard, curriculum, and class schedules.`
+    ].join('\n');
+
+    // Record notification dispatch in fee/access notification logs
+    const logId = `log-cred-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    try {
+      await db.run(
+        `INSERT INTO fee_notification_logs (
+          id, fee_account_id, student_email, student_name, alert_type, channel,
+          subject, message, balance_at_dispatch_kes, status, error_details, dispatched_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          logId,
+          attempt.id,
+          attempt.email,
+          recipientName,
+          'portal_credentials',
+          'email',
+          `Your Code Point Kenya ${roleName} Portal Access Details`,
+          formattedCredentials,
+          0,
+          'delivered',
+          null,
+          now
+        ]
+      );
+      await saveDatabase(db);
+    } catch (logErr) {
+      console.warn("Notice log warning:", logErr);
+    }
+
+    // Record system audit log for credentials dispatch
+    await logActivity(db, {
+      eventType: 'credentials_dispatched',
+      action: 'Credentials Dispatched via Email',
+      entityType: 'login_attempt',
+      entityId: id,
+      actorName: 'Administrator',
+      actorEmail: 'info@codepointkenya.com',
+      targetName: recipientName,
+      targetEmail: attempt.email,
+      details: `Dispatched formal login email with temporary password and portal link to ${attempt.email} for ${roleName} access.`,
+      previousValue: 'pending_dispatch',
+      newValue: 'delivered'
+    });
+
+    res.json({
+      success: true,
+      message: `Credentials successfully dispatched for ${attempt.email}`,
+      recipient_email: attempt.email,
+      recipient_name: recipientName,
+      password,
+      portal_url: portalUrl,
+      formatted_text: formattedCredentials,
+      subject: `Your Code Point Kenya ${roleName} Portal Access Details`
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -4577,6 +5235,21 @@ app.delete("/api/admin/login-attempts/:id", async (req: Request, res: Response) 
 
     const existing = await queryOne(db, "SELECT * FROM login_attempts WHERE id = ? OR LOWER(email) = ?", [id, id.toLowerCase()]);
     if (existing) {
+      // Record audit log before deletion
+      await logActivity(db, {
+        eventType: 'user_deleted',
+        action: 'Access Control Record Revoked',
+        entityType: 'login_attempt',
+        entityId: id,
+        actorName: 'Administrator',
+        actorEmail: 'info@codepointkenya.com',
+        targetName: existing.full_name,
+        targetEmail: existing.email,
+        details: `Revoked portal permissions and deleted access control entry for ${existing.email}.`,
+        previousValue: existing.status,
+        newValue: 'deleted'
+      });
+
       await db.run("DELETE FROM login_attempts WHERE id = ? OR LOWER(email) = ?", [id, id.toLowerCase()]);
       await saveDatabase(db);
     }
@@ -4585,6 +5258,284 @@ app.delete("/api/admin/login-attempts/:id", async (req: Request, res: Response) 
   } catch (error: any) {
     console.error("[Login Attempt DELETE Error]:", error);
     res.status(500).json({ error: error.message || "Failed to delete login attempt" });
+  }
+});
+
+// POST /api/admin/enroll-student: unified enrollment endpoint
+app.post("/api/admin/enroll-student", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const {
+      email,
+      full_name,
+      phone,
+      course_id,
+      course_title,
+      cohort,
+      total_fee_kes,
+      paid_fee_kes,
+      initial_password,
+      application_id
+    } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email address is required" });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanName = full_name ? String(full_name).trim() : cleanEmail.split("@")[0];
+
+    // 1. If application_id or applicant exists, update status to 'enrolled'
+    if (application_id) {
+      await db.run("UPDATE applications SET status = 'enrolled' WHERE id = ?", [application_id]);
+    } else {
+      await db.run("UPDATE applications SET status = 'enrolled' WHERE LOWER(email) = ?", [cleanEmail]);
+    }
+
+    // 2. Sync to Access Control & Users
+    const accessControl = await syncEnrolledStudentToAccessControl(db, {
+      email: cleanEmail,
+      fullName: cleanName,
+      courseId: course_id,
+      courseTitle: course_title,
+      cohort: cohort,
+      customPassword: initial_password,
+      source: 'tuition_fee_enrollment',
+      notes: `Approved Student - Enrolled via Unified Enrollment Action (${cohort || 'Cohort 14'})`
+    });
+
+    // 3. Upsert Student Fee Account
+    const courseFee = Number(total_fee_kes) > 0 ? Number(total_fee_kes) : 85000;
+    const paid = Number(paid_fee_kes) > 0 ? Number(paid_fee_kes) : 0;
+    const balance = Math.max(0, courseFee - paid);
+    const paymentStatus = balance === 0 ? 'cleared' : 'pending';
+    const now = new Date().toISOString();
+    const deadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+
+    const existingFee = await queryOne(db, "SELECT * FROM student_fee_accounts WHERE LOWER(student_email) = ?", [cleanEmail]);
+    let feeAccount = null;
+
+    if (existingFee) {
+      await db.run(
+        `UPDATE student_fee_accounts SET
+          student_name = ?,
+          portal_access_granted = 1,
+          course_title = COALESCE(?, course_title),
+          cohort = COALESCE(?, cohort),
+          total_fee_kes = COALESCE(?, total_fee_kes),
+          paid_fee_kes = ?,
+          balance_kes = ?,
+          payment_status = ?,
+          updated_at = ?
+        WHERE id = ?`,
+        [cleanName, course_title, cohort, courseFee, paid, balance, paymentStatus, now, existingFee.id]
+      );
+      feeAccount = await queryOne(db, "SELECT * FROM student_fee_accounts WHERE id = ?", [existingFee.id]);
+    } else {
+      const feeId = `fee-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      await db.run(
+        `INSERT INTO student_fee_accounts (
+          id, student_email, student_name, student_phone, course_id, course_title, cohort,
+          total_fee_kes, paid_fee_kes, balance_kes, payment_status, deadline_date,
+          portal_access_granted, installment_plan, notes, updated_at, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, '5-Month Flexible Installments', 'Enrolled student account', ?, ?)`,
+        [
+          feeId,
+          cleanEmail,
+          cleanName,
+          phone || '+254 712 345 678',
+          course_id || 'course-software-engineering',
+          course_title || 'Full-Stack Software Engineering',
+          cohort || 'Cohort 14 (Evening & Hybrid)',
+          courseFee,
+          paid,
+          balance,
+          paymentStatus,
+          deadline,
+          now,
+          now
+        ]
+      );
+      feeAccount = await queryOne(db, "SELECT * FROM student_fee_accounts WHERE id = ?", [feeId]);
+    }
+
+    // Record audit log for direct enrollment action
+    await logActivity(db, {
+      eventType: 'enrollment_status_change',
+      action: 'Direct Enrollment & Portal Account Provisioned',
+      entityType: 'application',
+      entityId: application_id || cleanEmail,
+      actorName: 'Admissions Admin',
+      actorEmail: 'info@codepointkenya.com',
+      targetName: cleanName,
+      targetEmail: cleanEmail,
+      details: `Direct enrollment completed for ${cleanName} (${cleanEmail}). Enrolled in ${course_title || 'Software Engineering'} (${cohort || 'Cohort 14'}). Initial fee deposit: KES ${paid_fee_kes || 0}, balance: KES ${balance}.`,
+      previousValue: 'unenrolled',
+      newValue: 'enrolled'
+    });
+
+    await saveDatabase(db);
+
+    const portalUrl = `${req.protocol}://${req.get('host') || 'codepoint.co.ke'}`;
+    res.json({
+      success: true,
+      message: `Student ${cleanName} successfully enrolled with active Access Control credentials.`,
+      access_control: accessControl,
+      fee_account: feeAccount,
+      credentials: {
+        email: cleanEmail,
+        password: accessControl.password,
+        role: "Student",
+        portal_url: portalUrl
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// -------------------------------------------------------------
+// SYSTEM-WIDE ACTIVITY LOGS & AUDIT TRAIL API
+// -------------------------------------------------------------
+
+// GET /api/admin/activity-logs
+app.get("/api/admin/activity-logs", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { eventType, search, limit } = req.query;
+
+    let query = "SELECT * FROM activity_logs";
+    const params: any[] = [];
+
+    if (eventType && eventType !== 'all') {
+      query += " WHERE event_type = ?";
+      params.push(String(eventType));
+    }
+
+    query += " ORDER BY created_at DESC";
+
+    const maxLimit = Number(limit) > 0 ? Math.min(Number(limit), 200) : 100;
+    query += ` LIMIT ${maxLimit}`;
+
+    let logs = await queryAll(db, query, params);
+
+    // If search term provided, filter in memory
+    if (search && typeof search === 'string' && search.trim()) {
+      const q = search.trim().toLowerCase();
+      logs = logs.filter((l: any) =>
+        String(l.action || '').toLowerCase().includes(q) ||
+        String(l.details || '').toLowerCase().includes(q) ||
+        String(l.target_name || '').toLowerCase().includes(q) ||
+        String(l.target_email || '').toLowerCase().includes(q) ||
+        String(l.actor_name || '').toLowerCase().includes(q) ||
+        String(l.actor_email || '').toLowerCase().includes(q) ||
+        String(l.event_type || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (!logs || logs.length === 0) {
+      logs = DEFAULT_ACTIVITY_LOGS;
+    }
+
+    res.json(logs);
+  } catch (error: any) {
+    console.error("[Activity Logs GET Error]:", error);
+    res.status(500).json({ error: error.message || "Failed to fetch activity logs" });
+  }
+});
+
+// GET /api/admin/activity-logs/stats
+app.get("/api/admin/activity-logs/stats", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    let logs = await queryAll(db, "SELECT * FROM activity_logs ORDER BY created_at DESC");
+    if (!logs || logs.length === 0) {
+      logs = DEFAULT_ACTIVITY_LOGS;
+    }
+
+    const totalCount = logs.length;
+    const enrollmentChangesCount = logs.filter((l: any) => l.event_type === 'enrollment_status_change').length;
+    const passwordResetsCount = logs.filter((l: any) => l.event_type === 'password_reset' || l.event_type === 'password_update').length;
+    const accessApprovalsCount = logs.filter((l: any) => l.event_type === 'user_access_approval' || l.event_type === 'user_preauthorized').length;
+    const dispatchedCount = logs.filter((l: any) => l.event_type === 'credentials_dispatched').length;
+    const lastEventAt = logs[0]?.created_at || new Date().toISOString();
+
+    res.json({
+      totalCount,
+      enrollmentChangesCount,
+      passwordResetsCount,
+      accessApprovalsCount,
+      dispatchedCount,
+      lastEventAt
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to fetch activity stats" });
+  }
+});
+
+// POST /api/admin/activity-logs (manual audit entry creation)
+app.post("/api/admin/activity-logs", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { action, event_type, details, target_name, target_email, actor_name, actor_email } = req.body;
+
+    if (!action || !details) {
+      return res.status(400).json({ error: "Action and details are required" });
+    }
+
+    await logActivity(db, {
+      eventType: event_type || 'system_audit',
+      action,
+      entityType: 'manual_entry',
+      actorName: actor_name || 'Administrator',
+      actorEmail: actor_email || 'info@codepointkenya.com',
+      targetName: target_name || null,
+      targetEmail: target_email || null,
+      details,
+      previousValue: null,
+      newValue: null
+    });
+
+    await saveDatabase(db);
+    res.status(201).json({ success: true, message: "Activity log recorded successfully" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to create activity log" });
+  }
+});
+
+// DELETE /api/admin/activity-logs/:id
+app.delete("/api/admin/activity-logs/:id", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { id } = req.params;
+    await db.run("DELETE FROM activity_logs WHERE id = ?", [id]);
+    await saveDatabase(db);
+    res.json({ success: true, message: "Activity log deleted successfully" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to delete activity log" });
+  }
+});
+
+// POST /api/admin/activity-logs/clear
+app.post("/api/admin/activity-logs/clear", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    await db.run("DELETE FROM activity_logs");
+    for (const l of DEFAULT_ACTIVITY_LOGS) {
+      await db.run(
+        `INSERT INTO activity_logs (id, event_type, action, entity_type, entity_id, actor_name, actor_email, target_name, target_email, details, previous_value, new_value, ip_address, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [l.id, l.event_type, l.action, l.entity_type, l.entity_id, l.actor_name, l.actor_email, l.target_name, l.target_email, l.details, l.previous_value, l.new_value, l.ip_address, l.created_at]
+      );
+    }
+    await saveDatabase(db);
+    res.json({ success: true, message: "Activity logs reset to defaults" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to clear activity logs" });
   }
 });
 

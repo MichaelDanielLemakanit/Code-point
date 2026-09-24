@@ -452,3 +452,33 @@ export interface FeeNotificationSettings {
   whatsapp_finance_phone: string;
 }
 
+export type ActivityEventType =
+  | 'enrollment_status_change'
+  | 'password_reset'
+  | 'password_update'
+  | 'user_access_approval'
+  | 'user_preauthorized'
+  | 'credentials_dispatched'
+  | 'fee_status_update'
+  | 'user_deleted'
+  | 'certificate_issued'
+  | 'manual_audit_note'
+  | 'system_configuration';
+
+export interface ActivityLog {
+  id: string;
+  event_type: ActivityEventType | string;
+  action: string;
+  entity_type: 'application' | 'user' | 'login_attempt' | 'fee_account' | 'certificate' | 'settings' | 'audit_note' | string;
+  entity_id?: string;
+  actor_name: string;
+  actor_email?: string;
+  target_name?: string;
+  target_email?: string;
+  details: string;
+  previous_value?: string;
+  new_value?: string;
+  ip_address?: string;
+  created_at: string;
+}
+

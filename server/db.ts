@@ -955,6 +955,105 @@ export const DEFAULT_STUDENT_FEES = [
   }
 ];
 
+export const DEFAULT_ACTIVITY_LOGS = [
+  {
+    id: "log-act-001",
+    event_type: "enrollment_status_change",
+    action: "Student Enrollment & Access Provisioned",
+    entity_type: "application",
+    entity_id: "app-101",
+    actor_name: "Admissions Admin",
+    actor_email: "info@codepointkenya.com",
+    target_name: "Brian Kipchumba",
+    target_email: "student@codepointkenya.com",
+    details: "Application status changed from 'accepted' to 'enrolled'. Automatically provisioned Student Portal credentials and generated student fee ledger.",
+    previous_value: "accepted",
+    new_value: "enrolled",
+    ip_address: "197.232.88.14",
+    created_at: new Date(Date.now() - 1000 * 60 * 35).toISOString()
+  },
+  {
+    id: "log-act-002",
+    event_type: "credentials_dispatched",
+    action: "Credentials Dispatched via Email",
+    entity_type: "login_attempt",
+    entity_id: "att-001",
+    actor_name: "System Auto-Sync",
+    actor_email: "info@codepointkenya.com",
+    target_name: "Brian Kipchumba",
+    target_email: "student@codepointkenya.com",
+    details: "Dispatched Student Portal login details (email, temporary password, and portal URL) to student@codepointkenya.com.",
+    previous_value: "generated",
+    new_value: "dispatched",
+    ip_address: "197.232.88.14",
+    created_at: new Date(Date.now() - 1000 * 60 * 34).toISOString()
+  },
+  {
+    id: "log-act-003",
+    event_type: "password_reset",
+    action: "Manual Temporary Password Reset",
+    entity_type: "user",
+    entity_id: "att-002",
+    actor_name: "Administrator",
+    actor_email: "info@codepointkenya.com",
+    target_name: "Kevin Kiprono",
+    target_email: "kevin.kiprono@gmail.com",
+    details: "Administrator executed manual temporary password reset. New cryptographically secure password regenerated and synced with users authentication table.",
+    previous_value: "******",
+    new_value: "CPK-Std-****",
+    ip_address: "105.163.2.112",
+    created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString()
+  },
+  {
+    id: "log-act-004",
+    event_type: "user_access_approval",
+    action: "Faculty Instructor Access Approved",
+    entity_type: "login_attempt",
+    entity_id: "att-003",
+    actor_name: "Administrator",
+    actor_email: "info@codepointkenya.com",
+    target_name: "Brenda Wambui",
+    target_email: "instructor@codepointkenya.com",
+    details: "Approved instructor role clearance with full lecture scheduling and assignment grading privileges.",
+    previous_value: "pending",
+    new_value: "approved",
+    ip_address: "105.163.2.112",
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString()
+  },
+  {
+    id: "log-act-005",
+    event_type: "enrollment_status_change",
+    action: "Admissions Offer Accepted",
+    entity_type: "application",
+    entity_id: "app-102",
+    actor_name: "Admissions Admin",
+    actor_email: "info@codepointkenya.com",
+    target_name: "Cynthia Moraa",
+    target_email: "cynthia.moraa@gmail.com",
+    details: "Application moved to 'accepted' status for Data Science & Applied AI (October 15 Cohort).",
+    previous_value: "interview_scheduled",
+    new_value: "accepted",
+    ip_address: "197.232.88.14",
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString()
+  },
+  {
+    id: "log-act-006",
+    event_type: "fee_status_update",
+    action: "Tuition Installment Recorded",
+    entity_type: "fee_account",
+    entity_id: "fee-001",
+    actor_name: "Finance Administrator",
+    actor_email: "info@codepointkenya.com",
+    target_name: "Brian Kipchumba",
+    target_email: "student@codepointkenya.com",
+    details: "Confirmed initial tuition deposit of KES 37,000 via M-Pesa. Outstanding balance updated to KES 48,000.",
+    previous_value: "KES 0",
+    new_value: "KES 37,000",
+    ip_address: "197.232.88.14",
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString()
+  }
+];
+
 /**
  * Initialize PostgreSQL Production Database
  */
@@ -1243,6 +1342,25 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       );
       CREATE INDEX IF NOT EXISTS idx_sfa_email ON student_fee_accounts(student_email);
       CREATE INDEX IF NOT EXISTS idx_sfa_status ON student_fee_accounts(payment_status);
+
+      CREATE TABLE IF NOT EXISTS activity_logs (
+        id VARCHAR(255) PRIMARY KEY,
+        event_type VARCHAR(100) NOT NULL,
+        action VARCHAR(255) NOT NULL,
+        entity_type VARCHAR(100) NOT NULL,
+        entity_id VARCHAR(255),
+        actor_name VARCHAR(255) NOT NULL DEFAULT 'Administrator',
+        actor_email VARCHAR(255) DEFAULT 'info@codepointkenya.com',
+        target_name VARCHAR(255),
+        target_email VARCHAR(255),
+        details TEXT NOT NULL,
+        previous_value TEXT,
+        new_value TEXT,
+        ip_address VARCHAR(100),
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_activity_logs_type ON activity_logs(event_type);
     `);
 
     // Ensure all required columns exist on courses if created earlier
@@ -1444,6 +1562,25 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       console.warn("[Database] PostgreSQL student_fee_accounts seed warning:", e);
     }
 
+    // Seed activity_logs if empty
+    try {
+      const logCountRes = await pool.query("SELECT count(*) as count FROM activity_logs");
+      const logCount = Number(logCountRes.rows[0]?.count || 0);
+      if (logCount === 0) {
+        console.log("[Database] Seeding initial activity logs in PostgreSQL...");
+        for (const l of DEFAULT_ACTIVITY_LOGS) {
+          await pool.query(
+            `INSERT INTO activity_logs (id, event_type, action, entity_type, entity_id, actor_name, actor_email, target_name, target_email, details, previous_value, new_value, ip_address, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+             ON CONFLICT (id) DO NOTHING`,
+            [l.id, l.event_type, l.action, l.entity_type, l.entity_id, l.actor_name, l.actor_email, l.target_name, l.target_email, l.details, l.previous_value, l.new_value, l.ip_address, l.created_at]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] PostgreSQL activity_logs seed warning:", e);
+    }
+
     const appDb: AppDatabase = {
       type: "postgres",
       providerName: "PostgreSQL (Production Cloud Database)",
@@ -1494,7 +1631,8 @@ function createInMemoryDb(): AppDatabase {
     login_attempts: [...DEFAULT_LOGIN_ATTEMPTS],
     class_lectures: [...DEFAULT_LECTURES],
     student_module_progress: [...DEFAULT_STUDENT_PROGRESS],
-    student_fee_accounts: [...DEFAULT_STUDENT_FEES]
+    student_fee_accounts: [...DEFAULT_STUDENT_FEES],
+    activity_logs: [...DEFAULT_ACTIVITY_LOGS]
   };
 
   return {
@@ -1937,10 +2075,50 @@ function createInMemoryDb(): AppDatabase {
         tables.student_fee_accounts = tables.student_fee_accounts.filter(f => f.id !== id && String(f.student_email).toLowerCase() !== String(id).toLowerCase());
         return;
       }
+
+      // INSERT INTO activity_logs
+      if (lower.includes("insert into activity_logs")) {
+        const row = {
+          id: params[0],
+          event_type: params[1],
+          action: params[2],
+          entity_type: params[3],
+          entity_id: params[4] || null,
+          actor_name: params[5] || 'Administrator',
+          actor_email: params[6] || 'info@codepointkenya.com',
+          target_name: params[7] || null,
+          target_email: params[8] || null,
+          details: params[9] || '',
+          previous_value: params[10] || null,
+          new_value: params[11] || null,
+          ip_address: params[12] || null,
+          created_at: params[13] || new Date().toISOString()
+        };
+        tables.activity_logs.unshift(row);
+        return;
+      }
+
+      // DELETE FROM activity_logs
+      if (lower.includes("delete from activity_logs")) {
+        if (params.length > 0) {
+          tables.activity_logs = tables.activity_logs.filter(l => l.id !== params[0]);
+        } else {
+          tables.activity_logs = [];
+        }
+        return;
+      }
     },
     async exec() {},
     async queryAll<T = any>(sql: string, params: any[] = []): Promise<T[]> {
       const lower = sql.toLowerCase();
+      if (lower.includes("from activity_logs")) {
+        let list = [...tables.activity_logs];
+        if (lower.includes("event_type = ?")) {
+          const type = params[0];
+          list = list.filter(l => l.event_type === type);
+        }
+        return list as unknown as T[];
+      }
       if (lower.includes("from student_fee_accounts")) {
         let list = [...tables.student_fee_accounts];
         if (lower.includes("lower(student_email) = ?") || lower.includes("student_email = ?")) {
@@ -2330,6 +2508,25 @@ async function initSqlite(): Promise<AppDatabase | null> {
         whatsapp_finance_phone TEXT DEFAULT '+254 756 295 128',
         updated_at TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS activity_logs (
+        id TEXT PRIMARY KEY,
+        event_type TEXT NOT NULL,
+        action TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT,
+        actor_name TEXT NOT NULL DEFAULT 'Administrator',
+        actor_email TEXT DEFAULT 'info@codepointkenya.com',
+        target_name TEXT,
+        target_email TEXT,
+        details TEXT NOT NULL,
+        previous_value TEXT,
+        new_value TEXT,
+        ip_address TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_sqlite_activity_created ON activity_logs(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_sqlite_activity_type ON activity_logs(event_type);
     `);
 
     // Ensure columns in student_fee_accounts if table already existed
@@ -2629,6 +2826,29 @@ async function initSqlite(): Promise<AppDatabase | null> {
       }
     } catch (e) {
       console.warn("[Database] SQLite student_fee_accounts seed warning:", e);
+    }
+
+    // Seed activity_logs if empty
+    try {
+      const stmtLogs = sqliteInstance.prepare("SELECT COUNT(*) as count FROM activity_logs");
+      let hasLogs = false;
+      if (stmtLogs.step()) {
+        const row = stmtLogs.getAsObject();
+        hasLogs = Number(row.count) > 0;
+      }
+      stmtLogs.free();
+
+      if (!hasLogs) {
+        for (const l of DEFAULT_ACTIVITY_LOGS) {
+          sqliteInstance.run(
+            `INSERT INTO activity_logs (id, event_type, action, entity_type, entity_id, actor_name, actor_email, target_name, target_email, details, previous_value, new_value, ip_address, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [l.id, l.event_type, l.action, l.entity_type, l.entity_id, l.actor_name, l.actor_email, l.target_name, l.target_email, l.details, l.previous_value, l.new_value, l.ip_address, l.created_at]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] SQLite activity_logs seed warning:", e);
     }
 
     // Save initial state

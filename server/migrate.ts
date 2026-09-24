@@ -11,7 +11,8 @@ import {
   DEFAULT_LOGIN_ATTEMPTS, 
   DEFAULT_LECTURES,
   DEFAULT_STUDENT_PROGRESS,
-  DEFAULT_STUDENT_FEES
+  DEFAULT_STUDENT_FEES,
+  DEFAULT_ACTIVITY_LOGS
 } from "./db.ts";
 
 const { Pool } = pg;
@@ -611,6 +612,43 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
            ON CONFLICT (id) DO NOTHING`,
           [f.id, f.student_email, f.student_name, f.course_id, f.course_title, f.cohort, f.total_fee_kes, f.paid_fee_kes, f.balance_kes, f.payment_status, f.deadline_date, f.portal_access_granted, f.installment_plan, f.notes, f.updated_at, f.created_at]
+        );
+      }
+    }
+
+    // 19. Table: activity_logs
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS activity_logs (
+        id VARCHAR(255) PRIMARY KEY,
+        event_type VARCHAR(100) NOT NULL,
+        action VARCHAR(255) NOT NULL,
+        entity_type VARCHAR(100) NOT NULL,
+        entity_id VARCHAR(255),
+        actor_name VARCHAR(255) NOT NULL DEFAULT 'Administrator',
+        actor_email VARCHAR(255) DEFAULT 'info@codepointkenya.com',
+        target_name VARCHAR(255),
+        target_email VARCHAR(255),
+        details TEXT NOT NULL,
+        previous_value TEXT,
+        new_value TEXT,
+        ip_address VARCHAR(100),
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_activity_logs_type ON activity_logs(event_type);
+    `);
+
+    // Seed default activity logs if empty
+    const logCountRes = await client.query("SELECT count(*) as count FROM activity_logs");
+    const logCount = Number(logCountRes.rows[0]?.count || 0);
+    if (logCount === 0) {
+      console.log("[Migration] Seeding initial activity logs in PostgreSQL...");
+      for (const l of DEFAULT_ACTIVITY_LOGS) {
+        await client.query(
+          `INSERT INTO activity_logs (id, event_type, action, entity_type, entity_id, actor_name, actor_email, target_name, target_email, details, previous_value, new_value, ip_address, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+           ON CONFLICT (id) DO NOTHING`,
+          [l.id, l.event_type, l.action, l.entity_type, l.entity_id, l.actor_name, l.actor_email, l.target_name, l.target_email, l.details, l.previous_value, l.new_value, l.ip_address, l.created_at]
         );
       }
     }

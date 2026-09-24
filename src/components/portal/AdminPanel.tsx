@@ -38,7 +38,8 @@ import {
   AlertTriangle,
   CreditCard,
   UserCheck,
-  Pencil
+  Pencil,
+  History
 } from 'lucide-react';
 import { SiteSettings, Application, Course, AdminStats, ApplicationStatus, User, ContactMessage, Certificate, AssignmentSubmission } from '../../types';
 import { ProgramsManager } from './ProgramsManager';
@@ -49,6 +50,7 @@ import { AccessControlManager } from './AccessControlManager';
 import { StudentFeeManager } from './StudentFeeManager';
 import { CertificateModal } from './CertificateModal';
 import { NextIntakeManager } from './NextIntakeManager';
+import { ActivityLogs } from './ActivityLogs';
 
 interface AdminPanelProps {
   isOpen: boolean;
@@ -97,8 +99,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onAdminLoginSuccess,
   onAdminLogout
 }) => {
-  // Navigation tabs: dashboard | intake | programs | fees | content | theme | reviews | inbox | certificates | access
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'intake' | 'programs' | 'fees' | 'content' | 'theme' | 'reviews' | 'inbox' | 'certificates' | 'access'>('dashboard');
+  // Navigation tabs: dashboard | intake | programs | fees | content | theme | reviews | inbox | certificates | access | activity_logs
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'intake' | 'programs' | 'fees' | 'content' | 'theme' | 'reviews' | 'inbox' | 'certificates' | 'access' | 'activity_logs'>('dashboard');
   const [contentSubTab, setContentSubTab] = useState<'site_details' | 'programs'>('site_details');
 
   // Local authenticated state so the session transitions immediately without getting stuck
@@ -982,6 +984,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     Auth
                   </span>
                 </button>
+
+                {/* Activity Logs & Audit Trail Tab */}
+                <button
+                  onClick={() => setActiveTab('activity_logs')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition-colors cursor-pointer text-left ${
+                    activeTab === 'activity_logs'
+                      ? 'bg-amber-500/15 text-white font-semibold border-l-2 border-amber-500 shadow-sm'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <History className={`w-4 h-4 ${activeTab === 'activity_logs' ? 'text-amber-400' : 'text-slate-400'}`} />
+                    <span>Activity Logs</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-bold border border-emerald-500/20">
+                    Audit
+                  </span>
+                </button>
               </nav>
 
               {/* Sidebar Footer Controls (View Site & Sign Out matching reference) */}
@@ -1268,6 +1288,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 {activeTab === 'access' && (
                   <div className="animate-in fade-in">
                     <AccessControlManager onRefreshStats={fetchStats} />
+                  </div>
+                )}
+
+                {/* ------------------------------------------------------------- */}
+                {/* TAB: ACTIVITY LOGS & SYSTEM-WIDE AUDIT TRAIL                  */}
+                {/* ------------------------------------------------------------- */}
+                {activeTab === 'activity_logs' && (
+                  <div className="animate-in fade-in">
+                    <ActivityLogs showToast={showToast} />
                   </div>
                 )}
 
