@@ -1517,42 +1517,87 @@ async function handleCreateCourse(req: Request, res: Response) {
     const prisma = getPrismaClient();
     const body = req.body || {};
 
-    // 1. Validate required title
-    const rawTitle = typeof body.title === "string" ? body.title.trim() : "";
-    if (!rawTitle) {
-      console.warn("[Courses API POST] Validation failed: title is missing or empty.");
-      return res.status(400).json({
-        error: "Validation failed: Program title is required and cannot be empty."
-      });
-    }
+    // Explicit payload validation try/catch block to prevent crashes or HTTP 500 on missing fields
+    let rawTitle = "";
+    let parsedPrice = 0;
+    let parsedMonthly = 0;
+    let parsedWeeks = 12;
+    let sanitizedModules: any[] = [];
+    let curJson = "[]";
 
-    // 2. Validate price_kes (tuition fee)
-    if (body.price_kes === undefined || body.price_kes === null || body.price_kes === "") {
-      console.warn("[Courses API POST] Validation failed: price_kes is required.");
-      return res.status(400).json({
-        error: "Validation failed: Full upfront tuition fee (KES) is required."
-      });
-    }
-    const parsedPrice = Number(body.price_kes);
-    if (isNaN(parsedPrice) || parsedPrice < 0) {
-      console.warn("[Courses API POST] Validation failed: price_kes must be a valid non-negative number:", body.price_kes);
-      return res.status(400).json({
-        error: "Validation failed: Tuition fee must be a valid positive number in KES."
-      });
-    }
+    try {
+      if (!body || typeof body !== "object" || Object.keys(body).length === 0) {
+        throw new Error("Missing request body: Payload cannot be empty.");
+      }
 
-    // 3. Validate and sanitize monthly_kes
-    let parsedMonthly = Number(body.monthly_kes);
-    if (isNaN(parsedMonthly) || parsedMonthly <= 0) {
-      parsedMonthly = Math.max(1000, Math.round(parsedPrice / 5));
-    }
+      // 1. Validate required title
+      rawTitle = typeof body.title === "string" ? body.title.trim() : "";
+      if (!rawTitle) {
+        throw new Error("Missing required field 'title': Program title is required and cannot be empty.");
+      }
 
-    // 4. Validate and sanitize duration_weeks
-    let parsedWeeks = Number(body.duration_weeks);
-    if (isNaN(parsedWeeks) || parsedWeeks <= 0) {
-      parsedWeeks = 12;
-    } else {
-      parsedWeeks = Math.round(parsedWeeks);
+      // 2. Validate price_kes (tuition fee)
+      if (body.price_kes === undefined || body.price_kes === null || body.price_kes === "") {
+        throw new Error("Missing required field 'price_kes': Full upfront tuition fee in KES is required.");
+      }
+      parsedPrice = Number(body.price_kes);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        throw new Error("Invalid field 'price_kes': Tuition fee must be a valid positive number in KES.");
+      }
+
+      // 3. Validate and sanitize monthly_kes
+      parsedMonthly = Number(body.monthly_kes);
+      if (isNaN(parsedMonthly) || parsedMonthly <= 0) {
+        parsedMonthly = Math.max(1000, Math.round(parsedPrice / 5));
+      }
+
+      // 4. Validate and sanitize duration_weeks
+      parsedWeeks = Number(body.duration_weeks);
+      if (isNaN(parsedWeeks) || parsedWeeks <= 0) {
+        parsedWeeks = 12;
+      } else {
+        parsedWeeks = Math.round(parsedWeeks);
+      }
+
+      // Process curriculum / curriculum_modules array
+      let rawModules = body.curriculum || body.curriculum_modules || [];
+      if (typeof rawModules === "string") {
+        try {
+          rawModules = JSON.parse(rawModules);
+        } catch {
+          rawModules = [];
+        }
+      }
+      if (!Array.isArray(rawModules)) {
+        rawModules = [];
+      }
+
+      sanitizedModules = rawModules.map((m: any, idx: number) => {
+        const moduleName = (m && (m.title || m.module) ? String(m.title || m.module).trim() : `Module ${idx + 1}`);
+        let topicsList: string[] = [];
+        if (Array.isArray(m?.topics)) {
+          topicsList = m.topics.map((t: any) => String(t).trim()).filter(Boolean);
+        } else if (typeof m?.topics === "string") {
+          topicsList = m.topics.split(",").map((t: string) => t.trim()).filter(Boolean);
+        }
+        return {
+          module: moduleName,
+          title: moduleName,
+          topics: topicsList
+        };
+      });
+
+      curJson = JSON.stringify(sanitizedModules);
+    } catch (valErr: any) {
+      console.error("Course Save Validation Error:", valErr.message, { payload: body });
+      return res.status(400).json({
+        success: false,
+        error: valErr.message,
+        missingFields: [
+          !body?.title ? "title" : null,
+          body?.price_kes === undefined || body?.price_kes === null || body?.price_kes === "" ? "price_kes" : null
+        ].filter(Boolean)
+      });
     }
 
     // 5. Generate safe unique ID
@@ -1611,36 +1656,6 @@ async function handleCreateCourse(req: Request, res: Response) {
       : "Intensive technical program designed for real-world Kenyan and global tech careers.";
 
     const isFeaturedInt = body.is_featured ? 1 : 0;
-
-    // 8. Process curriculum / curriculum_modules array
-    let rawModules = body.curriculum || body.curriculum_modules || [];
-    if (typeof rawModules === "string") {
-      try {
-        rawModules = JSON.parse(rawModules);
-      } catch {
-        rawModules = [];
-      }
-    }
-    if (!Array.isArray(rawModules)) {
-      rawModules = [];
-    }
-
-    const sanitizedModules = rawModules.map((m: any, idx: number) => {
-      const moduleName = (m && (m.title || m.module) ? String(m.title || m.module).trim() : `Module ${idx + 1}`);
-      let topicsList: string[] = [];
-      if (Array.isArray(m?.topics)) {
-        topicsList = m.topics.map((t: any) => String(t).trim()).filter(Boolean);
-      } else if (typeof m?.topics === "string") {
-        topicsList = m.topics.split(",").map((t: string) => t.trim()).filter(Boolean);
-      }
-      return {
-        module: moduleName,
-        title: moduleName,
-        topics: topicsList
-      };
-    });
-
-    const curJson = JSON.stringify(sanitizedModules);
 
     let createdRecord: any = null;
 
