@@ -1362,6 +1362,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <div className="animate-in fade-in">
                     <ReviewsModerator
                       showToast={showToast}
+                      courses={courses}
                       onRefreshApprovedReviews={() => {
                         window.dispatchEvent(new CustomEvent('reviews-updated'));
                       }}

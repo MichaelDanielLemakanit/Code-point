@@ -4,6 +4,7 @@ import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { Hero } from './components/Hero';
 import { CareerPathQuiz } from './components/CareerPathQuiz';
 import { ProgramsCatalog } from './components/ProgramsCatalog';
+import { VideoTestimonialsGallery } from './components/VideoTestimonialsGallery';
 import { LearningModel } from './components/LearningModel';
 import { ReviewsSection } from './components/ReviewsSection';
 import { AdmissionsFees } from './components/AdmissionsFees';
@@ -174,6 +175,22 @@ export default function App() {
           courses={courses}
           loading={loadingCourses}
           onApplyCourse={(courseId) => handleOpenApply(courseId)}
+        />
+
+        {/* 2.5 Student Video Testimonials & Alumni Stories */}
+        <VideoTestimonialsGallery
+          onApplyForCourse={(courseTitle) => {
+            if (courseTitle) {
+              const match = courses.find(c => 
+                c.title.toLowerCase().includes(courseTitle.toLowerCase()) || 
+                courseTitle.toLowerCase().includes(c.title.toLowerCase())
+              );
+              handleOpenApply(match ? match.id : undefined);
+            } else {
+              handleOpenApply();
+            }
+          }}
+          onExplorePrograms={() => handleNavigateSection('programs')}
         />
 
         {/* 3. Technologies You Will Master */}

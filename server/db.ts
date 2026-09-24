@@ -2218,10 +2218,96 @@ function createInMemoryDb(): AppDatabase {
         }
         return;
       }
+
+      // INSERT INTO video_testimonials
+      if (lower.includes("insert into video_testimonials")) {
+        const row = {
+          id: params[0],
+          student_name: params[1],
+          photo_url: params[2] || null,
+          thumbnail_url: params[3] || null,
+          course_program: params[4],
+          cohort: params[5] || '',
+          career_role: params[6] || '',
+          company: params[7] || '',
+          video_url: params[8],
+          duration: params[9] || '',
+          quote_highlight: params[10] || '',
+          is_featured: params[11] !== undefined ? (params[11] ? 1 : 0) : 1,
+          status: params[12] || 'approved',
+          views_count: Number(params[13] || 0),
+          created_at: params[14] || new Date().toISOString()
+        };
+        const existingIdx = tables.video_testimonials.findIndex(v => v.id === row.id);
+        if (existingIdx >= 0) {
+          tables.video_testimonials[existingIdx] = row;
+        } else {
+          tables.video_testimonials.unshift(row);
+        }
+        return;
+      }
+
+      // UPDATE video_testimonials
+      if (lower.includes("update video_testimonials")) {
+        const targetId = params[params.length - 1];
+        const v = tables.video_testimonials.find(t => t.id === targetId);
+        if (v) {
+          if (lower.includes("views_count = views_count + 1")) {
+            v.views_count = (v.views_count || 0) + 1;
+            return;
+          }
+          if (lower.includes("is_featured = ?") && params.length === 2) {
+            v.is_featured = params[0] ? 1 : 0;
+            return;
+          }
+          if (lower.includes("status = ?") && params.length === 2) {
+            v.status = params[0];
+            return;
+          }
+          if (params.length >= 12) {
+            v.student_name = params[0];
+            v.photo_url = params[1];
+            v.thumbnail_url = params[2];
+            v.course_program = params[3];
+            v.cohort = params[4];
+            v.career_role = params[5];
+            v.company = params[6];
+            v.video_url = params[7];
+            v.duration = params[8];
+            v.quote_highlight = params[9];
+            v.is_featured = params[10] ? 1 : 0;
+            v.status = params[11];
+          }
+        }
+        return;
+      }
+
+      // DELETE FROM video_testimonials
+      if (lower.includes("delete from video_testimonials")) {
+        const id = params[0];
+        tables.video_testimonials = tables.video_testimonials.filter(v => v.id !== id);
+        return;
+      }
     },
     async exec() {},
     async queryAll<T = any>(sql: string, params: any[] = []): Promise<T[]> {
       const lower = sql.toLowerCase();
+      if (lower.includes("from video_testimonials")) {
+        let list = [...tables.video_testimonials];
+        if (lower.includes("status = 'approved'")) {
+          list = list.filter(v => v.status === 'approved');
+        } else if (lower.includes("status = ?")) {
+          const s = params[0];
+          list = list.filter(v => v.status === s);
+        }
+        if (lower.includes("is_featured = 1")) {
+          list = list.filter(v => Number(v.is_featured) === 1);
+        }
+        if (lower.includes("order by is_featured desc")) {
+          list.sort((a, b) => Number(b.is_featured || 0) - Number(a.is_featured || 0));
+        }
+        return list as unknown as T[];
+      }
       if (lower.includes("from activity_logs")) {
         let list = [...tables.activity_logs];
         if (lower.includes("event_type = ?")) {
@@ -2638,6 +2724,26 @@ async function initSqlite(): Promise<AppDatabase | null> {
       );
       CREATE INDEX IF NOT EXISTS idx_sqlite_activity_created ON activity_logs(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_sqlite_activity_type ON activity_logs(event_type);
+
+      CREATE TABLE IF NOT EXISTS video_testimonials (
+        id TEXT PRIMARY KEY,
+        student_name TEXT NOT NULL,
+        photo_url TEXT,
+        thumbnail_url TEXT,
+        course_program TEXT NOT NULL,
+        cohort TEXT DEFAULT '',
+        career_role TEXT DEFAULT '',
+        company TEXT DEFAULT '',
+        video_url TEXT NOT NULL,
+        duration TEXT DEFAULT '',
+        quote_highlight TEXT NOT NULL,
+        is_featured INTEGER DEFAULT 1,
+        status TEXT NOT NULL DEFAULT 'approved',
+        views_count INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_sqlite_video_featured ON video_testimonials(is_featured);
+      CREATE INDEX IF NOT EXISTS idx_sqlite_video_status ON video_testimonials(status);
     `);
 
     // Ensure columns in student_fee_accounts if table already existed
@@ -2960,6 +3066,29 @@ async function initSqlite(): Promise<AppDatabase | null> {
       }
     } catch (e) {
       console.warn("[Database] SQLite activity_logs seed warning:", e);
+    }
+
+    // Seed video_testimonials if empty
+    try {
+      const stmtVids = sqliteInstance.prepare("SELECT COUNT(*) as count FROM video_testimonials");
+      let hasVids = false;
+      if (stmtVids.step()) {
+        const row = stmtVids.getAsObject();
+        hasVids = Number(row.count) > 0;
+      }
+      stmtVids.free();
+
+      if (!hasVids) {
+        for (const v of DEFAULT_VIDEO_TESTIMONIALS) {
+          sqliteInstance.run(
+            `INSERT INTO video_testimonials (id, student_name, photo_url, thumbnail_url, course_program, cohort, career_role, company, video_url, duration, quote_highlight, is_featured, status, views_count, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [v.id, v.student_name, v.photo_url, v.thumbnail_url, v.course_program, v.cohort, v.career_role, v.company, v.video_url, v.duration, v.quote_highlight, v.is_featured, v.status, v.views_count, v.created_at]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] SQLite video_testimonials seed warning:", e);
     }
 
     // Save initial state

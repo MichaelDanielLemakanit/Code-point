@@ -92,6 +92,29 @@
   box-shadow: 0 12px 28px -6px var(--card-highlight-glow) !important;
 }
 
+.theme-card-hover {
+  transition: all 0.3s ease;
+}
+
+.theme-card-hover:hover {
+  border-color: var(--card-highlight-border) !important;
+  box-shadow: 0 14px 30px -8px var(--card-highlight-glow) !important;
+}
+
+.theme-group-hover-title {
+  transition: color 0.2s ease;
+}
+
+.group:hover .theme-group-hover-title {
+  color: var(--primary-color) !important;
+}
+
+.theme-filter-pill-active {
+  background-color: var(--primary-color) !important;
+  color: #020617 !important;
+  box-shadow: 0 4px 14px 0 rgba(var(--primary-rgb), 0.35) !important;
+}
+
 .theme-gradient-text {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
   -webkit-background-clip: text !important;

@@ -45,6 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     'hero',
     'career-quiz',
     'programs',
+    'student-stories',
     'technologies',
     'schedules',
     'why-study',
@@ -57,6 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navItems = [
     { id: 'career-quiz', label: 'Career Quiz', icon: Compass, isSpecial: true },
     { id: 'programs', label: 'Programs' },
+    { id: 'student-stories', label: 'Alumni Stories' },
     { id: 'technologies', label: 'Technologies' },
     { id: 'schedules', label: 'Schedules' },
     { id: 'why-study', label: 'Why CodePoint' },

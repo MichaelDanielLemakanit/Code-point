@@ -369,6 +369,228 @@ app.delete("/api/reviews/:id", async (req: Request, res: Response) => {
   }
 });
 
+// -------------------------------------------------------------
+// STUDENT VIDEO TESTIMONIALS (PUBLIC GALLERY & ADMIN CMS)
+// -------------------------------------------------------------
+
+// GET: List video testimonials (Public & Admin)
+app.get("/api/video-testimonials", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { status, featured } = req.query;
+
+    let sql = "SELECT * FROM video_testimonials";
+    const conditions: string[] = [];
+    const params: any[] = [];
+
+    if (status && status !== 'all') {
+      conditions.push("status = ?");
+      params.push(String(status));
+    } else if (!status) {
+      // Default for public visitors: only approved
+      conditions.push("status = 'approved'");
+    }
+
+    if (featured === 'true' || featured === '1') {
+      conditions.push("is_featured = 1");
+    }
+
+    if (conditions.length > 0) {
+      sql += " WHERE " + conditions.join(" AND ");
+    }
+
+    sql += " ORDER BY is_featured DESC, created_at DESC";
+
+    const testimonials = await queryAll(db, sql, params);
+    res.json(testimonials);
+  } catch (error: any) {
+    console.error("Failed to fetch video testimonials:", error);
+    res.status(500).json({ error: error.message || "Failed to fetch video testimonials" });
+  }
+});
+
+// POST: Create a new video testimonial (Admin CMS)
+app.post("/api/video-testimonials", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const {
+      student_name,
+      photo_url,
+      thumbnail_url,
+      course_program,
+      cohort,
+      career_role,
+      company,
+      video_url,
+      duration,
+      quote_highlight,
+      is_featured,
+      status
+    } = req.body;
+
+    if (!student_name || !video_url || !quote_highlight || !course_program) {
+      return res.status(400).json({
+        success: false,
+        error: "Student name, course program, video URL, and quote highlight are required."
+      });
+    }
+
+    const id = `vid-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const effectivePhoto = photo_url || thumbnail_url || "/src/assets/images/alumni_daniel_dev_1790212245688.jpg";
+    const effectiveThumb = thumbnail_url || photo_url || effectivePhoto;
+    const effectiveFeatured = is_featured ? 1 : 0;
+    const effectiveStatus = status || 'approved';
+    const now = new Date().toISOString();
+
+    await db.run(
+      `INSERT INTO video_testimonials (
+        id, student_name, photo_url, thumbnail_url, course_program,
+        cohort, career_role, company, video_url, duration,
+        quote_highlight, is_featured, status, views_count, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        student_name.trim(),
+        effectivePhoto.trim(),
+        effectiveThumb.trim(),
+        course_program.trim(),
+        (cohort || '').trim(),
+        (career_role || '').trim(),
+        (company || '').trim(),
+        video_url.trim(),
+        (duration || '3:00').trim(),
+        quote_highlight.trim(),
+        effectiveFeatured,
+        effectiveStatus,
+        0,
+        now
+      ]
+    );
+
+    await saveDatabase(db);
+
+    const created = await queryOne(db, "SELECT * FROM video_testimonials WHERE id = ?", [id]);
+    res.status(201).json({
+      success: true,
+      message: "Video testimonial created successfully.",
+      testimonial: created
+    });
+  } catch (error: any) {
+    console.error("Failed to create video testimonial:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to create video testimonial" });
+  }
+});
+
+// PATCH: Update an existing video testimonial
+app.patch("/api/video-testimonials/:id", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { id } = req.params;
+
+    const existing = await queryOne<any>(db, "SELECT * FROM video_testimonials WHERE id = ?", [id]);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "Video testimonial not found" });
+    }
+
+    const body = req.body;
+    const student_name = body.student_name !== undefined ? body.student_name.trim() : existing.student_name;
+    const photo_url = body.photo_url !== undefined ? body.photo_url.trim() : existing.photo_url;
+    const thumbnail_url = body.thumbnail_url !== undefined ? body.thumbnail_url.trim() : existing.thumbnail_url;
+    const course_program = body.course_program !== undefined ? body.course_program.trim() : existing.course_program;
+    const cohort = body.cohort !== undefined ? body.cohort.trim() : existing.cohort;
+    const career_role = body.career_role !== undefined ? body.career_role.trim() : existing.career_role;
+    const company = body.company !== undefined ? body.company.trim() : existing.company;
+    const video_url = body.video_url !== undefined ? body.video_url.trim() : existing.video_url;
+    const duration = body.duration !== undefined ? body.duration.trim() : existing.duration;
+    const quote_highlight = body.quote_highlight !== undefined ? body.quote_highlight.trim() : existing.quote_highlight;
+    const is_featured = body.is_featured !== undefined ? (body.is_featured ? 1 : 0) : existing.is_featured;
+    const status = body.status !== undefined ? body.status : existing.status;
+
+    await db.run(
+      `UPDATE video_testimonials SET 
+        student_name = ?,
+        photo_url = ?,
+        thumbnail_url = ?,
+        course_program = ?,
+        cohort = ?,
+        career_role = ?,
+        company = ?,
+        video_url = ?,
+        duration = ?,
+        quote_highlight = ?,
+        is_featured = ?,
+        status = ?
+      WHERE id = ?`,
+      [
+        student_name,
+        photo_url,
+        thumbnail_url,
+        course_program,
+        cohort,
+        career_role,
+        company,
+        video_url,
+        duration,
+        quote_highlight,
+        is_featured,
+        status,
+        id
+      ]
+    );
+
+    await saveDatabase(db);
+    const updated = await queryOne(db, "SELECT * FROM video_testimonials WHERE id = ?", [id]);
+
+    res.json({
+      success: true,
+      message: "Video testimonial updated successfully.",
+      testimonial: updated
+    });
+  } catch (error: any) {
+    console.error("Failed to update video testimonial:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to update video testimonial" });
+  }
+});
+
+// DELETE: Remove a video testimonial
+app.delete("/api/video-testimonials/:id", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { id } = req.params;
+
+    const existing = await queryOne(db, "SELECT id FROM video_testimonials WHERE id = ?", [id]);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "Video testimonial not found" });
+    }
+
+    await db.run("DELETE FROM video_testimonials WHERE id = ?", [id]);
+    await saveDatabase(db);
+
+    res.json({
+      success: true,
+      message: "Video testimonial successfully deleted."
+    });
+  } catch (error: any) {
+    console.error("Failed to delete video testimonial:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to delete video testimonial" });
+  }
+});
+
+// POST: Increment views count
+app.post("/api/video-testimonials/:id/view", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { id } = req.params;
+
+    await db.run("UPDATE video_testimonials SET views_count = views_count + 1 WHERE id = ?", [id]);
+    await saveDatabase(db);
+
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Demo accounts for instant UI role switching
 app.get("/api/auth/demo-users", async (req: Request, res: Response) => {
   try {

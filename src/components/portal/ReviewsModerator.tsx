@@ -17,19 +17,24 @@ import {
   MessageSquareHeart,
   ExternalLink,
   ShieldCheck,
-  Check
+  Check,
+  Film
 } from 'lucide-react';
-import { Review } from '../../types';
+import { Review, Course } from '../../types';
+import { VideoTestimonialsManager } from './VideoTestimonialsManager';
 
 interface ReviewsModeratorProps {
   showToast: (msg: string) => void;
   onRefreshApprovedReviews?: () => void;
+  courses?: Course[];
 }
 
 export const ReviewsModerator: React.FC<ReviewsModeratorProps> = ({ 
   showToast,
-  onRefreshApprovedReviews 
+  onRefreshApprovedReviews,
+  courses = []
 }) => {
+  const [moderationTab, setModerationTab] = useState<'video_testimonials' | 'written_reviews'>('video_testimonials');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
@@ -287,8 +292,47 @@ export const ReviewsModerator: React.FC<ReviewsModeratorProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
+      {/* Top Moderation Subtab Switcher */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-stone-100 border border-stone-200 rounded-xl w-fit">
+        <button
+          onClick={() => setModerationTab('video_testimonials')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            moderationTab === 'video_testimonials'
+              ? 'bg-stone-900 text-white shadow-sm'
+              : 'text-stone-600 hover:text-stone-900'
+          }`}
+        >
+          <Film className="w-4 h-4 text-emerald-400" />
+          <span>Student Video Testimonials</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">
+            Alumni Stories
+          </span>
+        </button>
+
+        <button
+          onClick={() => setModerationTab('written_reviews')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            moderationTab === 'written_reviews'
+              ? 'bg-stone-900 text-white shadow-sm'
+              : 'text-stone-600 hover:text-stone-900'
+          }`}
+        >
+          <MessageSquareHeart className="w-4 h-4 text-amber-400" />
+          <span>Written Reviews & Ratings</span>
+          {pendingCount > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 font-mono font-bold">
+              {pendingCount} Pending
+            </span>
+          )}
+        </button>
+      </div>
+
+      {moderationTab === 'video_testimonials' ? (
+        <VideoTestimonialsManager showToast={showToast} courses={courses} />
+      ) : (
+        <>
+          {/* Top Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
         <div>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900 tracking-tight flex items-center gap-2.5">
             <MessageSquareHeart className="w-7 h-7 text-emerald-600" />
@@ -782,6 +826,8 @@ export const ReviewsModerator: React.FC<ReviewsModeratorProps> = ({
             </form>
           </div>
         </div>
+      )}
+        </>
       )}
 
     </div>
