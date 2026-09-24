@@ -12,7 +12,7 @@ import {
   DEFAULT_LECTURES,
   DEFAULT_STUDENT_PROGRESS,
   DEFAULT_STUDENT_FEES
-} from "./db.js";
+} from "./db.ts";
 
 const { Pool } = pg;
 
