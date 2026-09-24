@@ -12,7 +12,8 @@ import {
   DEFAULT_LECTURES,
   DEFAULT_STUDENT_PROGRESS,
   DEFAULT_STUDENT_FEES,
-  DEFAULT_ACTIVITY_LOGS
+  DEFAULT_ACTIVITY_LOGS,
+  DEFAULT_VIDEO_TESTIMONIALS
 } from "./db.ts";
 
 const { Pool } = pg;
@@ -649,6 +650,44 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
            ON CONFLICT (id) DO NOTHING`,
           [l.id, l.event_type, l.action, l.entity_type, l.entity_id, l.actor_name, l.actor_email, l.target_name, l.target_email, l.details, l.previous_value, l.new_value, l.ip_address, l.created_at]
+        );
+      }
+    }
+
+    // 20. Table: video_testimonials
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS video_testimonials (
+        id VARCHAR(255) PRIMARY KEY,
+        student_name VARCHAR(255) NOT NULL,
+        photo_url TEXT,
+        thumbnail_url TEXT,
+        course_program VARCHAR(255) NOT NULL,
+        cohort VARCHAR(100) NOT NULL DEFAULT 'Cohort 14',
+        career_role VARCHAR(255) NOT NULL,
+        company VARCHAR(255) NOT NULL,
+        video_url TEXT NOT NULL,
+        duration VARCHAR(50) DEFAULT '3:00',
+        quote_highlight TEXT NOT NULL,
+        is_featured INTEGER DEFAULT 1,
+        status VARCHAR(50) NOT NULL DEFAULT 'approved',
+        views_count INTEGER DEFAULT 0,
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_video_testimonials_featured ON video_testimonials(is_featured);
+      CREATE INDEX IF NOT EXISTS idx_video_testimonials_status ON video_testimonials(status);
+    `);
+
+    // Seed default video testimonials if empty
+    const vidCountRes = await client.query("SELECT count(*) as count FROM video_testimonials");
+    const vidCount = Number(vidCountRes.rows[0]?.count || 0);
+    if (vidCount === 0) {
+      console.log("[Migration] Seeding initial video testimonials in PostgreSQL...");
+      for (const v of DEFAULT_VIDEO_TESTIMONIALS) {
+        await client.query(
+          `INSERT INTO video_testimonials (id, student_name, photo_url, thumbnail_url, course_program, cohort, career_role, company, video_url, duration, quote_highlight, is_featured, status, views_count, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+           ON CONFLICT (id) DO NOTHING`,
+          [v.id, v.student_name, v.photo_url, v.thumbnail_url, v.course_program, v.cohort, v.career_role, v.company, v.video_url, v.duration, v.quote_highlight, v.is_featured, v.status, v.views_count, v.created_at]
         );
       }
     }

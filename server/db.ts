@@ -572,6 +572,77 @@ export const DEFAULT_REVIEWS = [
   }
 ];
 
+export const DEFAULT_VIDEO_TESTIMONIALS = [
+  {
+    id: "vid-001",
+    student_name: "Daniel Michael",
+    photo_url: "/src/assets/images/alumni_daniel_dev_1790212245688.jpg",
+    thumbnail_url: "/src/assets/images/alumni_daniel_dev_1790212245688.jpg",
+    course_program: "Full-Stack Software Engineering",
+    cohort: "Cohort 14",
+    career_role: "Junior Frontend Developer",
+    company: "Safaricom PLC",
+    video_url: "https://www.youtube.com/watch?v=kqtD5dpn9C8",
+    duration: "3:12",
+    quote_highlight: "The hands-on projects at Ngong Road campus helped me land my tech job in 4 months. Going from zero TypeScript knowledge to deploying microservices was surreal.",
+    is_featured: 1,
+    status: "approved",
+    views_count: 1420,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString()
+  },
+  {
+    id: "vid-002",
+    student_name: "Cynthia Njeri",
+    photo_url: "/src/assets/images/alumni_cynthia_data_1790212257311.jpg",
+    thumbnail_url: "/src/assets/images/alumni_cynthia_data_1790212257311.jpg",
+    course_program: "Data Science & Machine Learning",
+    cohort: "Cohort 12",
+    career_role: "BI & Data Analyst",
+    company: "Equity Bank Kenya",
+    video_url: "https://www.youtube.com/watch?v=r-uOLxNrNk8",
+    duration: "2:45",
+    quote_highlight: "From zero Python background to building predictive credit models. The instructors pushed us through real East African banking datasets.",
+    is_featured: 1,
+    status: "approved",
+    views_count: 980,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString()
+  },
+  {
+    id: "vid-003",
+    student_name: "Kevin Otieno",
+    photo_url: "/src/assets/images/alumni_kevin_cloud_1790212267835.jpg",
+    thumbnail_url: "/src/assets/images/alumni_kevin_cloud_1790212267835.jpg",
+    course_program: "Applied AI & Cloud Engineering",
+    cohort: "Cohort 15",
+    career_role: "Cloud DevOps Associate",
+    company: "Cellulant",
+    video_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    duration: "4:05",
+    quote_highlight: "The Saturday coding clinics and pair-programming at Teamshark 5th Floor completely changed my learning curve with senior mentors.",
+    is_featured: 1,
+    status: "approved",
+    views_count: 1250,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25).toISOString()
+  },
+  {
+    id: "vid-004",
+    student_name: "Faith Mwangi",
+    photo_url: "/src/assets/images/alumni_faith_sec_1790212286930.jpg",
+    thumbnail_url: "/src/assets/images/alumni_faith_sec_1790212286930.jpg",
+    course_program: "Cyber Security & Cloud Defense",
+    cohort: "Cohort 13",
+    career_role: "Security Operations Analyst",
+    company: "KCB Group",
+    video_url: "https://www.youtube.com/watch?v=EngW7tLk6R8",
+    duration: "3:30",
+    quote_highlight: "Real penetration testing labs instead of multiple-choice quizzes made all the difference during technical whiteboard interviews.",
+    is_featured: 1,
+    status: "approved",
+    views_count: 870,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 35).toISOString()
+  }
+];
+
 export const DEFAULT_ASSIGNMENTS = [
   {
     id: "asg-001",
@@ -1361,6 +1432,26 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       );
       CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_activity_logs_type ON activity_logs(event_type);
+
+      CREATE TABLE IF NOT EXISTS video_testimonials (
+        id VARCHAR(255) PRIMARY KEY,
+        student_name VARCHAR(255) NOT NULL,
+        photo_url TEXT,
+        thumbnail_url TEXT,
+        course_program VARCHAR(255) NOT NULL,
+        cohort VARCHAR(100) NOT NULL DEFAULT 'Cohort 14',
+        career_role VARCHAR(255) NOT NULL,
+        company VARCHAR(255) NOT NULL,
+        video_url TEXT NOT NULL,
+        duration VARCHAR(50) DEFAULT '3:00',
+        quote_highlight TEXT NOT NULL,
+        is_featured INTEGER DEFAULT 1,
+        status VARCHAR(50) NOT NULL DEFAULT 'approved',
+        views_count INTEGER DEFAULT 0,
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_vid_testimonials_featured ON video_testimonials(is_featured);
+      CREATE INDEX IF NOT EXISTS idx_vid_testimonials_status ON video_testimonials(status);
     `);
 
     // Ensure all required columns exist on courses if created earlier
@@ -1581,6 +1672,25 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       console.warn("[Database] PostgreSQL activity_logs seed warning:", e);
     }
 
+    // Seed default video testimonials if empty
+    try {
+      const vidCountRes = await pool.query("SELECT count(*) as count FROM video_testimonials");
+      const vidCount = Number(vidCountRes.rows[0]?.count || 0);
+      if (vidCount === 0) {
+        console.log("[Database] Seeding initial video testimonials in PostgreSQL...");
+        for (const v of DEFAULT_VIDEO_TESTIMONIALS) {
+          await pool.query(
+            `INSERT INTO video_testimonials (id, student_name, photo_url, thumbnail_url, course_program, cohort, career_role, company, video_url, duration, quote_highlight, is_featured, status, views_count, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+             ON CONFLICT (id) DO NOTHING`,
+            [v.id, v.student_name, v.photo_url, v.thumbnail_url, v.course_program, v.cohort, v.career_role, v.company, v.video_url, v.duration, v.quote_highlight, v.is_featured, v.status, v.views_count, v.created_at]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] PostgreSQL video_testimonials seed warning:", e);
+    }
+
     const appDb: AppDatabase = {
       type: "postgres",
       providerName: "PostgreSQL (Production Cloud Database)",
@@ -1632,7 +1742,8 @@ function createInMemoryDb(): AppDatabase {
     class_lectures: [...DEFAULT_LECTURES],
     student_module_progress: [...DEFAULT_STUDENT_PROGRESS],
     student_fee_accounts: [...DEFAULT_STUDENT_FEES],
-    activity_logs: [...DEFAULT_ACTIVITY_LOGS]
+    activity_logs: [...DEFAULT_ACTIVITY_LOGS],
+    video_testimonials: [...DEFAULT_VIDEO_TESTIMONIALS]
   };
 
   return {

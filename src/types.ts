@@ -131,6 +131,24 @@ export interface Review {
   created_at: string;
 }
 
+export interface VideoTestimonial {
+  id: string;
+  student_name: string;
+  photo_url?: string;
+  thumbnail_url?: string;
+  course_program: string;
+  cohort: string;
+  career_role: string;
+  company: string;
+  video_url: string;
+  duration?: string;
+  quote_highlight: string;
+  is_featured: number | boolean;
+  status: 'approved' | 'pending' | 'hidden';
+  views_count?: number;
+  created_at: string;
+}
+
 export type AccessStatus = 'pending' | 'approved' | 'rejected';
 
 export interface LoginAttempt {
