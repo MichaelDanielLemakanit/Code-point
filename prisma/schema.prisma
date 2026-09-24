@@ -254,3 +254,132 @@ model student_module_progress {
   @@index([student_email, course_id], map: "idx_smp_student")
   @@index([status], map: "idx_smp_status")
 }
+
+model tuition_ledger {
+  id                    String   @id @db.VarChar(255)
+  student_email         String?  @db.VarChar(255)
+  student_name          String?  @db.VarChar(255)
+  student_phone         String?  @db.VarChar(100)
+  course_id             String?  @db.VarChar(255)
+  course_title          String?  @db.VarChar(255)
+  cohort                String?  @default("Cohort 14") @db.VarChar(100)
+  total_fee_kes         Decimal  @default(85000) @db.Decimal
+  paid_fee_kes          Decimal  @default(0) @db.Decimal
+  balance_kes           Decimal  @default(85000) @db.Decimal
+  payment_status        String   @default("pending") @db.VarChar(50)
+  deadline_date         String?  @default("") @db.VarChar(100)
+  portal_access_granted Int      @default(1)
+  installment_plan      String?  @default("5-Month Flexible Installments") @db.VarChar(255)
+  notes                 String?  @default("")
+  updated_at            String?  @db.VarChar(100)
+  created_at            String   @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
+
+  @@index([student_email], map: "idx_tl_email")
+  @@index([payment_status], map: "idx_tl_status")
+}
+
+model student_fee_accounts {
+  id                    String   @id @db.VarChar(255)
+  student_email         String   @db.VarChar(255)
+  student_name          String   @db.VarChar(255)
+  student_phone         String?  @db.VarChar(100)
+  course_id             String   @db.VarChar(255)
+  course_title          String   @db.VarChar(255)
+  cohort                String   @default("Current Cohort") @db.VarChar(100)
+  total_fee_kes         Decimal  @default(85000) @db.Decimal
+  paid_fee_kes          Decimal  @default(0) @db.Decimal
+  balance_kes           Decimal  @default(85000) @db.Decimal
+  payment_status        String   @default("pending") @db.VarChar(50)
+  deadline_date         String   @default("") @db.VarChar(100)
+  portal_access_granted Int      @default(1)
+  installment_plan      String?  @default("5-Month Flexible Installments") @db.VarChar(255)
+  notes                 String?  @default("")
+  updated_at            String?  @db.VarChar(100)
+  created_at            String   @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
+
+  @@index([student_email], map: "idx_sfa_email")
+  @@index([payment_status], map: "idx_sfa_status")
+}
+
+model access_control {
+  id               String  @id @db.VarChar(255)
+  email            String  @db.VarChar(255)
+  requested_role   String  @default("student") @db.VarChar(50)
+  status           String  @default("pending") @db.VarChar(50)
+  assigned_role    String? @db.VarChar(50)
+  full_name        String? @db.VarChar(255)
+  phone            String? @db.VarChar(100)
+  course_id        String? @db.VarChar(255)
+  course_title     String? @db.VarChar(255)
+  cohort           String? @db.VarChar(100)
+  attempt_count    Int?    @default(1)
+  last_attempt_at  String? @db.VarChar(100)
+  reviewed_at      String? @db.VarChar(100)
+  reviewed_by      String? @db.VarChar(255)
+  notes            String?
+  initial_password String? @db.VarChar(255)
+  setup_token      String? @db.VarChar(255)
+  created_at       String  @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
+
+  @@index([email], map: "idx_ac_email")
+  @@index([status], map: "idx_ac_status")
+}
+
+model testimonials {
+  id            String  @id @db.VarChar(255)
+  rating        Int?    @default(5)
+  full_name     String  @db.VarChar(255)
+  role_program  String  @db.VarChar(255)
+  organization  String? @db.VarChar(255)
+  testimonial   String
+  avatar_url    String?
+  video_url     String?
+  thumbnail_url String?
+  status        String  @default("approved") @db.VarChar(50)
+  is_featured   Int?    @default(1)
+  created_at    String  @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
+
+  @@index([status], map: "idx_testimonials_status")
+  @@index([is_featured], map: "idx_testimonials_featured")
+}
+
+model video_testimonials {
+  id              String  @id @db.VarChar(255)
+  student_name    String  @db.VarChar(255)
+  photo_url       String?
+  thumbnail_url   String?
+  course_program  String  @db.VarChar(255)
+  cohort          String  @default("Cohort 14") @db.VarChar(100)
+  career_role     String  @db.VarChar(255)
+  company         String  @db.VarChar(255)
+  video_url       String
+  duration        String? @default("3:00") @db.VarChar(50)
+  quote_highlight String
+  is_featured     Int?    @default(1)
+  status          String  @default("approved") @db.VarChar(50)
+  views_count     Int?    @default(0)
+  created_at      String  @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
+
+  @@index([is_featured], map: "idx_vt_featured")
+  @@index([status], map: "idx_vt_status")
+}
+
+model activity_logs {
+  id             String  @id @db.VarChar(255)
+  event_type     String  @db.VarChar(100)
+  action         String  @db.VarChar(255)
+  entity_type    String  @db.VarChar(100)
+  entity_id      String? @db.VarChar(255)
+  actor_name     String  @default("Administrator") @db.VarChar(255)
+  actor_email    String? @default("info@codepointkenya.com") @db.VarChar(255)
+  target_name    String? @db.VarChar(255)
+  target_email   String? @db.VarChar(255)
+  details        String
+  previous_value String?
+  new_value      String?
+  ip_address     String? @db.VarChar(100)
+  created_at     String  @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
+
+  @@index([created_at], map: "idx_al_created")
+  @@index([event_type], map: "idx_al_type")
+}

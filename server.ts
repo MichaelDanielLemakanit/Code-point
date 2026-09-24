@@ -1233,7 +1233,8 @@ app.get("/api/courses/:id", async (req: Request, res: Response) => {
 // Admin: Run database migrations on-demand
 app.post("/api/admin/run-migrations", async (req: Request, res: Response) => {
   try {
-    const result = await runDatabaseMigrations();
+    const connStr = req.body?.connectionString || (req.query?.connectionString as string);
+    const result = await runDatabaseMigrations(connStr);
     res.json({ success: true, ...result });
   } catch (err: any) {
     console.error("[Migration API Error]:", {
@@ -1302,6 +1303,22 @@ async function syncCourseRelations(db: any, course: any, modules: any[]) {
         new Date().toISOString()
       ]
     ).catch((err: any) => console.warn("[Courses API] Tuition fee sync notice:", err?.message));
+
+    // Sync tuition_ledger table
+    await db.run(
+      `INSERT OR REPLACE INTO tuition_ledger (
+         id, course_id, course_title, total_fee_kes, installment_plan, notes, created_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        `tl-${course.id}`,
+        course.id,
+        course.title,
+        upfront,
+        `${Number(course.duration_weeks) || 12}-Week Flexible Installments`,
+        `Curriculum fee structure for ${course.title}`,
+        new Date().toISOString()
+      ]
+    ).catch(() => {});
 
     // 3. Sync course_modules and modules table
     await db.run("DELETE FROM course_modules WHERE course_id = ?", [course.id]).catch(() => {});

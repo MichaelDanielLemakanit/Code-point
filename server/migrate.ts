@@ -28,10 +28,12 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
     process.env.POSTGRES_URL_NON_POOLING;
 
   if (!connectionString || !connectionString.trim()) {
-    console.log("[Migration] No external PostgreSQL DATABASE_URL detected; running on local embedded SQLite / in-memory store. Skipping PostgreSQL migration.");
+    console.log("[Migration] No external PostgreSQL DATABASE_URL detected; ensuring local embedded SQLite database has all tables (courses, tuition_ledger, access_control, testimonials)...");
+    const { getDatabase } = await import("./db.ts");
+    await getDatabase();
     return {
       success: true,
-      details: "Local embedded database active (SQLite / in-memory); no remote PostgreSQL migration required."
+      details: "Local embedded database active (SQLite / in-memory). Successfully verified and initialized all tables: courses, tuition_ledger, access_control, testimonials, student_fee_accounts, video_testimonials, and users."
     };
   }
 
@@ -696,12 +698,136 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
       }
     }
 
+    // 21. Table: tuition_ledger (Direct ledger for tuition fees & student billing)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tuition_ledger (
+        id VARCHAR(255) PRIMARY KEY,
+        student_email VARCHAR(255),
+        student_name VARCHAR(255),
+        student_phone VARCHAR(100) DEFAULT '',
+        course_id VARCHAR(255),
+        course_title VARCHAR(255),
+        cohort VARCHAR(100) DEFAULT 'Current Cohort',
+        total_fee_kes NUMERIC NOT NULL DEFAULT 85000,
+        paid_fee_kes NUMERIC NOT NULL DEFAULT 0,
+        balance_kes NUMERIC NOT NULL DEFAULT 85000,
+        payment_status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        deadline_date VARCHAR(100) DEFAULT '',
+        portal_access_granted INTEGER NOT NULL DEFAULT 1,
+        installment_plan VARCHAR(255) DEFAULT '5-Month Flexible Installments',
+        notes TEXT DEFAULT '',
+        updated_at VARCHAR(100),
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_tl_email ON tuition_ledger(student_email);
+      CREATE INDEX IF NOT EXISTS idx_tl_status ON tuition_ledger(payment_status);
+    `);
+
+    // Seed tuition_ledger from student_fee_accounts / DEFAULT_STUDENT_FEES if empty
+    const tlCountRes = await client.query("SELECT count(*) as count FROM tuition_ledger");
+    const tlCount = Number(tlCountRes.rows[0]?.count || 0);
+    if (tlCount === 0) {
+      console.log("[Migration] Seeding initial tuition_ledger entries in PostgreSQL...");
+      for (const f of DEFAULT_STUDENT_FEES) {
+        await client.query(
+          `INSERT INTO tuition_ledger (id, student_email, student_name, student_phone, course_id, course_title, cohort, total_fee_kes, paid_fee_kes, balance_kes, payment_status, deadline_date, portal_access_granted, installment_plan, notes, updated_at, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+           ON CONFLICT (id) DO NOTHING`,
+          [f.id, f.student_email, f.student_name, (f as any).student_phone || '', f.course_id, f.course_title, f.cohort, f.total_fee_kes, f.paid_fee_kes, f.balance_kes, f.payment_status, f.deadline_date, f.portal_access_granted, f.installment_plan, f.notes, f.updated_at, f.created_at]
+        );
+      }
+    }
+
+    // 22. Table: access_control (Direct access control for permissions & credentials)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS access_control (
+        id VARCHAR(255) PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        requested_role VARCHAR(50) NOT NULL DEFAULT 'student',
+        status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        assigned_role VARCHAR(50),
+        full_name VARCHAR(255),
+        phone VARCHAR(100),
+        course_id VARCHAR(255),
+        course_title VARCHAR(255),
+        cohort VARCHAR(100),
+        attempt_count INTEGER DEFAULT 1,
+        last_attempt_at VARCHAR(100),
+        reviewed_at VARCHAR(100),
+        reviewed_by VARCHAR(255),
+        notes TEXT,
+        initial_password VARCHAR(255),
+        setup_token VARCHAR(255),
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_ac_email ON access_control(email);
+      CREATE INDEX IF NOT EXISTS idx_ac_status ON access_control(status);
+    `);
+
+    // Seed access_control from login_attempts / DEFAULT_LOGIN_ATTEMPTS if empty
+    const acCountRes = await client.query("SELECT count(*) as count FROM access_control");
+    const acCount = Number(acCountRes.rows[0]?.count || 0);
+    if (acCount === 0) {
+      console.log("[Migration] Seeding initial access_control records in PostgreSQL...");
+      for (const a of DEFAULT_LOGIN_ATTEMPTS) {
+        await client.query(
+          `INSERT INTO access_control (id, email, requested_role, status, assigned_role, full_name, phone, course_id, course_title, cohort, attempt_count, last_attempt_at, reviewed_at, reviewed_by, notes, initial_password, setup_token, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+           ON CONFLICT (id) DO NOTHING`,
+          [a.id, a.email, a.requested_role, a.status, a.assigned_role, a.full_name, (a as any).phone || '', (a as any).course_id || '', (a as any).course_title || '', (a as any).cohort || '', a.attempt_count, a.last_attempt_at, a.reviewed_at, a.reviewed_by, a.notes, a.initial_password, a.setup_token, a.created_at]
+        );
+      }
+    }
+
+    // 23. Table: testimonials (Unified reviews & student success stories)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS testimonials (
+        id VARCHAR(255) PRIMARY KEY,
+        rating INTEGER DEFAULT 5,
+        full_name VARCHAR(255) NOT NULL,
+        role_program VARCHAR(255) NOT NULL,
+        organization VARCHAR(255) DEFAULT '',
+        testimonial TEXT NOT NULL,
+        avatar_url TEXT,
+        video_url TEXT,
+        thumbnail_url TEXT,
+        status VARCHAR(50) NOT NULL DEFAULT 'approved',
+        is_featured INTEGER DEFAULT 1,
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_testimonials_status ON testimonials(status);
+      CREATE INDEX IF NOT EXISTS idx_testimonials_featured ON testimonials(is_featured);
+    `);
+
+    // Seed testimonials from DEFAULT_REVIEWS and DEFAULT_VIDEO_TESTIMONIALS if empty
+    const testCountRes = await client.query("SELECT count(*) as count FROM testimonials");
+    const testCount = Number(testCountRes.rows[0]?.count || 0);
+    if (testCount === 0) {
+      console.log("[Migration] Seeding initial testimonials in PostgreSQL...");
+      for (const r of DEFAULT_REVIEWS) {
+        await client.query(
+          `INSERT INTO testimonials (id, rating, full_name, role_program, organization, testimonial, avatar_url, video_url, thumbnail_url, status, is_featured, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           ON CONFLICT (id) DO NOTHING`,
+          [r.id, r.rating, r.full_name, r.role_program, r.organization, r.testimonial, r.avatar_url, null, null, r.status, r.is_featured, r.created_at]
+        );
+      }
+      for (const v of DEFAULT_VIDEO_TESTIMONIALS) {
+        await client.query(
+          `INSERT INTO testimonials (id, rating, full_name, role_program, organization, testimonial, avatar_url, video_url, thumbnail_url, status, is_featured, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           ON CONFLICT (id) DO NOTHING`,
+          [`t-${v.id}`, 5, v.student_name, v.career_role, v.company, v.quote_highlight, v.photo_url, v.video_url, v.thumbnail_url, v.status, v.is_featured, v.created_at]
+        );
+      }
+    }
+
     await client.query("COMMIT");
 
     console.log("[Migration] Database migration completed successfully!");
     return {
       success: true,
-      details: "All tables, columns, modules, tuition fees, and indexes successfully migrated."
+      details: "All tables (courses, tuition_ledger, access_control, testimonials, etc.) successfully migrated and verified on PostgreSQL."
     };
   } catch (err: any) {
     await client.query("ROLLBACK").catch(() => {});

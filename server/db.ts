@@ -89,6 +89,30 @@ export function convertSqlForPostgres(sql: string): string {
     ) + " ON CONFLICT (id) DO UPDATE SET student_email = EXCLUDED.student_email, student_name = EXCLUDED.student_name, student_phone = EXCLUDED.student_phone, course_id = EXCLUDED.course_id, course_title = EXCLUDED.course_title, cohort = EXCLUDED.cohort, total_fee_kes = EXCLUDED.total_fee_kes, paid_fee_kes = EXCLUDED.paid_fee_kes, balance_kes = EXCLUDED.balance_kes, payment_status = EXCLUDED.payment_status, deadline_date = EXCLUDED.deadline_date, portal_access_granted = EXCLUDED.portal_access_granted, installment_plan = EXCLUDED.installment_plan, notes = EXCLUDED.notes, updated_at = EXCLUDED.updated_at";
   }
 
+  // SQLite 'INSERT OR REPLACE INTO tuition_ledger (...) VALUES (...)'
+  if (/INSERT\s+OR\s+REPLACE\s+INTO\s+tuition_ledger/i.test(converted)) {
+    converted = converted.replace(
+      /INSERT\s+OR\s+REPLACE\s+INTO\s+tuition_ledger/i,
+      "INSERT INTO tuition_ledger"
+    ) + " ON CONFLICT (id) DO UPDATE SET student_email = EXCLUDED.student_email, student_name = EXCLUDED.student_name, student_phone = EXCLUDED.student_phone, course_id = EXCLUDED.course_id, course_title = EXCLUDED.course_title, cohort = EXCLUDED.cohort, total_fee_kes = EXCLUDED.total_fee_kes, paid_fee_kes = EXCLUDED.paid_fee_kes, balance_kes = EXCLUDED.balance_kes, payment_status = EXCLUDED.payment_status, deadline_date = EXCLUDED.deadline_date, portal_access_granted = EXCLUDED.portal_access_granted, installment_plan = EXCLUDED.installment_plan, notes = EXCLUDED.notes, updated_at = EXCLUDED.updated_at";
+  }
+
+  // SQLite 'INSERT OR REPLACE INTO access_control (...) VALUES (...)'
+  if (/INSERT\s+OR\s+REPLACE\s+INTO\s+access_control/i.test(converted)) {
+    converted = converted.replace(
+      /INSERT\s+OR\s+REPLACE\s+INTO\s+access_control/i,
+      "INSERT INTO access_control"
+    ) + " ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, requested_role = EXCLUDED.requested_role, status = EXCLUDED.status, assigned_role = EXCLUDED.assigned_role, full_name = EXCLUDED.full_name, phone = EXCLUDED.phone, course_id = EXCLUDED.course_id, course_title = EXCLUDED.course_title, cohort = EXCLUDED.cohort, attempt_count = EXCLUDED.attempt_count, last_attempt_at = EXCLUDED.last_attempt_at, reviewed_at = EXCLUDED.reviewed_at, reviewed_by = EXCLUDED.reviewed_by, notes = EXCLUDED.notes, initial_password = EXCLUDED.initial_password, setup_token = EXCLUDED.setup_token";
+  }
+
+  // SQLite 'INSERT OR REPLACE INTO testimonials (...) VALUES (...)'
+  if (/INSERT\s+OR\s+REPLACE\s+INTO\s+testimonials/i.test(converted)) {
+    converted = converted.replace(
+      /INSERT\s+OR\s+REPLACE\s+INTO\s+testimonials/i,
+      "INSERT INTO testimonials"
+    ) + " ON CONFLICT (id) DO UPDATE SET rating = EXCLUDED.rating, full_name = EXCLUDED.full_name, role_program = EXCLUDED.role_program, organization = EXCLUDED.organization, testimonial = EXCLUDED.testimonial, avatar_url = EXCLUDED.avatar_url, video_url = EXCLUDED.video_url, thumbnail_url = EXCLUDED.thumbnail_url, status = EXCLUDED.status, is_featured = EXCLUDED.is_featured";
+  }
+
   return converted;
 }
 
@@ -1452,6 +1476,68 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       );
       CREATE INDEX IF NOT EXISTS idx_vid_testimonials_featured ON video_testimonials(is_featured);
       CREATE INDEX IF NOT EXISTS idx_vid_testimonials_status ON video_testimonials(status);
+
+      CREATE TABLE IF NOT EXISTS tuition_ledger (
+        id VARCHAR(255) PRIMARY KEY,
+        student_email VARCHAR(255),
+        student_name VARCHAR(255),
+        student_phone VARCHAR(100) DEFAULT '',
+        course_id VARCHAR(255),
+        course_title VARCHAR(255),
+        cohort VARCHAR(100) DEFAULT 'Current Cohort',
+        total_fee_kes NUMERIC NOT NULL DEFAULT 85000,
+        paid_fee_kes NUMERIC NOT NULL DEFAULT 0,
+        balance_kes NUMERIC NOT NULL DEFAULT 85000,
+        payment_status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        deadline_date VARCHAR(100) DEFAULT '',
+        portal_access_granted INTEGER NOT NULL DEFAULT 1,
+        installment_plan VARCHAR(255) DEFAULT '5-Month Flexible Installments',
+        notes TEXT DEFAULT '',
+        updated_at VARCHAR(100),
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_tl_pg_email ON tuition_ledger(student_email);
+      CREATE INDEX IF NOT EXISTS idx_tl_pg_status ON tuition_ledger(payment_status);
+
+      CREATE TABLE IF NOT EXISTS access_control (
+        id VARCHAR(255) PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        requested_role VARCHAR(50) NOT NULL DEFAULT 'student',
+        status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        assigned_role VARCHAR(50),
+        full_name VARCHAR(255),
+        phone VARCHAR(100),
+        course_id VARCHAR(255),
+        course_title VARCHAR(255),
+        cohort VARCHAR(100),
+        attempt_count INTEGER DEFAULT 1,
+        last_attempt_at VARCHAR(100),
+        reviewed_at VARCHAR(100),
+        reviewed_by VARCHAR(255),
+        notes TEXT,
+        initial_password VARCHAR(255),
+        setup_token VARCHAR(255),
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_ac_pg_email ON access_control(email);
+      CREATE INDEX IF NOT EXISTS idx_ac_pg_status ON access_control(status);
+
+      CREATE TABLE IF NOT EXISTS testimonials (
+        id VARCHAR(255) PRIMARY KEY,
+        rating INTEGER DEFAULT 5,
+        full_name VARCHAR(255) NOT NULL,
+        role_program VARCHAR(255) NOT NULL,
+        organization VARCHAR(255) DEFAULT '',
+        testimonial TEXT NOT NULL,
+        avatar_url TEXT,
+        video_url TEXT,
+        thumbnail_url TEXT,
+        status VARCHAR(50) NOT NULL DEFAULT 'approved',
+        is_featured INTEGER DEFAULT 1,
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_test_pg_status ON testimonials(status);
+      CREATE INDEX IF NOT EXISTS idx_test_pg_featured ON testimonials(is_featured);
     `);
 
     // Ensure all required columns exist on courses if created earlier
@@ -2744,6 +2830,68 @@ async function initSqlite(): Promise<AppDatabase | null> {
       );
       CREATE INDEX IF NOT EXISTS idx_sqlite_video_featured ON video_testimonials(is_featured);
       CREATE INDEX IF NOT EXISTS idx_sqlite_video_status ON video_testimonials(status);
+
+      CREATE TABLE IF NOT EXISTS tuition_ledger (
+        id TEXT PRIMARY KEY,
+        student_email TEXT,
+        student_name TEXT,
+        student_phone TEXT DEFAULT '',
+        course_id TEXT,
+        course_title TEXT,
+        cohort TEXT DEFAULT 'Current Cohort',
+        total_fee_kes REAL NOT NULL DEFAULT 85000,
+        paid_fee_kes REAL NOT NULL DEFAULT 0,
+        balance_kes REAL NOT NULL DEFAULT 85000,
+        payment_status TEXT NOT NULL DEFAULT 'pending',
+        deadline_date TEXT DEFAULT '',
+        portal_access_granted INTEGER NOT NULL DEFAULT 1,
+        installment_plan TEXT DEFAULT '5-Month Flexible Installments',
+        notes TEXT DEFAULT '',
+        updated_at TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_sqlite_tl_email ON tuition_ledger(student_email);
+      CREATE INDEX IF NOT EXISTS idx_sqlite_tl_status ON tuition_ledger(payment_status);
+
+      CREATE TABLE IF NOT EXISTS access_control (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        requested_role TEXT NOT NULL DEFAULT 'student',
+        status TEXT NOT NULL DEFAULT 'pending',
+        assigned_role TEXT,
+        full_name TEXT,
+        phone TEXT,
+        course_id TEXT,
+        course_title TEXT,
+        cohort TEXT,
+        attempt_count INTEGER DEFAULT 1,
+        last_attempt_at TEXT,
+        reviewed_at TEXT,
+        reviewed_by TEXT,
+        notes TEXT,
+        initial_password TEXT,
+        setup_token TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_sqlite_ac_email ON access_control(email);
+      CREATE INDEX IF NOT EXISTS idx_sqlite_ac_status ON access_control(status);
+
+      CREATE TABLE IF NOT EXISTS testimonials (
+        id TEXT PRIMARY KEY,
+        rating INTEGER DEFAULT 5,
+        full_name TEXT NOT NULL,
+        role_program TEXT NOT NULL,
+        organization TEXT DEFAULT '',
+        testimonial TEXT NOT NULL,
+        avatar_url TEXT,
+        video_url TEXT,
+        thumbnail_url TEXT,
+        status TEXT NOT NULL DEFAULT 'approved',
+        is_featured INTEGER DEFAULT 1,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_sqlite_test_status ON testimonials(status);
+      CREATE INDEX IF NOT EXISTS idx_sqlite_test_featured ON testimonials(is_featured);
     `);
 
     // Ensure columns in student_fee_accounts if table already existed
@@ -3091,6 +3239,82 @@ async function initSqlite(): Promise<AppDatabase | null> {
       console.warn("[Database] SQLite video_testimonials seed warning:", e);
     }
 
+    // Seed tuition_ledger if empty
+    try {
+      const stmtTl = sqliteInstance.prepare("SELECT COUNT(*) as count FROM tuition_ledger");
+      let hasTl = false;
+      if (stmtTl.step()) {
+        const row = stmtTl.getAsObject();
+        hasTl = Number(row.count) > 0;
+      }
+      stmtTl.free();
+
+      if (!hasTl) {
+        for (const f of DEFAULT_STUDENT_FEES) {
+          sqliteInstance.run(
+            `INSERT INTO tuition_ledger (id, student_email, student_name, student_phone, course_id, course_title, cohort, total_fee_kes, paid_fee_kes, balance_kes, payment_status, deadline_date, portal_access_granted, installment_plan, notes, updated_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [f.id, f.student_email, f.student_name, (f as any).student_phone || '', f.course_id, f.course_title, f.cohort, f.total_fee_kes, f.paid_fee_kes, f.balance_kes, f.payment_status, f.deadline_date, f.portal_access_granted, f.installment_plan, f.notes, f.updated_at, f.created_at]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] SQLite tuition_ledger seed warning:", e);
+    }
+
+    // Seed access_control if empty
+    try {
+      const stmtAc = sqliteInstance.prepare("SELECT COUNT(*) as count FROM access_control");
+      let hasAc = false;
+      if (stmtAc.step()) {
+        const row = stmtAc.getAsObject();
+        hasAc = Number(row.count) > 0;
+      }
+      stmtAc.free();
+
+      if (!hasAc) {
+        for (const a of DEFAULT_LOGIN_ATTEMPTS) {
+          sqliteInstance.run(
+            `INSERT INTO access_control (id, email, requested_role, status, assigned_role, full_name, phone, course_id, course_title, cohort, attempt_count, last_attempt_at, reviewed_at, reviewed_by, notes, initial_password, setup_token, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [a.id, a.email, a.requested_role, a.status, a.assigned_role, a.full_name, (a as any).phone || '', (a as any).course_id || '', (a as any).course_title || '', (a as any).cohort || '', a.attempt_count, a.last_attempt_at, a.reviewed_at, a.reviewed_by, a.notes, a.initial_password, a.setup_token, a.created_at]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] SQLite access_control seed warning:", e);
+    }
+
+    // Seed testimonials if empty
+    try {
+      const stmtTest = sqliteInstance.prepare("SELECT COUNT(*) as count FROM testimonials");
+      let hasTest = false;
+      if (stmtTest.step()) {
+        const row = stmtTest.getAsObject();
+        hasTest = Number(row.count) > 0;
+      }
+      stmtTest.free();
+
+      if (!hasTest) {
+        for (const r of DEFAULT_REVIEWS) {
+          sqliteInstance.run(
+            `INSERT INTO testimonials (id, rating, full_name, role_program, organization, testimonial, avatar_url, video_url, thumbnail_url, status, is_featured, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [r.id, r.rating, r.full_name, r.role_program, r.organization, r.testimonial, r.avatar_url, null, null, r.status, r.is_featured, r.created_at]
+          );
+        }
+        for (const v of DEFAULT_VIDEO_TESTIMONIALS) {
+          sqliteInstance.run(
+            `INSERT INTO testimonials (id, rating, full_name, role_program, organization, testimonial, avatar_url, video_url, thumbnail_url, status, is_featured, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [`t-${v.id}`, 5, v.student_name, v.career_role, v.company, v.quote_highlight, v.photo_url, v.video_url, v.thumbnail_url, v.status, v.is_featured, v.created_at]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] SQLite testimonials seed warning:", e);
+    }
+
     // Save initial state
     try {
       const data = sqliteInstance.export();
@@ -3326,6 +3550,36 @@ export async function getDatabaseStatus(): Promise<{
       annCount = Number(ann?.count || 0);
     } catch {}
 
+    let tuitionLedgerCount = 0;
+    try {
+      const tl = await queryOne<{ count: string | number }>(db, "SELECT count(*) as count FROM tuition_ledger");
+      tuitionLedgerCount = Number(tl?.count || 0);
+    } catch {}
+
+    let accessControlCount = 0;
+    try {
+      const ac = await queryOne<{ count: string | number }>(db, "SELECT count(*) as count FROM access_control");
+      accessControlCount = Number(ac?.count || 0);
+    } catch {}
+
+    let testimonialsCount = 0;
+    try {
+      const ts = await queryOne<{ count: string | number }>(db, "SELECT count(*) as count FROM testimonials");
+      testimonialsCount = Number(ts?.count || 0);
+    } catch {}
+
+    let studentFeesCount = 0;
+    try {
+      const sf = await queryOne<{ count: string | number }>(db, "SELECT count(*) as count FROM student_fee_accounts");
+      studentFeesCount = Number(sf?.count || 0);
+    } catch {}
+
+    let videoTestimonialsCount = 0;
+    try {
+      const vt = await queryOne<{ count: string | number }>(db, "SELECT count(*) as count FROM video_testimonials");
+      videoTestimonialsCount = Number(vt?.count || 0);
+    } catch {}
+
     return {
       connected: true,
       type: db.type,
@@ -3335,6 +3589,11 @@ export async function getDatabaseStatus(): Promise<{
       maskedUrl,
       tables: {
         courses: courseCount,
+        tuition_ledger: tuitionLedgerCount,
+        access_control: accessControlCount,
+        testimonials: testimonialsCount,
+        student_fee_accounts: studentFeesCount,
+        video_testimonials: videoTestimonialsCount,
         applications: appCount,
         users: userCount,
         reviews: reviewCount,
