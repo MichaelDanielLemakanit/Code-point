@@ -10,12 +10,57 @@ const currentDirname = typeof __dirname !== "undefined" ? __dirname : process.cw
 export interface AppDatabase {
   type: "postgres" | "sqlite" | "memory";
   providerName: string;
+  activeConnectionUrl?: string;
   run(sql: string, params?: any[]): Promise<any>;
   exec(sql: string): Promise<any>;
   queryAll<T = any>(sql: string, params?: any[]): Promise<T[]>;
   queryOne<T = any>(sql: string, params?: any[]): Promise<T | null>;
   rawPostgresPool?: pg.Pool | null;
   rawSqliteDb?: any;
+}
+
+export const DEFAULT_NEON_DATABASE_URL =
+  "postgresql://neondb_owner:npg_s5GmlkHyQg3c@ep-old-sunset-b4j9fx8b-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=verify-full";
+
+/**
+ * Returns prioritized candidate PostgreSQL connection strings.
+ * Remote cloud databases are prioritized before local 127.0.0.1/localhost databases
+ * so containers without local PostgreSQL daemons seamlessly connect to production.
+ */
+export function getCandidatePostgresUrls(customUrl?: string): string[] {
+  const result: string[] = [];
+
+  const add = (u: string | undefined | null) => {
+    if (!u) return;
+    const trimmed = u.trim();
+    if (trimmed && !result.includes(trimmed)) {
+      result.push(trimmed);
+    }
+  };
+
+  if (customUrl) add(customUrl);
+
+  const rawEnvUrls = [
+    process.env.SUPABASE_DATABASE_URL,
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_URL,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.POSTGRES_URL_NON_POOLING,
+    DEFAULT_NEON_DATABASE_URL
+  ];
+
+  // Prioritize remote cloud databases over local 127.0.0.1/localhost databases
+  const remote = rawEnvUrls.filter(
+    (u): u is string => Boolean(u && !u.includes("localhost") && !u.includes("127.0.0.1"))
+  );
+  const local = rawEnvUrls.filter(
+    (u): u is string => Boolean(u && (u.includes("localhost") || u.includes("127.0.0.1")))
+  );
+
+  for (const r of remote) add(r);
+  for (const l of local) add(l);
+
+  return result;
 }
 
 let dbInstance: AppDatabase | null = null;
@@ -1153,14 +1198,15 @@ export const DEFAULT_ACTIVITY_LOGS = [
  * Initialize PostgreSQL Production Database
  */
 async function initPostgres(connectionString: string): Promise<AppDatabase | null> {
+  let pool: pg.Pool | null = null;
   try {
     const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
-    const pool = new Pool({
+    pool = new Pool({
       connectionString,
       ssl: isLocal ? false : { rejectUnauthorized: false },
       max: 10,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 8000
+      connectionTimeoutMillis: isLocal ? 2500 : 8000
     });
 
     // Test connection
@@ -1777,9 +1823,18 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       console.warn("[Database] PostgreSQL video_testimonials seed warning:", e);
     }
 
+    const isNeon = connectionString.includes("neon.tech");
+    const isSupabase = connectionString.includes("supabase.co");
+    const providerName = isNeon
+      ? "Neon PostgreSQL (Cloud Serverless)"
+      : isSupabase
+      ? "Supabase PostgreSQL (Cloud Database)"
+      : "PostgreSQL (Production Cloud Database)";
+
     const appDb: AppDatabase = {
       type: "postgres",
-      providerName: "PostgreSQL (Production Cloud Database)",
+      providerName,
+      activeConnectionUrl: connectionString,
       rawPostgresPool: pool,
       async run(sql: string, params: any[] = []) {
         const converted = convertSqlForPostgres(sql);
@@ -1801,8 +1856,12 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
     };
 
     return appDb;
-  } catch (err) {
-    console.error("[Database] Failed to connect to PostgreSQL:", err);
+  } catch (err: any) {
+    if (pool) {
+      await pool.end().catch(() => {});
+    }
+    const masked = connectionString.includes("@") ? connectionString.split("@")[1] : connectionString;
+    console.log(`[Database] PostgreSQL candidate (${masked}) not reachable: ${err?.code || err?.message}`);
     return null;
   }
 }
@@ -3369,21 +3428,18 @@ export async function getDatabase(): Promise<AppDatabase> {
 
   initPromise = (async () => {
     // 1. Check for PostgreSQL Connection Strings
-    const postgresUrl =
-      process.env.DATABASE_URL ||
-      process.env.POSTGRES_URL ||
-      process.env.SUPABASE_DATABASE_URL ||
-      process.env.POSTGRES_PRISMA_URL ||
-      process.env.POSTGRES_URL_NON_POOLING;
+    const candidates = getCandidatePostgresUrls();
 
-    if (postgresUrl && postgresUrl.trim()) {
-      console.log("[Database] Production PostgreSQL environment variable detected. Attempting connection...");
-      const pgDb = await initPostgres(postgresUrl.trim());
-      if (pgDb) {
-        dbInstance = pgDb;
-        return pgDb;
+    if (candidates.length > 0) {
+      console.log(`[Database] Found ${candidates.length} PostgreSQL candidate(s). Connecting to primary cloud database...`);
+      for (const candidate of candidates) {
+        const pgDb = await initPostgres(candidate);
+        if (pgDb) {
+          dbInstance = pgDb;
+          return pgDb;
+        }
       }
-      console.warn("[Database] PostgreSQL connection failed. Falling back to local database engine...");
+      console.warn("[Database] No reachable PostgreSQL instances found among candidates. Falling back to local database engine...");
     }
 
     // 2. Try SQLite
@@ -3496,9 +3552,10 @@ export async function getDatabaseStatus(): Promise<{
 }> {
   const db = await getDatabase();
   const rawUrl =
+    db.activeConnectionUrl ||
+    process.env.SUPABASE_DATABASE_URL ||
     process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL ||
-    process.env.SUPABASE_DATABASE_URL;
+    process.env.POSTGRES_URL;
 
   let maskedUrl = undefined;
   if (rawUrl) {
