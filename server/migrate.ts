@@ -13,7 +13,8 @@ import {
   DEFAULT_STUDENT_PROGRESS,
   DEFAULT_STUDENT_FEES,
   DEFAULT_ACTIVITY_LOGS,
-  DEFAULT_VIDEO_TESTIMONIALS
+  DEFAULT_VIDEO_TESTIMONIALS,
+  DEFAULT_NEON_DATABASE_URL
 } from "./db.ts";
 
 const { Pool } = pg;
@@ -25,7 +26,8 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
     process.env.POSTGRES_URL ||
     process.env.SUPABASE_DATABASE_URL ||
     process.env.POSTGRES_PRISMA_URL ||
-    process.env.POSTGRES_URL_NON_POOLING;
+    process.env.POSTGRES_URL_NON_POOLING ||
+    DEFAULT_NEON_DATABASE_URL;
 
   if (!connectionString || !connectionString.trim()) {
     console.log("[Migration] No external PostgreSQL DATABASE_URL detected; ensuring local embedded SQLite database has all tables (courses, tuition_ledger, access_control, testimonials)...");
