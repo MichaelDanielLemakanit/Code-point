@@ -20,7 +20,7 @@ export interface AppDatabase {
 }
 
 export const DEFAULT_NEON_DATABASE_URL =
-  "postgresql://neondb_owner:npg_s5GmlkHyQg3c@ep-old-sunset-b4j9fx8b-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=verify-full";
+  "postgresql://neondb_owner:npg_s5GmlkHyQg3c@ep-old-sunset-b4j9fx8b-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=verify-full&pgbouncer=true&connect_timeout=30";
 
 /**
  * Returns prioritized candidate PostgreSQL connection strings.

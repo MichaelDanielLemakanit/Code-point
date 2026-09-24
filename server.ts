@@ -4,7 +4,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { getDatabase, queryAll, queryOne, saveDatabase, getSiteSettings, saveSiteSettings, getDatabaseStatus, DEFAULT_ANNOUNCEMENTS, DEFAULT_LOGIN_ATTEMPTS, DEFAULT_LECTURES, DEFAULT_COURSES, DEFAULT_STUDENT_PROGRESS, DEFAULT_STUDENT_FEES, DEFAULT_ACTIVITY_LOGS } from "./server/db.ts";
 import { runDatabaseMigrations } from "./server/migrate.ts";
-import { getPrismaClient } from "./server/prisma.ts";
+import { getPrismaClient, withPrisma } from "./server/prisma.ts";
 
 const app = express();
 const PORT = 3000;
@@ -1174,15 +1174,17 @@ function normalizeCurriculum(rawCurriculum: any): any[] {
 // Get all courses
 async function handleGetCourses(req: Request, res: Response) {
   try {
-    const prisma = getPrismaClient();
     let courses: any[] = [];
 
-    if (prisma) {
-      try {
-        const rows = await prisma.courses.findMany({
+    try {
+      const rows = await withPrisma(async (prisma) => {
+        return prisma.courses.findMany({
           orderBy: [{ is_featured: "desc" }, { title: "asc" }],
           include: { course_modules: true }
         });
+      });
+
+      if (rows && Array.isArray(rows) && rows.length > 0) {
         courses = rows.map((c: any) => {
           let modules = normalizeCurriculum(c.curriculum);
           if (modules.length === 0 && Array.isArray(c.course_modules) && c.course_modules.length > 0) {
@@ -1207,9 +1209,9 @@ async function handleGetCourses(req: Request, res: Response) {
             is_featured: Boolean(c.is_featured)
           };
         });
-      } catch (pErr) {
-        console.warn("[Courses API GET] Prisma query failed, falling back to db driver:", pErr);
       }
+    } catch (pErr) {
+      console.warn("[Courses API GET] Prisma query notice:", pErr);
     }
 
     if (courses.length === 0) {
@@ -1238,21 +1240,20 @@ async function handleGetCourses(req: Request, res: Response) {
 // Get single course
 async function handleGetCourseById(req: Request, res: Response) {
   try {
-    const prisma = getPrismaClient();
     const idOrSlug = req.params.id;
     let course: any = null;
 
-    if (prisma) {
-      try {
-        course = await prisma.courses.findFirst({
+    try {
+      course = await withPrisma(async (prisma) => {
+        return prisma.courses.findFirst({
           where: {
             OR: [{ id: idOrSlug }, { slug: idOrSlug }]
           },
           include: { course_modules: true }
         });
-      } catch (pErr) {
-        console.warn("[Courses API GET :id] Prisma find failed, falling back to db driver:", pErr);
-      }
+      });
+    } catch (pErr) {
+      console.warn("[Courses API GET :id] Prisma find notice:", pErr);
     }
 
     if (!course) {
@@ -1324,11 +1325,9 @@ app.post("/api/admin/run-migrations", async (req: Request, res: Response) => {
 
 // Helper to synchronize related program entities (programs, tuition_fees, course_modules, modules, tuition_ledger)
 async function syncCourseRelations(db: any, course: any, modules: any[]) {
-  const prisma = getPrismaClient();
-
   // 1. Sync programs table
   try {
-    if (prisma) {
+    await withPrisma(async (prisma) => {
       await prisma.programs.upsert({
         where: { id: course.id },
         create: {
@@ -1362,8 +1361,8 @@ async function syncCourseRelations(db: any, course: any, modules: any[]) {
           next_intake: course.next_intake || "Upcoming Cohort",
           is_featured: course.is_featured ? 1 : 0
         }
-      }).catch((pErr: any) => console.warn("[Courses Sync] Prisma programs sync warning:", pErr?.message));
-    }
+      });
+    });
   } catch (pErr: any) {
     console.warn("[Courses Sync] Programs upsert notice:", pErr?.message);
   }
@@ -1403,7 +1402,7 @@ async function syncCourseRelations(db: any, course: any, modules: any[]) {
   const monthly = Number(course.monthly_kes) || Math.round(upfront / 5);
 
   try {
-    if (prisma) {
+    await withPrisma(async (prisma) => {
       await prisma.tuition_fees.upsert({
         where: { id: feeId },
         create: {
@@ -1422,8 +1421,8 @@ async function syncCourseRelations(db: any, course: any, modules: any[]) {
           upfront_kes: upfront,
           monthly_installment_kes: monthly
         }
-      }).catch((tfErr: any) => console.warn("[Courses Sync] Prisma tuition_fees sync notice:", tfErr?.message));
-    }
+      });
+    });
   } catch (tfErr: any) {
     console.warn("[Courses Sync] Tuition fee notice:", tfErr?.message);
   }
@@ -1468,8 +1467,8 @@ async function syncCourseRelations(db: any, course: any, modules: any[]) {
   }
 
   // 3. Sync course_modules and modules table
-  if (prisma) {
-    try {
+  try {
+    await withPrisma(async (prisma) => {
       await prisma.course_modules.deleteMany({ where: { course_id: course.id } }).catch(() => {});
       if (Array.isArray(modules) && modules.length > 0) {
         await prisma.course_modules.createMany({
@@ -1482,9 +1481,9 @@ async function syncCourseRelations(db: any, course: any, modules: any[]) {
           }))
         }).catch((cmErr: any) => console.warn("[Courses Sync] Prisma course_modules createMany notice:", cmErr?.message));
       }
-    } catch (cmErr: any) {
-      console.warn("[Courses Sync] Course modules sync notice:", cmErr?.message);
-    }
+    });
+  } catch (cmErr: any) {
+    console.warn("[Courses Sync] Course modules sync notice:", cmErr?.message);
   }
 
   if (db) {
@@ -1646,44 +1645,44 @@ async function handleCreateCourse(req: Request, res: Response) {
     let createdRecord: any = null;
 
     // 9. Create with Prisma if available
-    if (prisma) {
-      try {
-        // Nested relation creation with standard Prisma create syntax
-        createdRecord = await prisma.courses.create({
-          data: {
-            id,
-            title: rawTitle,
-            slug: cleanSlug,
-            category: cleanCategory,
-            duration_weeks: parsedWeeks,
-            price_kes: parsedPrice,
-            monthly_kes: parsedMonthly,
-            summary: cleanSummary,
-            curriculum: curJson, // Stored cleanly as plain JSON
-            level: cleanLevel,
-            delivery_mode: cleanDelivery,
-            schedule: cleanSchedule,
-            next_intake: cleanNextIntake,
-            is_featured: isFeaturedInt,
-            created_at: new Date().toISOString(),
-            course_modules: sanitizedModules.length > 0 ? {
-              create: sanitizedModules.map((m: any, idx: number) => ({
-                id: `${id}-mod-${idx + 1}`,
-                module_number: idx + 1,
-                title: m.title || m.module || `Module ${idx + 1}`,
-                topics: JSON.stringify(m.topics || [])
-              }))
-            } : undefined
-          },
-          include: {
-            course_modules: true
-          }
-        });
-      } catch (nestedErr: any) {
-        console.warn("[Courses API POST] Nested Prisma create failed, falling back to plain fields so missing foreign keys do not fail the transaction:", nestedErr?.message);
-        // Resilient fallback with plain JSON fields
+    try {
+      createdRecord = await withPrisma(async (prisma) => {
         try {
-          createdRecord = await prisma.courses.create({
+          // Nested relation creation with standard Prisma create syntax
+          return await prisma.courses.create({
+            data: {
+              id,
+              title: rawTitle,
+              slug: cleanSlug,
+              category: cleanCategory,
+              duration_weeks: parsedWeeks,
+              price_kes: parsedPrice,
+              monthly_kes: parsedMonthly,
+              summary: cleanSummary,
+              curriculum: curJson, // Stored cleanly as plain JSON
+              level: cleanLevel,
+              delivery_mode: cleanDelivery,
+              schedule: cleanSchedule,
+              next_intake: cleanNextIntake,
+              is_featured: isFeaturedInt,
+              created_at: new Date().toISOString(),
+              course_modules: sanitizedModules.length > 0 ? {
+                create: sanitizedModules.map((m: any, idx: number) => ({
+                  id: `${id}-mod-${idx + 1}`,
+                  module_number: idx + 1,
+                  title: m.title || m.module || `Module ${idx + 1}`,
+                  topics: JSON.stringify(m.topics || [])
+                }))
+              } : undefined
+            },
+            include: {
+              course_modules: true
+            }
+          });
+        } catch (nestedErr: any) {
+          console.warn("[Courses API POST] Nested Prisma create failed, falling back to plain fields so missing foreign keys do not fail the transaction:", nestedErr?.message);
+          // Resilient fallback with plain JSON fields
+          return await prisma.courses.create({
             data: {
               id,
               title: rawTitle,
@@ -1702,10 +1701,10 @@ async function handleCreateCourse(req: Request, res: Response) {
               created_at: new Date().toISOString()
             }
           });
-        } catch (plainErr: any) {
-          console.warn("[Courses API POST] Prisma create error, falling back to raw SQL:", plainErr?.message);
         }
-      }
+      });
+    } catch (pErr: any) {
+      console.warn("[Courses API POST] Prisma create notice, falling back to db driver:", pErr?.message);
     }
 
     // Fallback if Prisma was not available or did not persist
@@ -1856,12 +1855,12 @@ async function handleUpdateCourse(req: Request, res: Response) {
     const courseId = req.params.id;
 
     let existing: any = null;
-    if (prisma) {
-      try {
-        existing = await prisma.courses.findUnique({ where: { id: courseId } });
-      } catch (pErr) {
-        console.warn("[Courses API PUT] Prisma findUnique error:", pErr);
-      }
+    try {
+      existing = await withPrisma(async (prisma) => {
+        return prisma.courses.findUnique({ where: { id: courseId } });
+      });
+    } catch (pErr) {
+      console.warn("[Courses API PUT] Prisma findUnique notice:", pErr);
     }
     if (!existing && db) {
       existing = await queryOne(db, "SELECT * FROM courses WHERE id = ?", [courseId]);
@@ -2004,44 +2003,44 @@ async function handleUpdateCourse(req: Request, res: Response) {
     let updatedRecord: any = null;
 
     // 8. Update via Prisma if available
-    if (prisma) {
-      try {
-        // Cleanly delete old relations and update
-        await prisma.course_modules.deleteMany({ where: { course_id: courseId } }).catch(() => {});
-
-        updatedRecord = await prisma.courses.update({
-          where: { id: courseId },
-          data: {
-            title: finalTitle,
-            slug: finalSlug,
-            category: finalCategory,
-            duration_weeks: finalWeeks,
-            price_kes: finalPrice,
-            monthly_kes: finalMonthly,
-            summary: finalSummary,
-            curriculum: curJson, // plain JSON field
-            level: finalLevel,
-            delivery_mode: finalDelivery,
-            schedule: finalSchedule,
-            next_intake: finalNextIntake,
-            is_featured: finalFeatured,
-            course_modules: finalModules.length > 0 ? {
-              create: finalModules.map((m: any, idx: number) => ({
-                id: `${courseId}-mod-${idx + 1}`,
-                module_number: idx + 1,
-                title: m.title || m.module || `Module ${idx + 1}`,
-                topics: JSON.stringify(m.topics || [])
-              }))
-            } : undefined
-          },
-          include: {
-            course_modules: true
-          }
-        });
-      } catch (nestedErr: any) {
-        console.warn("[Courses API PUT] Nested Prisma update failed, updating plain JSON fields:", nestedErr?.message);
+    try {
+      updatedRecord = await withPrisma(async (prisma) => {
         try {
-          updatedRecord = await prisma.courses.update({
+          // Cleanly delete old relations and update
+          await prisma.course_modules.deleteMany({ where: { course_id: courseId } }).catch(() => {});
+
+          return await prisma.courses.update({
+            where: { id: courseId },
+            data: {
+              title: finalTitle,
+              slug: finalSlug,
+              category: finalCategory,
+              duration_weeks: finalWeeks,
+              price_kes: finalPrice,
+              monthly_kes: finalMonthly,
+              summary: finalSummary,
+              curriculum: curJson, // plain JSON field
+              level: finalLevel,
+              delivery_mode: finalDelivery,
+              schedule: finalSchedule,
+              next_intake: finalNextIntake,
+              is_featured: finalFeatured,
+              course_modules: finalModules.length > 0 ? {
+                create: finalModules.map((m: any, idx: number) => ({
+                  id: `${courseId}-mod-${idx + 1}`,
+                  module_number: idx + 1,
+                  title: m.title || m.module || `Module ${idx + 1}`,
+                  topics: JSON.stringify(m.topics || [])
+                }))
+              } : undefined
+            },
+            include: {
+              course_modules: true
+            }
+          });
+        } catch (nestedErr: any) {
+          console.warn("[Courses API PUT] Nested Prisma update failed, updating plain JSON fields:", nestedErr?.message);
+          return await prisma.courses.update({
             where: { id: courseId },
             data: {
               title: finalTitle,
@@ -2059,10 +2058,10 @@ async function handleUpdateCourse(req: Request, res: Response) {
               is_featured: finalFeatured
             }
           });
-        } catch (plainErr: any) {
-          console.warn("[Courses API PUT] Prisma plain update failed, falling back to SQL:", plainErr?.message);
         }
-      }
+      });
+    } catch (pErr: any) {
+      console.warn("[Courses API PUT] Prisma update notice, falling back to SQL:", pErr?.message);
     }
 
     if (!updatedRecord && db) {
@@ -2223,26 +2222,27 @@ async function handleDeleteCourse(req: Request, res: Response) {
     const courseId = req.params.id;
 
     let existingTitle = "Course";
-    if (prisma) {
-      try {
-        const c = await prisma.courses.findUnique({ where: { id: courseId } });
-        if (c) existingTitle = c.title;
-      } catch {}
-    }
+    try {
+      const c = await withPrisma(async (prisma) => {
+        return prisma.courses.findUnique({ where: { id: courseId } });
+      });
+      if (c) existingTitle = c.title;
+    } catch {}
+
     if (existingTitle === "Course" && db) {
       const existing = await queryOne(db, "SELECT title FROM courses WHERE id = ?", [courseId]);
       if (existing) existingTitle = existing.title;
     }
 
-    if (prisma) {
-      try {
+    try {
+      await withPrisma(async (prisma) => {
         await prisma.course_modules.deleteMany({ where: { course_id: courseId } }).catch(() => {});
         await prisma.programs.delete({ where: { id: courseId } }).catch(() => {});
         await prisma.tuition_fees.deleteMany({ where: { course_id: courseId } }).catch(() => {});
         await prisma.courses.delete({ where: { id: courseId } }).catch(() => {});
-      } catch (pDelErr) {
-        console.warn("[Courses API DELETE] Prisma delete notice:", pDelErr);
-      }
+      });
+    } catch (pDelErr) {
+      console.warn("[Courses API DELETE] Prisma delete notice:", pDelErr);
     }
 
     if (db) {
