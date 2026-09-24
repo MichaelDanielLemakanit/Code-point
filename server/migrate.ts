@@ -13,46 +13,38 @@ import {
   DEFAULT_STUDENT_PROGRESS,
   DEFAULT_STUDENT_FEES,
   DEFAULT_ACTIVITY_LOGS,
-  DEFAULT_VIDEO_TESTIMONIALS,
-  getCandidatePostgresUrls
+  DEFAULT_VIDEO_TESTIMONIALS
 } from "./db.ts";
 
 const { Pool } = pg;
 
 export async function runDatabaseMigrations(customConnectionString?: string): Promise<{ success: boolean; details: string }> {
-  const candidates = customConnectionString
-    ? [customConnectionString]
-    : getCandidatePostgresUrls();
+  const connectionString =
+    customConnectionString ||
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.SUPABASE_DATABASE_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL_NON_POOLING;
 
-  let pool: pg.Pool | null = null;
-  let client: pg.PoolClient | null = null;
-  let activeTarget = "";
-
-  for (const connStr of candidates) {
-    const isLocal = connStr.includes("localhost") || connStr.includes("127.0.0.1");
-    const testPool = new Pool({
-      connectionString: connStr,
-      ssl: isLocal ? false : { rejectUnauthorized: false },
-      connectionTimeoutMillis: isLocal ? 2500 : 8000
-    });
-
-    try {
-      const testClient = await testPool.connect();
-      pool = testPool;
-      client = testClient;
-      activeTarget = connStr.split("@")[1] || "PostgreSQL";
-      break;
-    } catch (connErr: any) {
-      await testPool.end().catch(() => {});
-      console.log(`[Migration] Candidate ${connStr.split("@")[1] || connStr} unavailable (${connErr?.code || connErr?.message}).`);
-    }
+  if (!connectionString || !connectionString.trim()) {
+    console.log("[Migration] No external PostgreSQL DATABASE_URL detected; running on local embedded SQLite / in-memory store. Skipping PostgreSQL migration.");
+    return {
+      success: true,
+      details: "Local embedded database active (SQLite / in-memory); no remote PostgreSQL migration required."
+    };
   }
 
-  if (!pool || !client) {
-    throw new Error("No reachable PostgreSQL instance found among candidate connection strings.");
-  }
+  console.log(`[Migration] Starting migration against database: ${connectionString.split("@")[1] || "connection target"}...`);
 
-  console.log(`[Migration] Starting migration against database: ${activeTarget}...`);
+  const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
+  const pool = new Pool({
+    connectionString,
+    ssl: isLocal ? false : { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000
+  });
+
+  const client = await pool.connect();
 
   try {
     console.log("[Migration] Connected successfully. Executing DDL table definitions...");
