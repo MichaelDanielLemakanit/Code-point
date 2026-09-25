@@ -120,16 +120,24 @@ export interface ProgressionStage {
 
 export interface Review {
   id: string;
+  reviewerName: string;
+  role: string;
   rating: number; // 1 to 5
-  full_name: string;
-  role_program: string;
-  organization: string;
-  testimonial: string;
+  comment: string;
+  avatarUrl?: string;
+  isApproved: boolean;
+  isFeatured: boolean;
+  createdAt: string;
+
+  // Backward compatibility aliases
+  full_name?: string;
+  role_program?: string;
+  organization?: string;
+  testimonial?: string;
   avatar_url?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  is_featured?: number;
-  isApproved?: boolean;
-  created_at: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  is_featured?: number | boolean;
+  created_at?: string;
 }
 
 export interface VideoTestimonial {

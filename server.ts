@@ -228,24 +228,129 @@ app.put("/api/progression-stages", async (req: Request, res: Response) => {
 // REVIEWS & STUDENT ENDORSEMENTS (PUBLIC & ADMIN MODERATION)
 // -------------------------------------------------------------
 
-// Public & Admin: Get reviews with optional status filter
+function normalizeReview(r: any) {
+  if (!r) return null;
+  const isApproved = Boolean(
+    r.isApproved === true ||
+    r.isApproved === 1 ||
+    r.is_approved === 1 ||
+    r.is_approved === true ||
+    r.status === 'approved'
+  );
+  const isFeatured = Boolean(
+    r.isFeatured !== undefined
+      ? (r.isFeatured === true || r.isFeatured === 1)
+      : (r.is_featured !== undefined ? (r.is_featured === 1 || r.is_featured === true) : true)
+  );
+  const name = String(r.reviewerName || r.reviewer_name || r.full_name || '').trim();
+  const role = String(r.role || r.role_program || 'Software Engineering Fellow').trim();
+  const comment = String(r.comment || r.testimonial || '').trim();
+  const avatar = String(r.avatarUrl || r.avatar_url || '').trim();
+  const rating = Math.max(1, Math.min(5, Number(r.rating) || 5));
+  const org = String(r.organization || '').trim();
+  const createdAt = r.createdAt || r.created_at || new Date().toISOString();
+
+  return {
+    id: r.id,
+    reviewerName: name,
+    role,
+    rating,
+    comment,
+    avatarUrl: avatar,
+    isApproved,
+    isFeatured,
+    createdAt,
+    // Backward compatibility fields
+    full_name: name,
+    role_program: role,
+    testimonial: comment,
+    avatar_url: avatar,
+    status: isApproved ? 'approved' : (r.status === 'rejected' ? 'rejected' : 'pending'),
+    is_featured: isFeatured ? 1 : 0,
+    organization: org
+  };
+}
+
+// Public & Admin: Get reviews with optional approved or status filter
 app.get("/api/reviews", async (req: Request, res: Response) => {
   try {
     const db = await getDatabase();
-    const { status } = req.query;
+    const { status, approved, featured } = req.query;
+
+    const isApprovedFilter = approved === 'true' || approved === '1' || approved === true;
+    const isUnapprovedFilter = approved === 'false' || approved === '0' || approved === false;
+    const isFeaturedFilter = featured === 'true' || featured === '1' || featured === true;
 
     let reviews: any[] = [];
-    if (status && typeof status === 'string' && status !== 'all') {
-      reviews = await queryAll(db, "SELECT * FROM reviews WHERE status = ? ORDER BY is_featured DESC, created_at DESC", [status]);
-    } else {
-      reviews = await queryAll(db, "SELECT * FROM reviews ORDER BY created_at DESC");
+
+    // Try Prisma first
+    try {
+      const prismaReviews = await withPrisma(async (prisma) => {
+        const where: any = {};
+        if (isApprovedFilter) {
+          where.isApproved = true;
+        } else if (isUnapprovedFilter) {
+          where.isApproved = false;
+        }
+        if (isFeaturedFilter) {
+          where.isFeatured = true;
+        }
+        return prisma.review.findMany({
+          where,
+          orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }]
+        });
+      });
+      if (prismaReviews && Array.isArray(prismaReviews) && prismaReviews.length > 0) {
+        reviews = prismaReviews.map(normalizeReview);
+      }
+    } catch (_) {}
+
+    // Fallback to SQLite / Postgres
+    if (reviews.length === 0) {
+      let rawReviews: any[] = [];
+      if (isApprovedFilter) {
+        try {
+          rawReviews = await queryAll(
+            db,
+            "SELECT * FROM reviews WHERE is_approved = 1 OR is_approved = TRUE OR isApproved = 1 OR isApproved = TRUE OR status = 'approved' ORDER BY is_featured DESC, created_at DESC"
+          );
+        } catch {
+          rawReviews = await queryAll(db, "SELECT * FROM reviews WHERE status = 'approved' ORDER BY is_featured DESC, created_at DESC");
+        }
+      } else if (isUnapprovedFilter) {
+        try {
+          rawReviews = await queryAll(
+            db,
+            "SELECT * FROM reviews WHERE (status != 'approved' OR status IS NULL) AND (is_approved = 0 OR is_approved IS NULL OR is_approved = FALSE) ORDER BY created_at DESC"
+          );
+        } catch {
+          rawReviews = await queryAll(db, "SELECT * FROM reviews WHERE status != 'approved' ORDER BY created_at DESC");
+        }
+      } else if (status && typeof status === 'string' && status !== 'all') {
+        rawReviews = await queryAll(db, "SELECT * FROM reviews WHERE status = ? ORDER BY is_featured DESC, created_at DESC", [status]);
+      } else {
+        rawReviews = await queryAll(db, "SELECT * FROM reviews ORDER BY is_featured DESC, created_at DESC");
+      }
+
+      if (rawReviews && rawReviews.length > 0) {
+        reviews = rawReviews.map(normalizeReview);
+      } else if (DEFAULT_REVIEWS && DEFAULT_REVIEWS.length > 0) {
+        if (isApprovedFilter) {
+          reviews = DEFAULT_REVIEWS.filter(r => r.isApproved || r.status === 'approved').map(normalizeReview);
+        } else {
+          reviews = DEFAULT_REVIEWS.map(normalizeReview);
+        }
+      }
+    }
+
+    if (isFeaturedFilter) {
+      reviews = reviews.filter(r => r.isFeatured);
     }
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.json(reviews.map(r => ({
-      ...r,
-      isApproved: r.status === 'approved'
-    })));
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.json(reviews);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -255,12 +360,26 @@ app.get("/api/reviews", async (req: Request, res: Response) => {
 app.get("/api/reviews/approved", async (req: Request, res: Response) => {
   try {
     const db = await getDatabase();
-    const reviews = await queryAll<any>(db, "SELECT * FROM reviews WHERE status = 'approved' ORDER BY is_featured DESC, created_at DESC");
+    let reviews: any[] = [];
+    try {
+      const raw = await queryAll<any>(
+        db,
+        "SELECT * FROM reviews WHERE is_approved = 1 OR is_approved = TRUE OR isApproved = 1 OR isApproved = TRUE OR status = 'approved' ORDER BY is_featured DESC, created_at DESC"
+      );
+      reviews = (raw || []).map(normalizeReview);
+    } catch {
+      const raw = await queryAll<any>(db, "SELECT * FROM reviews WHERE status = 'approved' ORDER BY is_featured DESC, created_at DESC");
+      reviews = (raw || []).map(normalizeReview);
+    }
+
+    if (reviews.length === 0 && DEFAULT_REVIEWS) {
+      reviews = DEFAULT_REVIEWS.filter(r => r.isApproved || r.status === 'approved').map(normalizeReview);
+    }
+
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.json(reviews.map(r => ({
-      ...r,
-      isApproved: true
-    })));
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.json(reviews);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -295,6 +414,8 @@ app.get("/api/testimonials", async (req: Request, res: Response) => {
 
     const testimonials = await queryAll<any>(db, sql, params);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.json(testimonials.map(t => ({
       ...t,
       isApproved: t.status === 'approved'
@@ -305,46 +426,143 @@ app.get("/api/testimonials", async (req: Request, res: Response) => {
   }
 });
 
-// Public: Submit a new feedback & star rating (Enters moderation queue as 'pending')
+// Public & Admin: Submit or manually create a review
 app.post("/api/reviews", async (req: Request, res: Response) => {
   try {
     const db = await getDatabase();
-    const { rating, full_name, role_program, organization, testimonial, avatar_url } = req.body;
+    const {
+      rating,
+      reviewerName,
+      full_name,
+      role,
+      role_program,
+      organization,
+      comment,
+      testimonial,
+      avatarUrl,
+      avatar_url,
+      isApproved,
+      status,
+      isFeatured
+    } = req.body || {};
+
+    const cleanName = String(reviewerName || full_name || "").trim();
+    const cleanComment = String(comment || testimonial || "").trim();
 
     // Validate required fields
-    if (!full_name || !full_name.trim()) {
-      return res.status(400).json({ success: false, error: "Please provide your full name." });
+    if (!cleanName) {
+      return res.status(400).json({ success: false, error: "Please provide the reviewer full name." });
     }
-    if (!testimonial || !testimonial.trim()) {
-      return res.status(400).json({ success: false, error: "Please enter your review or feedback endorsement." });
+    if (!cleanComment) {
+      return res.status(400).json({ success: false, error: "Please enter the review comment or feedback endorsement." });
     }
 
     const cleanRating = Math.max(1, Math.min(5, Number(rating) || 5));
-    const newId = `rev-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
-    const createdAt = new Date().toISOString();
+    const cleanRole = String(role || role_program || "Fellow / Alum").trim();
+    const cleanOrg = String(organization || "Independent / Student").trim();
+    const cleanAvatar = String(avatarUrl || avatar_url || "").trim();
 
-    await db.run(
-      `INSERT INTO reviews (id, rating, full_name, role_program, organization, testimonial, avatar_url, status, is_featured, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?)`,
-      [
-        newId,
-        cleanRating,
-        full_name.trim(),
-        (role_program || "Fellow / Alum").trim(),
-        (organization || "Independent / Student").trim(),
-        testimonial.trim(),
-        (avatar_url || "").trim(),
-        createdAt
-      ]
-    );
+    // Determine approved state
+    const approvedBool = isApproved !== undefined
+      ? Boolean(isApproved)
+      : (status === 'approved');
+    const statusVal = approvedBool ? 'approved' : (status === 'rejected' ? 'rejected' : 'pending');
+
+    // Featured state (defaults to true as requested in schema)
+    const featuredBool = isFeatured !== undefined ? Boolean(isFeatured) : true;
+    const featuredNum = featuredBool ? 1 : 0;
+
+    const newId = `rev-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    const createdAtIso = new Date().toISOString();
+
+    // Try Prisma create
+    try {
+      await withPrisma(async (prisma) => {
+        return prisma.review.create({
+          data: {
+            id: newId,
+            reviewerName: cleanName,
+            role: cleanRole,
+            rating: cleanRating,
+            comment: cleanComment,
+            avatarUrl: cleanAvatar,
+            isApproved: approvedBool,
+            isFeatured: featuredBool,
+            createdAt: new Date(createdAtIso)
+          }
+        });
+      });
+    } catch (_) {}
+
+    // Persist to raw database with full schema compatibility
+    try {
+      await db.run(
+        `INSERT INTO reviews (
+          id, rating, full_name, reviewer_name, reviewerName, role, role_program, organization, comment, testimonial, avatar_url, avatarUrl, status, is_approved, isApproved, is_featured, isFeatured, created_at, createdAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          newId,
+          cleanRating,
+          cleanName,
+          cleanName,
+          cleanName,
+          cleanRole,
+          cleanRole,
+          cleanOrg,
+          cleanComment,
+          cleanComment,
+          cleanAvatar,
+          cleanAvatar,
+          statusVal,
+          approvedBool ? 1 : 0,
+          approvedBool ? 1 : 0,
+          featuredNum,
+          featuredNum,
+          createdAtIso,
+          createdAtIso
+        ]
+      );
+    } catch (insertErr) {
+      // Fallback insert for core columns
+      await db.run(
+        `INSERT INTO reviews (id, rating, full_name, role_program, organization, testimonial, avatar_url, status, is_featured, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          newId,
+          cleanRating,
+          cleanName,
+          cleanRole,
+          cleanOrg,
+          cleanComment,
+          cleanAvatar,
+          statusVal,
+          featuredNum,
+          createdAtIso
+        ]
+      );
+    }
     await saveDatabase(db);
 
     const savedReview = await queryOne(db, "SELECT * FROM reviews WHERE id = ?", [newId]);
+    const normalized = normalizeReview(savedReview || {
+      id: newId,
+      reviewerName: cleanName,
+      role: cleanRole,
+      rating: cleanRating,
+      comment: cleanComment,
+      avatarUrl: cleanAvatar,
+      isApproved: approvedBool,
+      isFeatured: featuredBool,
+      organization: cleanOrg,
+      createdAt: createdAtIso
+    });
 
     res.status(201).json({
       success: true,
-      message: "Thank you for your review! Your endorsement has been submitted to the admissions moderation desk and will appear on our live wall of love once approved.",
-      review: savedReview
+      message: approvedBool
+        ? "Review published successfully."
+        : "Thank you for your review! Your endorsement has been submitted to the admissions moderation desk and will appear on our live wall of love once approved.",
+      review: normalized
     });
   } catch (error: any) {
     console.error("Error submitting review:", error);
@@ -352,8 +570,8 @@ app.post("/api/reviews", async (req: Request, res: Response) => {
   }
 });
 
-// Admin: Update review details or moderate status (approve, reject, edit)
-app.patch("/api/reviews/:id", async (req: Request, res: Response) => {
+// Admin: Update review details or moderate status (supports PUT and PATCH)
+const handleUpdateReview = async (req: Request, res: Response) => {
   try {
     const db = await getDatabase();
     const { id } = req.params;
@@ -362,37 +580,139 @@ app.patch("/api/reviews/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: "Review not found" });
     }
 
-    const { status, rating, full_name, role_program, organization, testimonial, avatar_url, is_featured } = req.body;
+    const {
+      status,
+      rating,
+      reviewerName,
+      full_name,
+      role,
+      role_program,
+      organization,
+      comment,
+      testimonial,
+      avatarUrl,
+      avatar_url,
+      isApproved,
+      is_approved,
+      isFeatured,
+      is_featured
+    } = req.body || {};
 
-    const newStatus = status !== undefined ? status : existing.status;
-    const newRating = rating !== undefined ? Math.max(1, Math.min(5, Number(rating))) : existing.rating;
-    const newFullName = full_name !== undefined ? full_name : existing.full_name;
-    const newRole = role_program !== undefined ? role_program : existing.role_program;
-    const newOrg = organization !== undefined ? organization : existing.organization;
-    const newTestimonial = testimonial !== undefined ? testimonial : existing.testimonial;
-    const newAvatar = avatar_url !== undefined ? avatar_url : existing.avatar_url;
-    const newFeatured = is_featured !== undefined ? (is_featured ? 1 : 0) : existing.is_featured;
+    const cleanName = reviewerName !== undefined ? String(reviewerName).trim() : (full_name !== undefined ? String(full_name).trim() : (existing.reviewerName || existing.reviewer_name || existing.full_name));
+    const cleanRole = role !== undefined ? String(role).trim() : (role_program !== undefined ? String(role_program).trim() : (existing.role || existing.role_program));
+    const cleanOrg = organization !== undefined ? String(organization).trim() : existing.organization;
+    const cleanComment = comment !== undefined ? String(comment).trim() : (testimonial !== undefined ? String(testimonial).trim() : (existing.comment || existing.testimonial));
+    const cleanAvatar = avatarUrl !== undefined ? String(avatarUrl).trim() : (avatar_url !== undefined ? String(avatar_url).trim() : (existing.avatarUrl || existing.avatar_url));
+    const cleanRating = rating !== undefined ? Math.max(1, Math.min(5, Number(rating))) : existing.rating;
 
-    await db.run(
-      `UPDATE reviews 
-       SET status = ?, rating = ?, full_name = ?, role_program = ?, organization = ?, testimonial = ?, avatar_url = ?, is_featured = ?
-       WHERE id = ?`,
-      [newStatus, newRating, newFullName, newRole, newOrg, newTestimonial, newAvatar, newFeatured, id]
-    );
+    // Approved status resolution
+    let finalApproved = existing.isApproved || existing.is_approved === 1 || existing.status === 'approved';
+    if (isApproved !== undefined) {
+      finalApproved = Boolean(isApproved);
+    } else if (is_approved !== undefined) {
+      finalApproved = Boolean(is_approved);
+    } else if (status !== undefined) {
+      finalApproved = status === 'approved';
+    }
+
+    const finalStatus = finalApproved ? 'approved' : (status === 'rejected' ? 'rejected' : 'pending');
+
+    // Featured resolution
+    let finalFeatured = true;
+    if (isFeatured !== undefined) {
+      finalFeatured = Boolean(isFeatured);
+    } else if (is_featured !== undefined) {
+      finalFeatured = Boolean(is_featured);
+    } else if (existing.isFeatured !== undefined) {
+      finalFeatured = Boolean(existing.isFeatured);
+    } else if (existing.is_featured !== undefined) {
+      finalFeatured = Boolean(existing.is_featured);
+    }
+
+    // Try Prisma update
+    try {
+      await withPrisma(async (prisma) => {
+        return prisma.review.update({
+          where: { id },
+          data: {
+            reviewerName: cleanName,
+            role: cleanRole,
+            rating: cleanRating,
+            comment: cleanComment,
+            avatarUrl: cleanAvatar,
+            isApproved: finalApproved,
+            isFeatured: finalFeatured
+          }
+        });
+      });
+    } catch (_) {}
+
+    // Update SQL database
+    try {
+      await db.run(
+        `UPDATE reviews SET
+          rating = ?,
+          full_name = ?,
+          reviewer_name = ?,
+          reviewerName = ?,
+          role = ?,
+          role_program = ?,
+          organization = ?,
+          comment = ?,
+          testimonial = ?,
+          avatar_url = ?,
+          avatarUrl = ?,
+          status = ?,
+          is_approved = ?,
+          isApproved = ?,
+          is_featured = ?,
+          isFeatured = ?
+         WHERE id = ?`,
+        [
+          cleanRating,
+          cleanName,
+          cleanName,
+          cleanName,
+          cleanRole,
+          cleanRole,
+          cleanOrg,
+          cleanComment,
+          cleanComment,
+          cleanAvatar,
+          cleanAvatar,
+          finalStatus,
+          finalApproved ? 1 : 0,
+          finalApproved ? 1 : 0,
+          finalFeatured ? 1 : 0,
+          finalFeatured ? 1 : 0,
+          id
+        ]
+      );
+    } catch (_) {
+      await db.run(
+        `UPDATE reviews 
+         SET status = ?, rating = ?, full_name = ?, role_program = ?, organization = ?, testimonial = ?, avatar_url = ?, is_featured = ?
+         WHERE id = ?`,
+        [finalStatus, cleanRating, cleanName, cleanRole, cleanOrg, cleanComment, cleanAvatar, finalFeatured ? 1 : 0, id]
+      );
+    }
     await saveDatabase(db);
 
     const updated = await queryOne(db, "SELECT * FROM reviews WHERE id = ?", [id]);
 
     res.json({
       success: true,
-      message: `Review has been marked as ${newStatus}.`,
-      review: updated
+      message: `Review updated successfully.`,
+      review: normalizeReview(updated)
     });
   } catch (error: any) {
     console.error("Error updating review:", error);
     res.status(500).json({ success: false, error: error.message || "Failed to update review" });
   }
-});
+};
+
+app.put("/api/reviews/:id", handleUpdateReview);
+app.patch("/api/reviews/:id", handleUpdateReview);
 
 // Admin: Delete a review
 app.delete("/api/reviews/:id", async (req: Request, res: Response) => {
@@ -403,6 +723,12 @@ app.delete("/api/reviews/:id", async (req: Request, res: Response) => {
     if (!existing) {
       return res.status(404).json({ success: false, error: "Review not found" });
     }
+
+    try {
+      await withPrisma(async (prisma) => {
+        return prisma.review.delete({ where: { id } });
+      });
+    } catch (_) {}
 
     await db.run("DELETE FROM reviews WHERE id = ?", [id]);
     await saveDatabase(db);

@@ -349,7 +349,19 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
       "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS \"certIdNumber\" VARCHAR(100)",
       "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active'",
       "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS recipienttype VARCHAR(50) DEFAULT 'Student'",
-      "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS \"recipientType\" VARCHAR(50) DEFAULT 'Student'"
+      "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS \"recipientType\" VARCHAR(50) DEFAULT 'Student'",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS reviewer_name VARCHAR(255)",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"reviewerName\" VARCHAR(255)",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS role VARCHAR(255)",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS comment TEXT",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS avatar_url TEXT",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"avatarUrl\" TEXT",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT false",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"isApproved\" BOOLEAN DEFAULT false",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT true",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"isFeatured\" BOOLEAN DEFAULT true",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS created_at VARCHAR(100)",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"createdAt\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
     ];
     for (const sql of certAlterStatements) {
       await client.query(sql).catch(() => {});

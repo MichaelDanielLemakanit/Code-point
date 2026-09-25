@@ -197,17 +197,18 @@ model programs {
   created_at     String  @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
 }
 
-model reviews {
-  id           String  @id @db.VarChar(255)
-  rating       Int
-  full_name    String  @db.VarChar(255)
-  role_program String  @db.VarChar(255)
-  organization String  @db.VarChar(255)
-  testimonial  String
-  avatar_url   String?
-  status       String  @default("pending") @db.VarChar(50)
-  is_featured  Int?    @default(0)
-  created_at   String  @db.VarChar(100)
+model Review {
+  id           String   @id @default(uuid())
+  reviewerName String   @map("reviewer_name")
+  role         String
+  rating       Int      @default(5)
+  comment      String   @db.Text
+  avatarUrl    String?  @map("avatar_url")
+  isApproved   Boolean  @default(false) @map("is_approved")
+  isFeatured   Boolean  @default(true)  @map("is_featured")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("reviews")
 }
 
 model site_settings {

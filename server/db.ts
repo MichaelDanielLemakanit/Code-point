@@ -594,49 +594,85 @@ export const DEFAULT_REVIEWS = [
   {
     id: "rev-001",
     rating: 5,
+    reviewerName: "Kevin Otieno",
+    reviewer_name: "Kevin Otieno",
     full_name: "Kevin Otieno",
+    role: "Software Engineering Cohort 3 Alum",
     role_program: "Software Engineering Cohort 3 Alum",
     organization: "Junior Backend Developer, Safaricom PLC",
+    comment: "Code Point Kenya transformed my transition into tech. The evening online cohorts allowed me to keep my daytime job while building 4 production systems with real cloud deployments. The Ngong Road lab Saturday hackathons connected me directly with hiring leads.",
     testimonial: "Code Point Kenya transformed my transition into tech. The evening online cohorts allowed me to keep my daytime job while building 4 production systems with real cloud deployments. The Ngong Road lab Saturday hackathons connected me directly with hiring leads.",
+    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
     avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    isApproved: true,
+    is_approved: 1,
     status: "approved",
+    isFeatured: true,
     is_featured: 1,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString()
   },
   {
     id: "rev-002",
     rating: 5,
+    reviewerName: "Amina Abdi",
+    reviewer_name: "Amina Abdi",
     full_name: "Amina Abdi",
+    role: "Applied AI & LLMs Fellow",
     role_program: "Applied AI & LLMs Fellow",
     organization: "AI Solutions Specialist, Twiga Foods",
+    comment: "The curriculum doesn't waste time on surface-level toy apps. We built real retrieval-augmented generation pipelines, fine-tuned models, and deployed containerized microservices. The mentorship from senior Kenyan engineers is truly world-class.",
     testimonial: "The curriculum doesn't waste time on surface-level toy apps. We built real retrieval-augmented generation pipelines, fine-tuned models, and deployed containerized microservices. The mentorship from senior Kenyan engineers is truly world-class.",
+    avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
     avatar_url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+    isApproved: true,
+    is_approved: 1,
     status: "approved",
+    isFeatured: true,
     is_featured: 1,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString()
   },
   {
     id: "rev-003",
     rating: 5,
+    reviewerName: "Brian Kiprop",
+    reviewer_name: "Brian Kiprop",
     full_name: "Brian Kiprop",
+    role: "Data Science & Predictive Analytics",
     role_program: "Data Science & Predictive Analytics",
     organization: "Analytics Associate, Equity Bank Tech",
+    comment: "I came in with zero Python background. In 16 weeks, I went from beginner syntax to predictive customer churn modeling and automated ETL data pipelines. The installment tuition plan made it completely stress-free.",
     testimonial: "I came in with zero Python background. In 16 weeks, I went from beginner syntax to predictive customer churn modeling and automated ETL data pipelines. The installment tuition plan made it completely stress-free.",
+    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
     avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+    isApproved: true,
+    is_approved: 1,
     status: "approved",
+    isFeatured: true,
     is_featured: 1,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(),
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString()
   },
   {
     id: "rev-004",
     rating: 5,
+    reviewerName: "Grace Mwangi",
+    reviewer_name: "Grace Mwangi",
     full_name: "Grace Mwangi",
+    role: "Cybersecurity & Defense Track",
     role_program: "Cybersecurity & Defense Track",
     organization: "Security Analyst, Cellulant",
+    comment: "The physical lab at Ngong Road (Teamshark, 5th Floor) was my second home during weekends. Blazing fast gigabit fiber and zero power interruptions meant I could focus 100% on cloud security labs and mock incident drills.",
     testimonial: "The physical lab at Ngong Road (Teamshark, 5th Floor) was my second home during weekends. Blazing fast gigabit fiber and zero power interruptions meant I could focus 100% on cloud security labs and mock incident drills.",
+    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
     avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    isApproved: true,
+    is_approved: 1,
     status: "approved",
+    isFeatured: true,
     is_featured: 1,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(),
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString()
   }
 ];
@@ -1730,7 +1766,19 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS \"certIdNumber\" VARCHAR(100)",
       "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active'",
       "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS recipienttype VARCHAR(50) DEFAULT 'Student'",
-      "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS \"recipientType\" VARCHAR(50) DEFAULT 'Student'"
+      "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS \"recipientType\" VARCHAR(50) DEFAULT 'Student'",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS reviewer_name VARCHAR(255)",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"reviewerName\" VARCHAR(255)",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS role VARCHAR(255)",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS comment TEXT",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS avatar_url TEXT",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"avatarUrl\" TEXT",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT false",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"isApproved\" BOOLEAN DEFAULT false",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT true",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"isFeatured\" BOOLEAN DEFAULT true",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS created_at VARCHAR(100)",
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"createdAt\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
     ];
     for (const sql of alterColumns) {
       await pool.query(sql).catch((err: any) => console.warn("[Database] Alter column notice:", err?.message));
@@ -2131,18 +2179,55 @@ function createInMemoryDb(): AppDatabase {
 
       // INSERT reviews
       if (lower.includes("insert into reviews")) {
-        tables.reviews.push({
+        const newReview: any = {
           id: params[0],
-          rating: Number(params[1]),
+          rating: Number(params[1]) || 5,
           full_name: params[2],
+          reviewer_name: params[2],
+          reviewerName: params[2],
           role_program: params[3],
-          organization: params[4],
+          role: params[3],
+          organization: params[4] || "",
           testimonial: params[5],
-          avatar_url: params[6],
-          status: "pending",
-          is_featured: 0,
-          created_at: params[7]
-        });
+          comment: params[5],
+          avatar_url: params[6] || "",
+          avatarUrl: params[6] || "",
+          status: params[7] || "pending",
+          is_approved: params[7] === "approved" || params[8] === 1 ? 1 : 0,
+          isApproved: params[7] === "approved" || params[8] === 1,
+          is_featured: params[9] !== undefined ? Number(params[9]) : 1,
+          isFeatured: params[9] !== undefined ? Boolean(params[9]) : true,
+          created_at: params[10] || new Date().toISOString(),
+          createdAt: params[10] || new Date().toISOString()
+        };
+        const existingIdx = tables.reviews.findIndex(r => r.id === newReview.id);
+        if (existingIdx >= 0) {
+          tables.reviews[existingIdx] = { ...tables.reviews[existingIdx], ...newReview };
+        } else {
+          tables.reviews.unshift(newReview);
+        }
+        return;
+      }
+
+      // UPDATE reviews
+      if (lower.includes("update reviews")) {
+        const id = params[params.length - 1];
+        const existing = tables.reviews.find(r => r.id === id);
+        if (existing) {
+          params.slice(0, -1).forEach(val => {
+            if (typeof val === 'string') {
+              if (['approved', 'pending', 'rejected'].includes(val)) {
+                existing.status = val;
+                existing.is_approved = val === 'approved' ? 1 : 0;
+                existing.isApproved = val === 'approved';
+              }
+            } else if (typeof val === 'boolean') {
+              existing.isApproved = val;
+              existing.is_approved = val ? 1 : 0;
+              existing.status = val ? 'approved' : 'pending';
+            }
+          });
+        }
         return;
       }
 
@@ -2848,15 +2933,24 @@ async function initSqlite(): Promise<AppDatabase | null> {
 
       CREATE TABLE IF NOT EXISTS reviews (
         id TEXT PRIMARY KEY,
-        rating INTEGER NOT NULL,
+        rating INTEGER NOT NULL DEFAULT 5,
         full_name TEXT NOT NULL,
+        reviewer_name TEXT,
+        reviewerName TEXT,
+        role TEXT,
         role_program TEXT NOT NULL,
         organization TEXT NOT NULL,
+        comment TEXT,
         testimonial TEXT NOT NULL,
         avatar_url TEXT,
+        avatarUrl TEXT,
         status TEXT NOT NULL DEFAULT 'pending',
-        is_featured INTEGER DEFAULT 0,
-        created_at TEXT NOT NULL
+        is_approved INTEGER DEFAULT 0,
+        isApproved INTEGER DEFAULT 0,
+        is_featured INTEGER DEFAULT 1,
+        isFeatured INTEGER DEFAULT 1,
+        created_at TEXT NOT NULL,
+        createdAt TEXT
       );
 
       CREATE TABLE IF NOT EXISTS assignments (
@@ -3172,6 +3266,22 @@ async function initSqlite(): Promise<AppDatabase | null> {
     ];
     for (const cSql of certAlterStatements) {
       try { sqliteInstance.run(cSql); } catch (_) {}
+    }
+
+    const reviewAlterStatements = [
+      "ALTER TABLE reviews ADD COLUMN reviewer_name TEXT",
+      "ALTER TABLE reviews ADD COLUMN reviewerName TEXT",
+      "ALTER TABLE reviews ADD COLUMN role TEXT",
+      "ALTER TABLE reviews ADD COLUMN comment TEXT",
+      "ALTER TABLE reviews ADD COLUMN avatarUrl TEXT",
+      "ALTER TABLE reviews ADD COLUMN is_approved INTEGER DEFAULT 0",
+      "ALTER TABLE reviews ADD COLUMN isApproved INTEGER DEFAULT 0",
+      "ALTER TABLE reviews ADD COLUMN is_featured INTEGER DEFAULT 1",
+      "ALTER TABLE reviews ADD COLUMN isFeatured INTEGER DEFAULT 1",
+      "ALTER TABLE reviews ADD COLUMN createdAt TEXT"
+    ];
+    for (const rSql of reviewAlterStatements) {
+      try { sqliteInstance.run(rSql); } catch (_) {}
     }
 
     // Seed courses if empty

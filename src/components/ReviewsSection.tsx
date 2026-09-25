@@ -38,7 +38,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
   const fetchApprovedReviews = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/reviews/approved', {
+      const res = await fetch(`/api/reviews?approved=true&_t=${Date.now()}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -48,11 +48,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
-          const approved = data.filter(
-            (r: Review) =>
-              (r.isApproved === undefined || r.isApproved === true) &&
-              (r.status === undefined || r.status === 'approved')
-          );
+          const approved = data.filter((r: Review) => r.isApproved === true);
           setReviews(approved);
         } else {
           setReviews([]);
@@ -77,10 +73,21 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
     window.addEventListener('reviews-updated', handleUpdate);
     window.addEventListener('testimonials-updated', handleUpdate);
     window.addEventListener('video-testimonials-updated', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+    
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchApprovedReviews();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       window.removeEventListener('reviews-updated', handleUpdate);
       window.removeEventListener('testimonials-updated', handleUpdate);
       window.removeEventListener('video-testimonials-updated', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
@@ -245,79 +252,19 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
               <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
                 <div className="flex w-max animate-marquee hover:[animation-play-state:paused] gap-5 py-2">
                   {/* Render track twice to ensure seamless continuous looping */}
-                  {[...firstRow, ...firstRow].map((review, i) => (
-                    <div
-                      key={`row1-${review.id}-${i}`}
-                      className="w-[320px] sm:w-[380px] p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-900 transition-all duration-300 shrink-0 shadow-lg flex flex-col justify-between"
-                    >
-                      <div>
-                        {/* Rating Stars & Quote Icon */}
-                        <div className="flex items-center justify-between gap-2 mb-3">
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map(starNum => (
-                              <Star
-                                key={starNum}
-                                className={`w-3.5 h-3.5 ${
-                                  starNum <= review.rating
-                                    ? 'fill-amber-400 text-amber-400'
-                                    : 'text-slate-700'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <Quote className="w-4 h-4 text-emerald-500/40" />
-                        </div>
+                  {[...firstRow, ...firstRow].map((review, i) => {
+                    const reviewerName = review.reviewerName || review.full_name || 'Fellow';
+                    const reviewerRole = review.role || review.role_program || 'Software Engineering Fellow';
+                    const reviewComment = review.comment || review.testimonial || '';
+                    const reviewerAvatar = review.avatarUrl || review.avatar_url;
 
-                        {/* Testimonial Quote */}
-                        <p className="text-xs text-slate-300 leading-relaxed italic line-clamp-4">
-                          "{review.testimonial}"
-                        </p>
-                      </div>
-
-                      {/* Reviewer Profile */}
-                      <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center gap-3">
-                        {review.avatar_url ? (
-                          <img
-                            src={review.avatar_url}
-                            alt={review.full_name}
-                            className="w-10 h-10 rounded-full object-cover border border-emerald-500/30 shrink-0 bg-slate-800"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-600 to-teal-800 text-white font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-500/40">
-                            {getInitials(review.full_name)}
-                          </div>
-                        )}
-
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-white truncate">
-                              {review.full_name}
-                            </span>
-                            <CheckCircle2 className="w-3.5 h-3.5 theme-text-primary shrink-0" title="Verified Alumni / Partner" />
-                          </div>
-                          <p className="text-[11px] theme-text-primary font-medium truncate">
-                            {review.role_program}
-                          </p>
-                          <p className="text-[10px] text-slate-400 truncate">
-                            {review.organization}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Marquee Track 2 (Reverse rightwards continuous animation) */}
-              {secondRow.length > 0 && (
-                <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-                  <div className="flex w-max animate-marquee-reverse hover:[animation-play-state:paused] gap-5 py-2">
-                    {[...secondRow, ...secondRow].map((review, i) => (
+                    return (
                       <div
-                        key={`row2-${review.id}-${i}`}
-                        className="w-[320px] sm:w-[380px] p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-teal-500/40 hover:bg-slate-900 transition-all duration-300 shrink-0 shadow-lg flex flex-col justify-between"
+                        key={`row1-${review.id}-${i}`}
+                        className="w-[320px] sm:w-[380px] p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-900 transition-all duration-300 shrink-0 shadow-lg flex flex-col justify-between"
                       >
                         <div>
+                          {/* Rating Stars & Quote Icon */}
                           <div className="flex items-center justify-between gap-2 mb-3">
                             <div className="flex items-center gap-1">
                               {[1, 2, 3, 4, 5].map(starNum => (
@@ -331,36 +278,38 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
                                 />
                               ))}
                             </div>
-                            <Quote className="w-4 h-4 text-teal-500/40" />
+                            <Quote className="w-4 h-4 text-emerald-500/40" />
                           </div>
 
+                          {/* Testimonial Quote */}
                           <p className="text-xs text-slate-300 leading-relaxed italic line-clamp-4">
-                            "{review.testimonial}"
+                            "{reviewComment}"
                           </p>
                         </div>
 
+                        {/* Reviewer Profile */}
                         <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center gap-3">
-                          {review.avatar_url ? (
+                          {reviewerAvatar ? (
                             <img
-                              src={review.avatar_url}
-                              alt={review.full_name}
-                              className="w-10 h-10 rounded-full object-cover border border-teal-500/30 shrink-0 bg-slate-800"
+                              src={reviewerAvatar}
+                              alt={reviewerName}
+                              className="w-10 h-10 rounded-full object-cover border border-emerald-500/30 shrink-0 bg-slate-800"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-600 to-indigo-800 text-white font-bold text-xs flex items-center justify-center shrink-0 border border-teal-500/40">
-                              {getInitials(review.full_name)}
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-600 to-teal-800 text-white font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-500/40">
+                              {getInitials(reviewerName)}
                             </div>
                           )}
 
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs font-bold text-white truncate">
-                                {review.full_name}
+                                {reviewerName}
                               </span>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0" title="Verified Fellow" />
+                              <CheckCircle2 className="w-3.5 h-3.5 theme-text-primary shrink-0" title="Verified Alumni / Partner" />
                             </div>
-                            <p className="text-[11px] text-teal-400 font-medium truncate">
-                              {review.role_program}
+                            <p className="text-[11px] theme-text-primary font-medium truncate">
+                              {reviewerRole}
                             </p>
                             <p className="text-[10px] text-slate-400 truncate">
                               {review.organization}
@@ -368,7 +317,79 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
                           </div>
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Marquee Track 2 (Reverse rightwards continuous animation) */}
+              {secondRow.length > 0 && (
+                <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+                  <div className="flex w-max animate-marquee-reverse hover:[animation-play-state:paused] gap-5 py-2">
+                    {[...secondRow, ...secondRow].map((review, i) => {
+                      const reviewerName = review.reviewerName || review.full_name || 'Fellow';
+                      const reviewerRole = review.role || review.role_program || 'Software Engineering Fellow';
+                      const reviewComment = review.comment || review.testimonial || '';
+                      const reviewerAvatar = review.avatarUrl || review.avatar_url;
+
+                      return (
+                        <div
+                          key={`row2-${review.id}-${i}`}
+                          className="w-[320px] sm:w-[380px] p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-teal-500/40 hover:bg-slate-900 transition-all duration-300 shrink-0 shadow-lg flex flex-col justify-between"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-3">
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map(starNum => (
+                                  <Star
+                                    key={starNum}
+                                    className={`w-3.5 h-3.5 ${
+                                      starNum <= review.rating
+                                        ? 'fill-amber-400 text-amber-400'
+                                        : 'text-slate-700'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <Quote className="w-4 h-4 text-teal-500/40" />
+                            </div>
+
+                            <p className="text-xs text-slate-300 leading-relaxed italic line-clamp-4">
+                              "{reviewComment}"
+                            </p>
+                          </div>
+
+                          <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center gap-3">
+                            {reviewerAvatar ? (
+                              <img
+                                src={reviewerAvatar}
+                                alt={reviewerName}
+                                className="w-10 h-10 rounded-full object-cover border border-teal-500/30 shrink-0 bg-slate-800"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-600 to-indigo-800 text-white font-bold text-xs flex items-center justify-center shrink-0 border border-teal-500/40">
+                                {getInitials(reviewerName)}
+                              </div>
+                            )}
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-bold text-white truncate">
+                                  {reviewerName}
+                                </span>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0" title="Verified Fellow" />
+                              </div>
+                              <p className="text-[11px] text-teal-400 font-medium truncate">
+                                {reviewerRole}
+                              </p>
+                              <p className="text-[10px] text-slate-400 truncate">
+                                {review.organization}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
