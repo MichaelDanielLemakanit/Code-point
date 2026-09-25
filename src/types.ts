@@ -313,6 +313,9 @@ export interface AssignmentSubmission {
   marked_at?: string;
 }
 
+export type CertificateStatus = 'Active' | 'Draft' | 'Revoked' | 'Pending Clearance';
+export type CertificateRecipientType = 'Student' | 'Teacher / Instructor';
+
 export interface Certificate {
   id: string;
   studentName: string;
@@ -328,10 +331,14 @@ export interface Certificate {
   signatory2Title: string;
   issueDate: string;
   certIdNumber: string;
+  status?: CertificateStatus | string;
+  recipientType?: CertificateRecipientType | string;
   createdAt?: string;
   updatedAt?: string;
 
   // Backward-compatibility aliases for existing components
+  recipient_type?: string;
+  certidnumber?: string;
   verification_id?: string;
   student_name?: string;
   student_email?: string;

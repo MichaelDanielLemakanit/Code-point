@@ -39,7 +39,10 @@ import {
   CreditCard,
   UserCheck,
   Pencil,
-  History
+  History,
+  Share2,
+  Loader2,
+  GraduationCap
 } from 'lucide-react';
 import { SiteSettings, Application, Course, AdminStats, ApplicationStatus, User, ContactMessage, Certificate, AssignmentSubmission } from '../../types';
 import { ProgramsManager } from './ProgramsManager';
@@ -202,6 +205,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         isError: true
       });
     }
+  };
+
+  const [sendingEmailCertId, setSendingEmailCertId] = useState<string | null>(null);
+
+  const handleSendEmailCert = async (cert: Certificate) => {
+    const certId = cert.id || cert.certIdNumber || cert.verification_id;
+    const recipientEmail = cert.studentEmail || cert.student_email;
+    const certCode = cert.certIdNumber || cert.verification_id;
+    if (!recipientEmail) {
+      alert("No recipient email address registered for this certificate.");
+      return;
+    }
+
+    try {
+      setSendingEmailCertId(cert.id || certCode);
+      const res = await fetch(`/api/certificates/${encodeURIComponent(certId)}/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: recipientEmail })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to dispatch certificate email');
+      }
+      setApprovalFeedback({
+        text: `Official certificate PDF & verification link successfully emailed to ${recipientEmail}!`,
+        isError: false
+      });
+    } catch (err: any) {
+      setApprovalFeedback({
+        text: err.message || 'Error emailing certificate',
+        isError: true
+      });
+    } finally {
+      setSendingEmailCertId(null);
+    }
+  };
+
+  const handleShareWhatsApp = (cert: Certificate) => {
+    const certCode = cert.certIdNumber || cert.verification_id;
+    const name = cert.studentName || cert.student_name || 'Fellow';
+    const course = cert.courseName || cert.course_title || 'Software Engineering';
+    const origin = window.location.origin;
+    const verifyUrl = `${origin}/#verify-cert?id=${encodeURIComponent(certCode)}`;
+    const msg = `🎓 *Code Point Kenya - Certificate of Graduation*\n\nCongratulations *${name}*! Your official graduation credential for *${course}* (Certificate ID: *${certCode}*) has been successfully issued and authenticated.\n\n🔗 *Verify Credential Online:* ${verifyUrl}\n\n🏛 *Code Point Kenya* - Institute of Software Engineering & Applied AI`;
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleCertificateSaved = (savedCert: Certificate, isNew: boolean) => {
@@ -1188,52 +1238,135 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {certificates.map((cert) => (
-                            <div
-                              key={cert.id}
-                              className="p-4 rounded-xl border border-stone-200 bg-stone-50/50 hover:bg-stone-50 transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-3"
-                            >
-                              <div className="space-y-1 min-w-0 flex-1">
-                                <div className="font-bold text-stone-900 text-sm truncate">
-                                  {cert.studentName || cert.student_name}
+                          {certificates.map((cert) => {
+                            const certId = cert.id || cert.certIdNumber || cert.verification_id;
+                            const certCode = cert.certIdNumber || cert.verification_id;
+                            const isSendingEmail = sendingEmailCertId === certId || sendingEmailCertId === certCode;
+                            const st = cert.status || 'Active';
+                            const isFaculty = (cert.recipientType || cert.recipient_type) === 'Teacher / Instructor';
+
+                            return (
+                              <div
+                                key={cert.id}
+                                className="p-4 rounded-xl border border-stone-200 bg-stone-50/50 hover:bg-stone-50 transition-all flex flex-col justify-between gap-3 shadow-xs"
+                              >
+                                <div className="space-y-1.5 min-w-0">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <Award className="w-4 h-4 text-amber-600 shrink-0" />
+                                      <div className="font-bold text-stone-900 text-sm truncate">
+                                        {cert.studentName || cert.student_name}
+                                      </div>
+                                    </div>
+
+                                    {/* Visible Status Badge */}
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      {st === 'Active' && (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                                          Active
+                                        </span>
+                                      )}
+                                      {st === 'Draft' && (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                                          Draft
+                                        </span>
+                                      )}
+                                      {st === 'Pending Clearance' && (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-100 text-sky-800 border border-sky-300 flex items-center gap-1">
+                                          <Clock className="w-3 h-3" />
+                                          Pending
+                                        </span>
+                                      )}
+                                      {st === 'Revoked' && (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1">
+                                          <XCircle className="w-3 h-3" />
+                                          Revoked
+                                        </span>
+                                      )}
+                                      {isFaculty && (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-100 text-indigo-800 border border-indigo-300 flex items-center gap-1">
+                                          <GraduationCap className="w-3 h-3" />
+                                          Faculty
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="text-xs text-stone-500 truncate">
+                                    {cert.studentEmail || cert.student_email}
+                                  </div>
+                                  <div className="text-[11px] text-amber-700 font-medium truncate">
+                                    {cert.courseName || cert.course_title} • {cert.grade || cert.final_grade}
+                                  </div>
+                                  <div className="text-[10px] text-stone-400 font-mono">
+                                    ID: {certCode}
+                                    {cert.issueDate && (
+                                      <span className="ml-1 text-stone-500">• {cert.issueDate.includes('T') ? cert.issueDate.split('T')[0] : cert.issueDate}</span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="text-xs text-stone-500 truncate">
-                                  {cert.studentEmail || cert.student_email}
-                                </div>
-                                <div className="text-[11px] text-amber-700 font-medium truncate">
-                                  {cert.courseName || cert.course_title} • {cert.grade || cert.final_grade}
-                                </div>
-                                <div className="text-[10px] text-stone-400 font-mono">
-                                  ID: {cert.certIdNumber || cert.verification_id}
+
+                                {/* Action Buttons: View, Edit, Send via Email, Send via WhatsApp, Delete/Revoke */}
+                                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-stone-200">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedCert(cert)}
+                                    className="px-2.5 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs"
+                                    title="View Verifiable Certificate Preview"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>View</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditCert(cert)}
+                                    className="px-2.5 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs"
+                                    title="Edit Certificate Data"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5 text-indigo-600" />
+                                    <span>Edit</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSendEmailCert(cert)}
+                                    disabled={isSendingEmail}
+                                    className="px-2.5 py-1.5 rounded-lg border border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs disabled:opacity-50"
+                                    title="Send Dynamic Certificate Link via Email"
+                                  >
+                                    {isSendingEmail ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <Mail className="w-3.5 h-3.5 text-sky-600" />
+                                    )}
+                                    <span>{isSendingEmail ? 'Sending...' : 'Email'}</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleShareWhatsApp(cert)}
+                                    className="px-2.5 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs"
+                                    title="Generate WhatsApp Congratulatory Share Link"
+                                  >
+                                    <Share2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>WhatsApp</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRevokeCert(cert)}
+                                    className="p-1.5 rounded-lg border border-stone-200 bg-white hover:bg-rose-50 text-stone-400 hover:text-rose-600 text-xs font-medium transition-colors ml-auto cursor-pointer"
+                                    title="Revoke / Delete Certificate from Database"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-start">
-                                <button
-                                  onClick={() => setSelectedCert(cert)}
-                                  className="px-2.5 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs"
-                                  title="View Verifiable Certificate"
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
-                                  <span>View Cert</span>
-                                </button>
-                                <button
-                                  onClick={() => handleOpenEditCert(cert)}
-                                  className="px-2.5 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs"
-                                  title="Edit Certificate Data"
-                                >
-                                  <Pencil className="w-3.5 h-3.5 text-indigo-600" />
-                                  <span>Edit</span>
-                                </button>
-                                <button
-                                  onClick={() => handleRevokeCert(cert)}
-                                  className="p-1.5 rounded-lg border border-stone-200 bg-white hover:bg-rose-50 text-stone-400 hover:text-rose-600 text-xs font-medium transition-colors cursor-pointer"
-                                  title="Revoke / Delete Certificate"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>

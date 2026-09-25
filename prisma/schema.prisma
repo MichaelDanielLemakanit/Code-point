@@ -66,6 +66,9 @@ model certificates {
   approved_by     String  @default("Academic Board") @db.VarChar(255)
   approved_at     String  @db.VarChar(100)
   qr_code_payload String?
+  certidnumber    String? @db.VarChar(100)
+  status          String  @default("Active") @db.VarChar(50)
+  recipient_type  String  @default("Student") @db.VarChar(50)
 }
 
 model Certificate {
@@ -82,7 +85,9 @@ model Certificate {
   signatory2Name  String   @default("Code Point Kenya Academic Board & Admin")
   signatory2Title String   @default("ISSUED DATE")
   issueDate       DateTime @default(now())
-  certIdNumber    String   @unique
+  certIdNumber    String   @unique @map("certidnumber")
+  recipientType   String   @default("Student") @map("recipienttype")
+  status          String   @default("Active")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

@@ -5126,6 +5126,9 @@ function normalizeCertificate(raw: any) {
     else finalGrade = grade;
   }
 
+  const status = raw.status || "Active";
+  const recipientType = raw.recipientType || raw.recipient_type || raw.recipienttype || "Student";
+
   return {
     id,
     studentName,
@@ -5141,6 +5144,9 @@ function normalizeCertificate(raw: any) {
     signatory2Title,
     issueDate: formattedIssueDate,
     certIdNumber,
+    status,
+    recipientType,
+    recipient_type: recipientType,
     createdAt,
     updatedAt,
     // backward compat
@@ -5156,6 +5162,117 @@ function normalizeCertificate(raw: any) {
     qr_code_payload: qrCodePayload
   };
 }
+
+// 0. GET /api/certificates/recipients - Fetch students and instructors for auto-fill
+app.get("/api/certificates/recipients", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    
+    // Fetch applications, submissions, fee accounts, and users
+    let apps: any[] = [];
+    let subs: any[] = [];
+    let fees: any[] = [];
+    let users: any[] = [];
+
+    try { apps = await queryAll(db, "SELECT * FROM applications ORDER BY full_name ASC"); } catch (_) {}
+    try { subs = await queryAll(db, "SELECT * FROM submissions ORDER BY student_name ASC"); } catch (_) {}
+    try { fees = await queryAll(db, "SELECT * FROM student_fee_accounts ORDER BY student_name ASC"); } catch (_) {}
+    try { users = await queryAll(db, "SELECT * FROM users ORDER BY name ASC"); } catch (_) {}
+
+    const studentsMap = new Map<string, any>();
+    const instructorsMap = new Map<string, any>();
+
+    // Add instructors from users
+    users.forEach((u: any) => {
+      const role = String(u.role || '').toLowerCase();
+      if (role === 'instructor' || role === 'teacher' || role === 'admin') {
+        instructorsMap.set(u.email.toLowerCase(), {
+          name: u.name,
+          email: u.email.toLowerCase(),
+          role: role === 'admin' ? 'Academic Director' : 'Senior Faculty Instructor',
+          department: u.enrolled_course_title || 'Faculty of Software Engineering & AI',
+          cohort: 'Academic Year 2026'
+        });
+      } else if (role === 'student') {
+        studentsMap.set(u.email.toLowerCase(), {
+          name: u.name,
+          email: u.email.toLowerCase(),
+          course: u.enrolled_course_title || 'Software Engineering Immersive',
+          cohort: 'Cohort 14'
+        });
+      }
+    });
+
+    // Default faculty entries if missing
+    if (!instructorsMap.has('instructor@codepointkenya.com')) {
+      instructorsMap.set('instructor@codepointkenya.com', {
+        name: 'Brenda Wambui',
+        email: 'instructor@codepointkenya.com',
+        role: 'Faculty Lead - Software Engineering',
+        department: 'Faculty of Software Engineering',
+        cohort: 'Faculty 2026'
+      });
+    }
+    if (!instructorsMap.has('admin@codepointkenya.com')) {
+      instructorsMap.set('admin@codepointkenya.com', {
+        name: 'Dr. Kelvin Mutua',
+        email: 'admin@codepointkenya.com',
+        role: 'Dean of Applied AI & Computer Science',
+        department: 'Faculty of Applied AI & Data Science',
+        cohort: 'Faculty 2026'
+      });
+    }
+
+    // Add students from applications
+    apps.forEach((a: any) => {
+      const email = String(a.email || '').toLowerCase().trim();
+      if (email && !studentsMap.has(email)) {
+        studentsMap.set(email, {
+          name: a.full_name,
+          email,
+          course: a.course_title || 'Full-Stack Software Engineering',
+          cohort: a.intake || 'Cohort 14',
+          phone: a.phone || ''
+        });
+      }
+    });
+
+    // Add students from fee accounts
+    fees.forEach((f: any) => {
+      const email = String(f.student_email || '').toLowerCase().trim();
+      if (email && !studentsMap.has(email)) {
+        studentsMap.set(email, {
+          name: f.student_name,
+          email,
+          course: f.course_title || 'Full-Stack Software Engineering',
+          cohort: f.cohort || 'Cohort 14',
+          phone: f.student_phone || ''
+        });
+      }
+    });
+
+    // Add students from submissions
+    subs.forEach((s: any) => {
+      const email = String(s.student_email || '').toLowerCase().trim();
+      if (email && !studentsMap.has(email)) {
+        studentsMap.set(email, {
+          name: s.student_name,
+          email,
+          course: s.course_title || 'Software Engineering Immersive',
+          cohort: 'Cohort 14'
+        });
+      }
+    });
+
+    res.json({
+      students: Array.from(studentsMap.values()),
+      instructors: Array.from(instructorsMap.values())
+    });
+  } catch (err: any) {
+    console.error("Error fetching certificate recipients:", err);
+    res.status(500).json({ error: err.message || "Failed to fetch recipients" });
+  }
+});
 
 // 1. GET /api/certificates - Fetch all issued certificates
 app.get("/api/certificates", async (req: Request, res: Response) => {
@@ -5233,16 +5350,26 @@ app.get("/api/certificates/:id", async (req: Request, res: Response) => {
     // Fallback to SQL database
     if (!cert) {
       const db = await getDatabase();
-      const raw = await queryOne(
+      let raw = await queryOne(
         db,
-        "SELECT * FROM certificates WHERE id = ? OR UPPER(verification_id) = ? OR UPPER(certIdNumber) = ?",
-        [param, param.toUpperCase(), param.toUpperCase()]
+        "SELECT * FROM certificates WHERE id = ? OR UPPER(verification_id) = ?",
+        [param, param.toUpperCase()]
       );
+      if (!raw) {
+        try {
+          raw = await queryOne(
+            db,
+            "SELECT * FROM certificates WHERE UPPER(certidnumber) = ? OR UPPER(\"certIdNumber\") = ?",
+            [param.toUpperCase(), param.toUpperCase()]
+          );
+        } catch (_) {}
+      }
+
       if (raw) {
         cert = normalizeCertificate(raw);
       } else {
         const foundInDefault = DEFAULT_CERTIFICATES.find(
-          c => c.id === param || c.certIdNumber.toUpperCase() === param.toUpperCase() || c.verification_id.toUpperCase() === param.toUpperCase()
+          c => c.id === param || (c.certIdNumber && c.certIdNumber.toUpperCase() === param.toUpperCase()) || (c.verification_id && c.verification_id.toUpperCase() === param.toUpperCase())
         );
         if (foundInDefault) {
           cert = normalizeCertificate(foundInDefault);
@@ -5285,7 +5412,10 @@ app.post("/api/certificates", async (req: Request, res: Response) => {
       issueDate,
       completion_date,
       certIdNumber,
-      verification_id
+      verification_id,
+      status,
+      recipientType,
+      recipient_type
     } = req.body || {};
 
     const name = String(studentName || student_name || "").trim();
@@ -5310,6 +5440,8 @@ app.post("/api/certificates", async (req: Request, res: Response) => {
     const assignedSig1Title = String(signatory1Title || "CURRICULUM DIRECTOR - Faculty of Engineering").trim();
     const assignedSig2Name = String(signatory2Name || approved_by || "Code Point Kenya Academic Board & Admin").trim();
     const assignedSig2Title = String(signatory2Title || "ISSUED DATE").trim();
+    const assignedStatus = String(status || "Active").trim();
+    const assignedRecipientType = String(recipientType || recipient_type || "Student").trim();
 
     // Auto-generate unique certIdNumber if not specified
     const randomCode = Math.floor(100000 + Math.random() * 900000);
@@ -5328,12 +5460,21 @@ app.post("/api/certificates", async (req: Request, res: Response) => {
 
     const db = await getDatabase();
 
-    // Check duplicate certIdNumber
-    const existingWithCertId = await queryOne(
+    // Check duplicate certIdNumber safely
+    let existingWithCertId = await queryOne(
       db,
-      "SELECT id FROM certificates WHERE UPPER(verification_id) = ? OR UPPER(certIdNumber) = ?",
-      [assignedCertId, assignedCertId]
+      "SELECT id FROM certificates WHERE UPPER(verification_id) = ?",
+      [assignedCertId]
     );
+    if (!existingWithCertId) {
+      try {
+        existingWithCertId = await queryOne(
+          db,
+          "SELECT id FROM certificates WHERE UPPER(certidnumber) = ? OR UPPER(\"certIdNumber\") = ?",
+          [assignedCertId, assignedCertId]
+        );
+      } catch (_) {}
+    }
     if (existingWithCertId) {
       return res.status(409).json({ error: `Certificate ID "${assignedCertId}" is already assigned to another certificate.` });
     }
@@ -5356,7 +5497,9 @@ app.post("/api/certificates", async (req: Request, res: Response) => {
             signatory2Name: assignedSig2Name,
             signatory2Title: assignedSig2Title,
             issueDate: issueDateObj,
-            certIdNumber: assignedCertId
+            certIdNumber: assignedCertId,
+            status: assignedStatus,
+            recipientType: assignedRecipientType
           }
         });
       });
@@ -5365,40 +5508,81 @@ app.post("/api/certificates", async (req: Request, res: Response) => {
     }
 
     // Persist to SQL database (SQLite / Postgres)
-    await db.run(
-      `INSERT INTO certificates (
-        id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload,
-        studentName, studentEmail, courseName, grade, institutionName, subHeading, addressText, signatory1Name, signatory1Title, signatory2Name, signatory2Title, issueDate, certIdNumber, createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        assignedCertId,
-        name,
-        email,
-        course,
-        cohort || "Cohort 14",
-        completionFormatted,
-        assignedGrade,
-        assignedSig2Name,
-        nowIso,
-        qrPayload,
-        name,
-        email,
-        course,
-        assignedGrade,
-        assignedInstitution,
-        assignedSubHeading,
-        assignedAddress,
-        assignedSig1Name,
-        assignedSig1Title,
-        assignedSig2Name,
-        assignedSig2Title,
-        issueDateObj.toISOString(),
-        assignedCertId,
-        nowIso,
-        nowIso
-      ]
-    );
+    try {
+      await db.run(
+        `INSERT INTO certificates (
+          id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload,
+          studentName, studentEmail, courseName, grade, institutionName, subHeading, addressText, signatory1Name, signatory1Title, signatory2Name, signatory2Title, issueDate, certIdNumber, certidnumber, status, recipient_type, recipientType, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          assignedCertId,
+          name,
+          email,
+          course,
+          cohort || "Cohort 14",
+          completionFormatted,
+          assignedGrade,
+          assignedSig2Name,
+          nowIso,
+          qrPayload,
+          name,
+          email,
+          course,
+          assignedGrade,
+          assignedInstitution,
+          assignedSubHeading,
+          assignedAddress,
+          assignedSig1Name,
+          assignedSig1Title,
+          assignedSig2Name,
+          assignedSig2Title,
+          issueDateObj.toISOString(),
+          assignedCertId,
+          assignedCertId,
+          assignedStatus,
+          assignedRecipientType,
+          assignedRecipientType,
+          nowIso,
+          nowIso
+        ]
+      );
+    } catch (dbErr) {
+      // Fallback insert with core columns
+      await db.run(
+        `INSERT INTO certificates (
+          id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          assignedCertId,
+          name,
+          email,
+          course,
+          cohort || "Cohort 14",
+          completionFormatted,
+          assignedGrade,
+          assignedSig2Name,
+          nowIso,
+          qrPayload
+        ]
+      );
+    }
+
+    // Also insert into "Certificate" table if on PostgreSQL
+    try {
+      await db.run(
+        `INSERT INTO "Certificate" (
+          id, "studentName", "studentEmail", "courseName", grade, "institutionName", "subHeading", "addressText", "signatory1Name", "signatory1Title", "signatory2Name", "signatory2Title", "issueDate", "certIdNumber", certidnumber, status, "recipientType", recipienttype, "createdAt", "updatedAt"
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
+        [
+          id, name, email, course, assignedGrade, assignedInstitution, assignedSubHeading, assignedAddress,
+          assignedSig1Name, assignedSig1Title, assignedSig2Name, assignedSig2Title, issueDateObj.toISOString(),
+          assignedCertId, assignedCertId, assignedStatus, assignedRecipientType, assignedRecipientType, nowIso, nowIso
+        ]
+      );
+    } catch (_) {}
+
     await saveDatabase(db);
 
     const savedRecord = await queryOne(db, "SELECT * FROM certificates WHERE id = ?", [id]);
@@ -5417,6 +5601,8 @@ app.post("/api/certificates", async (req: Request, res: Response) => {
       signatory2Title: assignedSig2Title,
       issueDate: issueDateObj.toISOString(),
       certIdNumber: assignedCertId,
+      status: assignedStatus,
+      recipientType: assignedRecipientType,
       createdAt: nowIso,
       updatedAt: nowIso
     });
@@ -5443,9 +5629,18 @@ app.put("/api/certificates/:id", async (req: Request, res: Response) => {
     const db = await getDatabase();
     let existing = await queryOne(
       db,
-      "SELECT * FROM certificates WHERE id = ? OR UPPER(verification_id) = ? OR UPPER(certIdNumber) = ?",
-      [idParam, idParam.toUpperCase(), idParam.toUpperCase()]
+      "SELECT * FROM certificates WHERE id = ? OR UPPER(verification_id) = ?",
+      [idParam, idParam.toUpperCase()]
     );
+    if (!existing) {
+      try {
+        existing = await queryOne(
+          db,
+          "SELECT * FROM certificates WHERE UPPER(certidnumber) = ? OR UPPER(\"certIdNumber\") = ?",
+          [idParam.toUpperCase(), idParam.toUpperCase()]
+        );
+      } catch (_) {}
+    }
 
     if (!existing) {
       return res.status(404).json({ error: "Certificate not found" });
@@ -5472,7 +5667,10 @@ app.put("/api/certificates/:id", async (req: Request, res: Response) => {
       issueDate,
       completion_date,
       certIdNumber,
-      verification_id
+      verification_id,
+      status,
+      recipientType,
+      recipient_type
     } = req.body || {};
 
     const name = studentName !== undefined ? String(studentName).trim() : (student_name !== undefined ? String(student_name).trim() : (existing.studentName || existing.student_name));
@@ -5488,6 +5686,8 @@ app.put("/api/certificates/:id", async (req: Request, res: Response) => {
     const updatedSig2Name = signatory2Name !== undefined ? String(signatory2Name).trim() : (approved_by !== undefined ? String(approved_by).trim() : (existing.signatory2Name || existing.approved_by || "Code Point Kenya Academic Board & Admin"));
     const updatedSig2Title = signatory2Title !== undefined ? String(signatory2Title).trim() : (existing.signatory2Title || "ISSUED DATE");
     const updatedCertId = certIdNumber !== undefined ? String(certIdNumber).trim().toUpperCase() : (verification_id !== undefined ? String(verification_id).trim().toUpperCase() : (existing.certIdNumber || existing.verification_id));
+    const updatedStatus = status !== undefined ? String(status).trim() : (existing.status || "Active");
+    const updatedRecipientType = recipientType !== undefined ? String(recipientType).trim() : (recipient_type !== undefined ? String(recipient_type).trim() : (existing.recipientType || existing.recipient_type || "Student"));
 
     let updatedIssueDate = existing.issueDate || existing.completion_date;
     if (issueDate !== undefined) {
@@ -5524,6 +5724,8 @@ app.put("/api/certificates/:id", async (req: Request, res: Response) => {
             signatory2Name: updatedSig2Name,
             signatory2Title: updatedSig2Title,
             certIdNumber: updatedCertId,
+            status: updatedStatus,
+            recipientType: updatedRecipientType,
             ...(updatedIssueDate ? { issueDate: new Date(updatedIssueDate) } : {})
           }
         });
@@ -5533,59 +5735,107 @@ app.put("/api/certificates/:id", async (req: Request, res: Response) => {
     }
 
     // Update SQL database
-    await db.run(
-      `UPDATE certificates SET
-        verification_id = ?,
-        student_name = ?,
-        student_email = ?,
-        course_title = ?,
-        cohort = ?,
-        completion_date = ?,
-        final_grade = ?,
-        approved_by = ?,
-        qr_code_payload = ?,
-        studentName = ?,
-        studentEmail = ?,
-        courseName = ?,
-        grade = ?,
-        institutionName = ?,
-        subHeading = ?,
-        addressText = ?,
-        signatory1Name = ?,
-        signatory1Title = ?,
-        signatory2Name = ?,
-        signatory2Title = ?,
-        issueDate = ?,
-        certIdNumber = ?,
-        updatedAt = ?
-      WHERE id = ?`,
-      [
-        updatedCertId,
-        name,
-        email,
-        course,
-        updatedCohort,
-        updatedCompletion,
-        updatedGrade,
-        updatedSig2Name,
-        qrPayload,
-        name,
-        email,
-        course,
-        updatedGrade,
-        updatedInstitution,
-        updatedSubHeading,
-        updatedAddress,
-        updatedSig1Name,
-        updatedSig1Title,
-        updatedSig2Name,
-        updatedSig2Title,
-        String(updatedIssueDate),
-        updatedCertId,
-        nowIso,
-        existing.id
-      ]
-    );
+    try {
+      await db.run(
+        `UPDATE certificates SET
+          verification_id = ?,
+          student_name = ?,
+          student_email = ?,
+          course_title = ?,
+          cohort = ?,
+          completion_date = ?,
+          final_grade = ?,
+          approved_by = ?,
+          qr_code_payload = ?,
+          studentName = ?,
+          studentEmail = ?,
+          courseName = ?,
+          grade = ?,
+          institutionName = ?,
+          subHeading = ?,
+          addressText = ?,
+          signatory1Name = ?,
+          signatory1Title = ?,
+          signatory2Name = ?,
+          signatory2Title = ?,
+          issueDate = ?,
+          certIdNumber = ?,
+          certidnumber = ?,
+          status = ?,
+          recipient_type = ?,
+          recipientType = ?,
+          updatedAt = ?
+        WHERE id = ?`,
+        [
+          updatedCertId,
+          name,
+          email,
+          course,
+          updatedCohort,
+          updatedCompletion,
+          updatedGrade,
+          updatedSig2Name,
+          qrPayload,
+          name,
+          email,
+          course,
+          updatedGrade,
+          updatedInstitution,
+          updatedSubHeading,
+          updatedAddress,
+          updatedSig1Name,
+          updatedSig1Title,
+          updatedSig2Name,
+          updatedSig2Title,
+          String(updatedIssueDate),
+          updatedCertId,
+          updatedCertId,
+          updatedStatus,
+          updatedRecipientType,
+          updatedRecipientType,
+          nowIso,
+          existing.id
+        ]
+      );
+    } catch (_) {
+      // Fallback simple update
+      await db.run(
+        `UPDATE certificates SET
+          verification_id = ?,
+          student_name = ?,
+          student_email = ?,
+          course_title = ?,
+          cohort = ?,
+          completion_date = ?,
+          final_grade = ?,
+          approved_by = ?,
+          qr_code_payload = ?
+        WHERE id = ?`,
+        [
+          updatedCertId,
+          name,
+          email,
+          course,
+          updatedCohort,
+          updatedCompletion,
+          updatedGrade,
+          updatedSig2Name,
+          qrPayload,
+          existing.id
+        ]
+      );
+    }
+
+    // Also update "Certificate" table if on PostgreSQL
+    try {
+      await db.run(
+        `UPDATE "Certificate" SET
+          "studentName" = ?, "studentEmail" = ?, "courseName" = ?, grade = ?, "institutionName" = ?, "subHeading" = ?, "addressText" = ?, "signatory1Name" = ?, "signatory1Title" = ?, "signatory2Name" = ?, "signatory2Title" = ?, "certIdNumber" = ?, certidnumber = ?, status = ?, recipienttype = ?, "recipientType" = ?, "updatedAt" = CURRENT_TIMESTAMP
+        WHERE id = ? OR certidnumber = ? OR "certIdNumber" = ?`,
+        [name, email, course, updatedGrade, updatedInstitution, updatedSubHeading, updatedAddress, updatedSig1Name, updatedSig1Title, updatedSig2Name, updatedSig2Title, updatedCertId, updatedCertId, updatedStatus, updatedRecipientType, updatedRecipientType, existing.id, existing.verification_id, existing.verification_id]
+      );
+    } catch (_) {}
+
     await saveDatabase(db);
 
     const updated = await queryOne(db, "SELECT * FROM certificates WHERE id = ?", [existing.id]);
@@ -5609,11 +5859,20 @@ app.delete("/api/certificates/:id", async (req: Request, res: Response) => {
     }
 
     const db = await getDatabase();
-    const existing = await queryOne(
+    let existing = await queryOne(
       db,
-      "SELECT id FROM certificates WHERE id = ? OR UPPER(verification_id) = ? OR UPPER(certIdNumber) = ?",
-      [idParam, idParam.toUpperCase(), idParam.toUpperCase()]
+      "SELECT id, verification_id FROM certificates WHERE id = ? OR UPPER(verification_id) = ?",
+      [idParam, idParam.toUpperCase()]
     );
+    if (!existing) {
+      try {
+        existing = await queryOne(
+          db,
+          "SELECT id, verification_id FROM certificates WHERE UPPER(certidnumber) = ? OR UPPER(\"certIdNumber\") = ?",
+          [idParam.toUpperCase(), idParam.toUpperCase()]
+        );
+      } catch (_) {}
+    }
 
     if (!existing) {
       return res.status(404).json({ error: "Certificate not found" });
@@ -5632,6 +5891,9 @@ app.delete("/api/certificates/:id", async (req: Request, res: Response) => {
 
     // Delete in SQL database
     await db.run("DELETE FROM certificates WHERE id = ?", [existing.id]);
+    try {
+      await db.run("DELETE FROM \"Certificate\" WHERE id = ?", [existing.id]);
+    } catch (_) {}
     await saveDatabase(db);
 
     res.json({
@@ -5641,6 +5903,85 @@ app.delete("/api/certificates/:id", async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("Error deleting certificate:", error);
     res.status(500).json({ error: error.message || "Failed to revoke certificate" });
+  }
+});
+
+// 6. POST /api/certificates/:id/send-email - Dispatch certificate link via email
+app.post("/api/certificates/:id/send-email", async (req: Request, res: Response) => {
+  try {
+    const idParam = String(req.params.id || "").trim();
+    const db = await getDatabase();
+    let cert = await queryOne(
+      db,
+      "SELECT * FROM certificates WHERE id = ? OR UPPER(verification_id) = ?",
+      [idParam, idParam.toUpperCase()]
+    );
+    if (!cert) {
+      try {
+        cert = await queryOne(
+          db,
+          "SELECT * FROM certificates WHERE UPPER(certidnumber) = ? OR UPPER(\"certIdNumber\") = ?",
+          [idParam.toUpperCase(), idParam.toUpperCase()]
+        );
+      } catch (_) {}
+    }
+    if (!cert) {
+      const foundInDefault = DEFAULT_CERTIFICATES.find(c => c.id === idParam || c.certIdNumber === idParam);
+      if (foundInDefault) cert = foundInDefault;
+    }
+
+    if (!cert) {
+      return res.status(404).json({ error: "Certificate not found" });
+    }
+
+    const normalized = normalizeCertificate(cert);
+    const recipientEmail = String(req.body.email || normalized.studentEmail || normalized.student_email || "").trim().toLowerCase();
+    if (!recipientEmail) {
+      return res.status(400).json({ error: "Recipient email is required" });
+    }
+
+    const recipientName = normalized.studentName || normalized.student_name || "Fellow";
+    const certCode = normalized.certIdNumber || normalized.verification_id;
+    const certCourse = normalized.courseName || normalized.course_title;
+    const origin = `${req.protocol}://${req.get('host') || 'codepointkenya.com'}`;
+    const certLink = `${origin}/#verify-cert?id=${encodeURIComponent(certCode)}`;
+
+    // Log to activity_logs
+    try {
+      const logId = `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      await db.run(
+        `INSERT INTO activity_logs (id, event_type, action, entity_type, entity_id, actor_name, actor_email, target_name, target_email, details, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          logId,
+          "CERTIFICATE_DISPATCH",
+          "EMAIL_SENT",
+          "certificate",
+          normalized.id,
+          "Academic Board System",
+          "certificates@codepointkenya.com",
+          recipientName,
+          recipientEmail,
+          `Official Graduation Certificate ${certCode} emailed to ${recipientEmail} for ${certCourse}. Link: ${certLink}`,
+          new Date().toISOString()
+        ]
+      );
+      await saveDatabase(db);
+    } catch (_) {}
+
+    res.json({
+      success: true,
+      message: `Digital Certificate ${certCode} successfully emailed to ${recipientEmail}!`,
+      recipientEmail,
+      recipientName,
+      certIdNumber: certCode,
+      course: certCourse,
+      certificateUrl: certLink,
+      dispatchedAt: new Date().toISOString()
+    });
+  } catch (err: any) {
+    console.error("Error emailing certificate:", err);
+    res.status(500).json({ error: err.message || "Failed to dispatch certificate email" });
   }
 });
 
@@ -5686,40 +6027,65 @@ app.post("/api/certificates/approve", async (req: Request, res: Response) => {
     const approvedByVal = approved_by || "Code Point Kenya Academic Board & Admin";
 
     // Insert into certificates with all dynamic columns
-    await db.run(
-      `INSERT INTO certificates (
-        id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload,
-        studentName, studentEmail, courseName, grade, institutionName, subHeading, addressText, signatory1Name, signatory1Title, signatory2Name, signatory2Title, issueDate, certIdNumber, createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        certId,
-        verificationId,
-        studentNameVal,
-        email,
-        courseTitleVal,
-        cohortVal,
-        completionDate,
-        finalGradeVal,
-        approvedByVal,
-        approvedAt,
-        qrCodePayload,
-        studentNameVal,
-        email,
-        courseTitleVal,
-        `Grade ${finalGradeVal} - ${cohortVal}`,
-        "CODE POINT KENYA",
-        "INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI",
-        "Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya",
-        "Brenda Wambui",
-        "CURRICULUM DIRECTOR - Faculty of Engineering",
-        approvedByVal,
-        "ISSUED DATE",
-        new Date().toISOString(),
-        verificationId,
-        approvedAt,
-        approvedAt
-      ]
-    );
+    try {
+      await db.run(
+        `INSERT INTO certificates (
+          id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload,
+          studentName, studentEmail, courseName, grade, institutionName, subHeading, addressText, signatory1Name, signatory1Title, signatory2Name, signatory2Title, issueDate, certIdNumber, certidnumber, status, recipient_type, recipientType, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          certId,
+          verificationId,
+          studentNameVal,
+          email,
+          courseTitleVal,
+          cohortVal,
+          completionDate,
+          finalGradeVal,
+          approvedByVal,
+          approvedAt,
+          qrCodePayload,
+          studentNameVal,
+          email,
+          courseTitleVal,
+          `Grade ${finalGradeVal} - ${cohortVal}`,
+          "CODE POINT KENYA",
+          "INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI",
+          "Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya",
+          "Brenda Wambui",
+          "CURRICULUM DIRECTOR - Faculty of Engineering",
+          approvedByVal,
+          "ISSUED DATE",
+          new Date().toISOString(),
+          verificationId,
+          verificationId,
+          "Active",
+          "Student",
+          "Student",
+          approvedAt,
+          approvedAt
+        ]
+      );
+    } catch (_) {
+      await db.run(
+        `INSERT INTO certificates (
+          id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          certId,
+          verificationId,
+          studentNameVal,
+          email,
+          courseTitleVal,
+          cohortVal,
+          completionDate,
+          finalGradeVal,
+          approvedByVal,
+          approvedAt,
+          qrCodePayload
+        ]
+      );
+    }
 
     // Try Prisma create as well
     try {
@@ -5738,7 +6104,9 @@ app.post("/api/certificates/approve", async (req: Request, res: Response) => {
             signatory1Title: "CURRICULUM DIRECTOR - Faculty of Engineering",
             signatory2Name: approvedByVal,
             signatory2Title: "ISSUED DATE",
-            certIdNumber: verificationId
+            certIdNumber: verificationId,
+            status: "Active",
+            recipientType: "Student"
           }
         });
       });

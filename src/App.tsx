@@ -18,7 +18,8 @@ import { ApplyModal } from './components/ApplyModal';
 import { ApplicationTrackerModal } from './components/ApplicationTrackerModal';
 import { PortalModal } from './components/portal/PortalModal';
 import { AdminPanel } from './components/portal/AdminPanel';
-import { Course, User, Application, SiteSettings } from './types';
+import { CertificateModal } from './components/portal/CertificateModal';
+import { Course, User, Application, SiteSettings, Certificate } from './types';
 import { applyGlobalTheme } from './utils/theme';
 
 export default function App() {
@@ -57,6 +58,32 @@ export default function App() {
   const [trackerCode, setTrackerCode] = useState<string>('');
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const [isAdminCMSOpen, setIsAdminCMSOpen] = useState(false);
+  const [publicVerifyCert, setPublicVerifyCert] = useState<Certificate | null>(null);
+
+  // Check URL parameters for direct certificate verification link
+  useEffect(() => {
+    const checkVerifyLink = async () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      let certId = searchParams.get('id') || searchParams.get('verify') || searchParams.get('cert');
+      if (!certId && window.location.hash.includes('verify')) {
+        const hashQuery = window.location.hash.split('?')[1];
+        if (hashQuery) {
+          const hParams = new URLSearchParams(hashQuery);
+          certId = hParams.get('id');
+        }
+      }
+      if (certId) {
+        try {
+          const res = await fetch(`/api/certificates/${encodeURIComponent(certId)}`);
+          if (res.ok) {
+            const data = await res.json();
+            setPublicVerifyCert(data);
+          }
+        } catch (_) {}
+      }
+    };
+    checkVerifyLink();
+  }, []);
 
   // Fetch courses from SQLite backend
   const fetchCourses = async () => {

@@ -281,9 +281,79 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
         final_grade VARCHAR(50) NOT NULL DEFAULT 'Distinction',
         approved_by VARCHAR(255) NOT NULL DEFAULT 'Academic Board',
         approved_at VARCHAR(100) NOT NULL,
-        qr_code_payload TEXT
+        qr_code_payload TEXT,
+        certidnumber VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'Active',
+        recipient_type VARCHAR(50) DEFAULT 'Student'
+      );
+
+      CREATE TABLE IF NOT EXISTS "Certificate" (
+        id VARCHAR(255) PRIMARY KEY,
+        "studentName" VARCHAR(255) NOT NULL,
+        "studentEmail" VARCHAR(255) NOT NULL,
+        "courseName" VARCHAR(255) NOT NULL,
+        grade VARCHAR(100) NOT NULL,
+        "institutionName" VARCHAR(255) DEFAULT 'CODE POINT KENYA',
+        "subHeading" VARCHAR(255) DEFAULT 'INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI',
+        "addressText" VARCHAR(255) DEFAULT 'Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya',
+        "signatory1Name" VARCHAR(255) DEFAULT 'Brenda Wambui',
+        "signatory1Title" VARCHAR(255) DEFAULT 'CURRICULUM DIRECTOR - Faculty of Engineering',
+        "signatory2Name" VARCHAR(255) DEFAULT 'Code Point Kenya Academic Board & Admin',
+        "signatory2Title" VARCHAR(255) DEFAULT 'ISSUED DATE',
+        "issueDate" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        certidnumber VARCHAR(100) UNIQUE,
+        "certIdNumber" VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'Active',
+        recipienttype VARCHAR(50) DEFAULT 'Student',
+        "recipientType" VARCHAR(50) DEFAULT 'Student',
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Ensure all certificate columns exist in PostgreSQL
+    const certAlterStatements = [
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS certidnumber VARCHAR(100)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"certIdNumber\" VARCHAR(100)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active'",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS recipient_type VARCHAR(50) DEFAULT 'Student'",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"recipientType\" VARCHAR(50) DEFAULT 'Student'",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS studentname VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"studentName\" VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS studentemail VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"studentEmail\" VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS coursename VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"courseName\" VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS grade VARCHAR(100)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS institutionname VARCHAR(255) DEFAULT 'CODE POINT KENYA'",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"institutionName\" VARCHAR(255) DEFAULT 'CODE POINT KENYA'",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS subheading VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"subHeading\" VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS addresstext VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"addressText\" VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS signatory1name VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"signatory1Name\" VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS signatory1title VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"signatory1Title\" VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS signatory2name VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"signatory2Name\" VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS signatory2title VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"signatory2Title\" VARCHAR(255)",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS issuedate TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"issueDate\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"createdAt\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+      "ALTER TABLE certificates ADD COLUMN IF NOT EXISTS \"updatedAt\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+      "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS certidnumber VARCHAR(100)",
+      "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS \"certIdNumber\" VARCHAR(100)",
+      "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active'",
+      "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS recipienttype VARCHAR(50) DEFAULT 'Student'",
+      "ALTER TABLE \"Certificate\" ADD COLUMN IF NOT EXISTS \"recipientType\" VARCHAR(50) DEFAULT 'Student'"
+    ];
+    for (const sql of certAlterStatements) {
+      await client.query(sql).catch(() => {});
+    }
 
     // 14. Table: announcements
     await client.query(`
