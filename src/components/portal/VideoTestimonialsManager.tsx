@@ -139,6 +139,12 @@ export const VideoTestimonialsManager: React.FC<VideoTestimonialsManagerProps> =
     fetchVideos();
   }, []);
 
+  const notifyTestimonialsUpdated = () => {
+    window.dispatchEvent(new CustomEvent('video-testimonials-updated'));
+    window.dispatchEvent(new CustomEvent('testimonials-updated'));
+    window.dispatchEvent(new CustomEvent('reviews-updated'));
+  };
+
   // Quick action: Toggle Featured
   const handleToggleFeatured = async (v: VideoTestimonial) => {
     const nextFeatured = !(Number(v.is_featured) === 1);
@@ -151,7 +157,7 @@ export const VideoTestimonialsManager: React.FC<VideoTestimonialsManagerProps> =
       if (res.ok) {
         setTestimonials(prev => prev.map(item => item.id === v.id ? { ...item, is_featured: nextFeatured ? 1 : 0 } : item));
         showToast(nextFeatured ? `"${v.student_name}" is now featured on homepage!` : `Unfeatured "${v.student_name}".`);
-        window.dispatchEvent(new CustomEvent('video-testimonials-updated'));
+        notifyTestimonialsUpdated();
       } else {
         alert('Failed to update featured status');
       }
@@ -172,7 +178,7 @@ export const VideoTestimonialsManager: React.FC<VideoTestimonialsManagerProps> =
       if (res.ok) {
         setTestimonials(prev => prev.map(item => item.id === v.id ? { ...item, status: nextStatus } : item));
         showToast(nextStatus === 'approved' ? `Video published to live gallery!` : `Video set to hidden.`);
-        window.dispatchEvent(new CustomEvent('video-testimonials-updated'));
+        notifyTestimonialsUpdated();
       }
     } catch (e) {
       console.error('Error toggling status:', e);
@@ -188,7 +194,7 @@ export const VideoTestimonialsManager: React.FC<VideoTestimonialsManagerProps> =
       if (res.ok) {
         setTestimonials(prev => prev.filter(item => item.id !== id));
         showToast(`Video testimonial deleted.`);
-        window.dispatchEvent(new CustomEvent('video-testimonials-updated'));
+        notifyTestimonialsUpdated();
       } else {
         alert('Failed to delete testimonial');
       }
@@ -278,7 +284,7 @@ export const VideoTestimonialsManager: React.FC<VideoTestimonialsManagerProps> =
           showToast('Video testimonial updated successfully!');
           await fetchVideos();
           setIsModalOpen(false);
-          window.dispatchEvent(new CustomEvent('video-testimonials-updated'));
+          notifyTestimonialsUpdated();
         } else {
           alert('Failed to update testimonial');
         }
@@ -292,7 +298,7 @@ export const VideoTestimonialsManager: React.FC<VideoTestimonialsManagerProps> =
           showToast('New video testimonial created and published!');
           await fetchVideos();
           setIsModalOpen(false);
-          window.dispatchEvent(new CustomEvent('video-testimonials-updated'));
+          notifyTestimonialsUpdated();
         } else {
           alert('Failed to create video testimonial');
         }

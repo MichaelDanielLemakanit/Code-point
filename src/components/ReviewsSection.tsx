@@ -38,13 +38,31 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
   const fetchApprovedReviews = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/reviews/approved');
+      const res = await fetch('/api/reviews/approved', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
       if (res.ok) {
         const data = await res.json();
-        setReviews(data);
+        if (Array.isArray(data)) {
+          const approved = data.filter(
+            (r: Review) =>
+              (r.isApproved === undefined || r.isApproved === true) &&
+              (r.status === undefined || r.status === 'approved')
+          );
+          setReviews(approved);
+        } else {
+          setReviews([]);
+        }
+      } else {
+        setReviews([]);
       }
     } catch (e) {
       console.warn('Failed to load approved reviews:', e);
+      setReviews([]);
     } finally {
       setLoading(false);
     }
@@ -52,6 +70,18 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
 
   useEffect(() => {
     fetchApprovedReviews();
+
+    const handleUpdate = () => {
+      fetchApprovedReviews();
+    };
+    window.addEventListener('reviews-updated', handleUpdate);
+    window.addEventListener('testimonials-updated', handleUpdate);
+    window.addEventListener('video-testimonials-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('reviews-updated', handleUpdate);
+      window.removeEventListener('testimonials-updated', handleUpdate);
+      window.removeEventListener('video-testimonials-updated', handleUpdate);
+    };
   }, []);
 
   const handleSubmitReview = async (e: React.FormEvent) => {

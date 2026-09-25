@@ -128,6 +128,7 @@ export interface Review {
   avatar_url?: string;
   status: 'pending' | 'approved' | 'rejected';
   is_featured?: number;
+  isApproved?: boolean;
   created_at: string;
 }
 
@@ -145,6 +146,7 @@ export interface VideoTestimonial {
   quote_highlight: string;
   is_featured: number | boolean;
   status: 'approved' | 'pending' | 'hidden';
+  isApproved?: boolean;
   views_count?: number;
   created_at: string;
 }
@@ -313,15 +315,32 @@ export interface AssignmentSubmission {
 
 export interface Certificate {
   id: string;
-  verification_id: string;
-  student_name: string;
-  student_email: string;
-  course_title: string;
-  cohort: string;
-  completion_date: string;
-  final_grade: string;
-  approved_by: string;
-  approved_at: string;
+  studentName: string;
+  studentEmail: string;
+  courseName: string;
+  grade: string;
+  institutionName: string;
+  subHeading: string;
+  addressText: string;
+  signatory1Name: string;
+  signatory1Title: string;
+  signatory2Name: string;
+  signatory2Title: string;
+  issueDate: string;
+  certIdNumber: string;
+  createdAt?: string;
+  updatedAt?: string;
+
+  // Backward-compatibility aliases for existing components
+  verification_id?: string;
+  student_name?: string;
+  student_email?: string;
+  course_title?: string;
+  cohort?: string;
+  completion_date?: string;
+  final_grade?: string;
+  approved_by?: string;
+  approved_at?: string;
   qr_code_payload?: string;
 }
 

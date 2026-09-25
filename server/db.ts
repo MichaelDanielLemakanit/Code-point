@@ -20,7 +20,7 @@ export interface AppDatabase {
 }
 
 export const DEFAULT_NEON_DATABASE_URL =
-  "postgresql://neondb_owner:npg_s5GmlkHyQg3c@ep-old-sunset-b4j9fx8b-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=verify-full&pgbouncer=true&connect_timeout=30";
+  process.env.DATABASE_URL || "";
 
 /**
  * Returns prioritized candidate PostgreSQL connection strings.
@@ -709,6 +709,65 @@ export const DEFAULT_VIDEO_TESTIMONIALS = [
     status: "approved",
     views_count: 870,
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 35).toISOString()
+  }
+];
+
+export const DEFAULT_CERTIFICATES = [
+  {
+    id: "cert-2026-001",
+    studentName: "Daniel Kiptoo",
+    studentEmail: "daniel.kiptoo@example.com",
+    courseName: "Full-Stack Software Engineering",
+    grade: "Grade Distinction - Cohort 14",
+    institutionName: "CODE POINT KENYA",
+    subHeading: "INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI",
+    addressText: "Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya",
+    signatory1Name: "Brenda Wambui",
+    signatory1Title: "CURRICULUM DIRECTOR - Faculty of Engineering",
+    signatory2Name: "Code Point Kenya Academic Board & Admin",
+    signatory2Title: "ISSUED DATE",
+    issueDate: "2026-04-15",
+    certIdNumber: "CPK-CERT-2026-501525",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+    verification_id: "CPK-CERT-2026-501525",
+    student_name: "Daniel Kiptoo",
+    student_email: "daniel.kiptoo@example.com",
+    course_title: "Full-Stack Software Engineering",
+    cohort: "Cohort 14",
+    completion_date: "April 15, 2026",
+    final_grade: "Distinction",
+    approved_by: "Code Point Kenya Academic Board & Admin",
+    approved_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+    qr_code_payload: "https://codepointkenya.com/verify?id=CPK-CERT-2026-501525"
+  },
+  {
+    id: "cert-2026-002",
+    studentName: "Cynthia Wanjiku",
+    studentEmail: "cynthia.wanjiku@example.com",
+    courseName: "Data Science & Applied AI",
+    grade: "Grade Distinction - Cohort 14",
+    institutionName: "CODE POINT KENYA",
+    subHeading: "INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI",
+    addressText: "Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya",
+    signatory1Name: "Brenda Wambui",
+    signatory1Title: "CURRICULUM DIRECTOR - Faculty of Engineering",
+    signatory2Name: "Code Point Kenya Academic Board & Admin",
+    signatory2Title: "ISSUED DATE",
+    issueDate: "2026-04-20",
+    certIdNumber: "CPK-CERT-2026-782194",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    verification_id: "CPK-CERT-2026-782194",
+    student_name: "Cynthia Wanjiku",
+    student_email: "cynthia.wanjiku@example.com",
+    course_title: "Data Science & Applied AI",
+    cohort: "Cohort 14",
+    completion_date: "April 20, 2026",
+    final_grade: "Distinction",
+    approved_by: "Code Point Kenya Academic Board & Admin",
+    approved_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    qr_code_payload: "https://codepointkenya.com/verify?id=CPK-CERT-2026-782194"
   }
 ];
 
@@ -1881,7 +1940,7 @@ function createInMemoryDb(): AppDatabase {
     reviews: [...DEFAULT_REVIEWS],
     assignments: [...DEFAULT_ASSIGNMENTS],
     submissions: [...DEFAULT_SUBMISSIONS],
-    certificates: [],
+    certificates: [...DEFAULT_CERTIFICATES],
     announcements: [...DEFAULT_ANNOUNCEMENTS],
     login_attempts: [...DEFAULT_LOGIN_ATTEMPTS],
     class_lectures: [...DEFAULT_LECTURES],
@@ -2143,8 +2202,62 @@ function createInMemoryDb(): AppDatabase {
           final_grade: params[7] || "Distinction",
           approved_by: params[8] || "Academic Board",
           approved_at: params[9],
-          qr_code_payload: params[10]
+          qr_code_payload: params[10],
+          studentName: params[11] || params[2],
+          studentEmail: params[12] || params[3],
+          courseName: params[13] || params[4],
+          grade: params[14] || params[7] || "Distinction",
+          institutionName: params[15] || "CODE POINT KENYA",
+          subHeading: params[16] || "INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI",
+          addressText: params[17] || "Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya",
+          signatory1Name: params[18] || "Brenda Wambui",
+          signatory1Title: params[19] || "CURRICULUM DIRECTOR - Faculty of Engineering",
+          signatory2Name: params[20] || params[8] || "Code Point Kenya Academic Board & Admin",
+          signatory2Title: params[21] || "ISSUED DATE",
+          issueDate: params[22] || params[6] || new Date().toISOString(),
+          certIdNumber: params[23] || params[1],
+          createdAt: params[24] || params[9] || new Date().toISOString(),
+          updatedAt: params[25] || new Date().toISOString()
         });
+        return;
+      }
+
+      // UPDATE certificates
+      if (lower.includes("update certificates set")) {
+        const id = params[params.length - 1];
+        const existing = tables.certificates.find(c => c.id === id || c.verification_id === id || c.certIdNumber === id);
+        if (existing && params.length >= 10) {
+          existing.verification_id = params[0];
+          existing.student_name = params[1];
+          existing.student_email = params[2];
+          existing.course_title = params[3];
+          existing.cohort = params[4];
+          existing.completion_date = params[5];
+          existing.final_grade = params[6];
+          existing.approved_by = params[7];
+          existing.qr_code_payload = params[8];
+          existing.studentName = params[9] || params[1];
+          existing.studentEmail = params[10] || params[2];
+          existing.courseName = params[11] || params[3];
+          existing.grade = params[12] || params[6];
+          existing.institutionName = params[13] || existing.institutionName;
+          existing.subHeading = params[14] || existing.subHeading;
+          existing.addressText = params[15] || existing.addressText;
+          existing.signatory1Name = params[16] || existing.signatory1Name;
+          existing.signatory1Title = params[17] || existing.signatory1Title;
+          existing.signatory2Name = params[18] || existing.signatory2Name;
+          existing.signatory2Title = params[19] || existing.signatory2Title;
+          existing.issueDate = params[20] || existing.issueDate;
+          existing.certIdNumber = params[21] || params[0];
+          existing.updatedAt = params[22] || new Date().toISOString();
+        }
+        return;
+      }
+
+      // DELETE FROM certificates
+      if (lower.includes("delete from certificates")) {
+        const id = params[0];
+        tables.certificates = tables.certificates.filter(c => c.id !== id && c.verification_id !== id && c.certIdNumber !== id);
         return;
       }
       // INSERT INTO login_attempts
@@ -2964,6 +3077,28 @@ async function initSqlite(): Promise<AppDatabase | null> {
       sqliteInstance.run("ALTER TABLE student_fee_accounts ADD COLUMN last_alert_type TEXT");
     } catch (_) {}
 
+    // Ensure columns in certificates if table already existed
+    const certAlterStatements = [
+      "ALTER TABLE certificates ADD COLUMN studentName TEXT",
+      "ALTER TABLE certificates ADD COLUMN studentEmail TEXT",
+      "ALTER TABLE certificates ADD COLUMN courseName TEXT",
+      "ALTER TABLE certificates ADD COLUMN grade TEXT",
+      "ALTER TABLE certificates ADD COLUMN institutionName TEXT DEFAULT 'CODE POINT KENYA'",
+      "ALTER TABLE certificates ADD COLUMN subHeading TEXT DEFAULT 'INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI'",
+      "ALTER TABLE certificates ADD COLUMN addressText TEXT DEFAULT 'Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya'",
+      "ALTER TABLE certificates ADD COLUMN signatory1Name TEXT DEFAULT 'Brenda Wambui'",
+      "ALTER TABLE certificates ADD COLUMN signatory1Title TEXT DEFAULT 'CURRICULUM DIRECTOR - Faculty of Engineering'",
+      "ALTER TABLE certificates ADD COLUMN signatory2Name TEXT DEFAULT 'Code Point Kenya Academic Board & Admin'",
+      "ALTER TABLE certificates ADD COLUMN signatory2Title TEXT DEFAULT 'ISSUED DATE'",
+      "ALTER TABLE certificates ADD COLUMN issueDate TEXT",
+      "ALTER TABLE certificates ADD COLUMN certIdNumber TEXT",
+      "ALTER TABLE certificates ADD COLUMN createdAt TEXT",
+      "ALTER TABLE certificates ADD COLUMN updatedAt TEXT"
+    ];
+    for (const cSql of certAlterStatements) {
+      try { sqliteInstance.run(cSql); } catch (_) {}
+    }
+
     // Seed courses if empty
     const stmtCourses = sqliteInstance.prepare("SELECT COUNT(*) as count FROM courses");
     let hasCourses = false;
@@ -3372,6 +3507,34 @@ async function initSqlite(): Promise<AppDatabase | null> {
       }
     } catch (e) {
       console.warn("[Database] SQLite testimonials seed warning:", e);
+    }
+
+    // Seed certificates if empty
+    try {
+      const stmtCert = sqliteInstance.prepare("SELECT COUNT(*) as count FROM certificates");
+      let hasCert = false;
+      if (stmtCert.step()) {
+        const row = stmtCert.getAsObject();
+        hasCert = Number(row.count) > 0;
+      }
+      stmtCert.free();
+
+      if (!hasCert) {
+        for (const c of DEFAULT_CERTIFICATES) {
+          sqliteInstance.run(
+            `INSERT INTO certificates (
+              id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload,
+              studentName, studentEmail, courseName, grade, institutionName, subHeading, addressText, signatory1Name, signatory1Title, signatory2Name, signatory2Title, issueDate, certIdNumber, createdAt, updatedAt
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              c.id, c.verification_id, c.student_name, c.student_email, c.course_title, c.cohort, c.completion_date, c.final_grade, c.approved_by, c.approved_at, c.qr_code_payload,
+              c.studentName, c.studentEmail, c.courseName, c.grade, c.institutionName, c.subHeading, c.addressText, c.signatory1Name, c.signatory1Title, c.signatory2Name, c.signatory2Title, c.issueDate, c.certIdNumber, c.createdAt, c.updatedAt
+            ]
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[Database] SQLite certificates seed warning:", e);
     }
 
     // Save initial state

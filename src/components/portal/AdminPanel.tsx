@@ -49,6 +49,7 @@ import { ReviewsModerator } from './ReviewsModerator';
 import { AccessControlManager } from './AccessControlManager';
 import { StudentFeeManager } from './StudentFeeManager';
 import { CertificateModal } from './CertificateModal';
+import { CertificateEditorModal } from './CertificateEditorModal';
 import { NextIntakeManager } from './NextIntakeManager';
 import { ActivityLogs } from './ActivityLogs';
 
@@ -160,8 +161,59 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
   const [certsLoading, setCertsLoading] = useState(false);
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
+  const [isCertEditorOpen, setIsCertEditorOpen] = useState(false);
+  const [editingCert, setEditingCert] = useState<Certificate | null>(null);
   const [approvingEmail, setApprovingEmail] = useState<string | null>(null);
   const [approvalFeedback, setApprovalFeedback] = useState<{ text: string; isError: boolean } | null>(null);
+
+  const handleOpenCreateCert = () => {
+    setEditingCert(null);
+    setIsCertEditorOpen(true);
+  };
+
+  const handleOpenEditCert = (cert: Certificate) => {
+    setEditingCert(cert);
+    setIsCertEditorOpen(true);
+  };
+
+  const handleRevokeCert = async (cert: Certificate) => {
+    const certId = cert.certIdNumber || cert.verification_id || cert.id;
+    const recipient = cert.studentName || cert.student_name || 'Fellow';
+    if (!window.confirm(`Are you sure you want to revoke and delete certificate ${certId} issued to ${recipient}? This action permanently revokes the credential.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/certificates/${encodeURIComponent(cert.id || certId)}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to revoke certificate');
+      }
+      setApprovalFeedback({
+        text: `Certificate ${certId} successfully revoked and removed from records.`,
+        isError: false
+      });
+      await fetchCertificatesAndSubmissions();
+    } catch (err: any) {
+      setApprovalFeedback({
+        text: err.message || 'Error revoking certificate',
+        isError: true
+      });
+    }
+  };
+
+  const handleCertificateSaved = (savedCert: Certificate, isNew: boolean) => {
+    setApprovalFeedback({
+      text: isNew
+        ? `Certificate ${savedCert.certIdNumber || savedCert.verification_id} issued successfully for ${savedCert.studentName || savedCert.student_name}!`
+        : `Certificate ${savedCert.certIdNumber || savedCert.verification_id} updated successfully!`,
+      isError: false
+    });
+    fetchCertificatesAndSubmissions();
+    setSelectedCert(savedCert);
+  };
 
   const fetchCertificatesAndSubmissions = async () => {
     setCertsLoading(true);
@@ -1078,14 +1130,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </p>
                       </div>
 
-                      <button
-                        onClick={fetchCertificatesAndSubmissions}
-                        disabled={certsLoading}
-                        className="px-3.5 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors self-start cursor-pointer shadow-xs"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${certsLoading ? 'animate-spin text-amber-500' : 'text-stone-500'}`} />
-                        <span>Refresh Records</span>
-                      </button>
+                      <div className="flex items-center gap-2 self-start flex-wrap">
+                        <button
+                          onClick={handleOpenCreateCert}
+                          className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Issue New Certificate</span>
+                        </button>
+                        <button
+                          onClick={fetchCertificatesAndSubmissions}
+                          disabled={certsLoading}
+                          className="px-3.5 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${certsLoading ? 'animate-spin text-amber-500' : 'text-stone-500'}`} />
+                          <span>Refresh Records</span>
+                        </button>
+                      </div>
                     </div>
 
                     {approvalFeedback && (
@@ -1130,21 +1191,47 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           {certificates.map((cert) => (
                             <div
                               key={cert.id}
-                              className="p-4 rounded-xl border border-stone-200 bg-stone-50/50 hover:bg-stone-50 transition-all flex items-start justify-between gap-3"
+                              className="p-4 rounded-xl border border-stone-200 bg-stone-50/50 hover:bg-stone-50 transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-3"
                             >
-                              <div className="space-y-1 min-w-0">
-                                <div className="font-bold text-stone-900 text-sm truncate">{cert.student_name}</div>
-                                <div className="text-xs text-stone-500 truncate">{cert.student_email}</div>
-                                <div className="text-[11px] text-amber-700 font-medium">{cert.course_title} • {cert.cohort}</div>
-                                <div className="text-[10px] text-stone-400 font-mono">ID: {cert.verification_id}</div>
+                              <div className="space-y-1 min-w-0 flex-1">
+                                <div className="font-bold text-stone-900 text-sm truncate">
+                                  {cert.studentName || cert.student_name}
+                                </div>
+                                <div className="text-xs text-stone-500 truncate">
+                                  {cert.studentEmail || cert.student_email}
+                                </div>
+                                <div className="text-[11px] text-amber-700 font-medium truncate">
+                                  {cert.courseName || cert.course_title} • {cert.grade || cert.final_grade}
+                                </div>
+                                <div className="text-[10px] text-stone-400 font-mono">
+                                  ID: {cert.certIdNumber || cert.verification_id}
+                                </div>
                               </div>
-                              <button
-                                onClick={() => setSelectedCert(cert)}
-                                className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                <span>View Cert</span>
-                              </button>
+                              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-start">
+                                <button
+                                  onClick={() => setSelectedCert(cert)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs"
+                                  title="View Verifiable Certificate"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>View Cert</span>
+                                </button>
+                                <button
+                                  onClick={() => handleOpenEditCert(cert)}
+                                  className="px-2.5 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs"
+                                  title="Edit Certificate Data"
+                                >
+                                  <Pencil className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  onClick={() => handleRevokeCert(cert)}
+                                  className="p-1.5 rounded-lg border border-stone-200 bg-white hover:bg-rose-50 text-stone-400 hover:text-rose-600 text-xs font-medium transition-colors cursor-pointer"
+                                  title="Revoke / Delete Certificate"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -2015,6 +2102,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onClose={() => setSelectedCert(null)}
         />
       )}
+
+      {/* Certificate Editor Modal (Create / Edit) */}
+      <CertificateEditorModal
+        isOpen={isCertEditorOpen}
+        onClose={() => {
+          setIsCertEditorOpen(false);
+          setEditingCert(null);
+        }}
+        certificate={editingCert}
+        courses={courses}
+        onSaved={handleCertificateSaved}
+      />
 
       {/* Confirmation Dialog for Submission Deletion */}
       {submissionToDelete && (

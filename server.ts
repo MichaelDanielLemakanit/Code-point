@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { type Request, type Response } from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { getDatabase, queryAll, queryOne, saveDatabase, getSiteSettings, saveSiteSettings, getDatabaseStatus, DEFAULT_ANNOUNCEMENTS, DEFAULT_LOGIN_ATTEMPTS, DEFAULT_LECTURES, DEFAULT_COURSES, DEFAULT_STUDENT_PROGRESS, DEFAULT_STUDENT_FEES, DEFAULT_ACTIVITY_LOGS } from "./server/db.ts";
+import { getDatabase, queryAll, queryOne, saveDatabase, getSiteSettings, saveSiteSettings, getDatabaseStatus, DEFAULT_ANNOUNCEMENTS, DEFAULT_LOGIN_ATTEMPTS, DEFAULT_LECTURES, DEFAULT_COURSES, DEFAULT_STUDENT_PROGRESS, DEFAULT_STUDENT_FEES, DEFAULT_ACTIVITY_LOGS, DEFAULT_CERTIFICATES } from "./server/db.ts";
 import { runDatabaseMigrations } from "./server/migrate.ts";
 import { getPrismaClient, withPrisma } from "./server/prisma.ts";
 
@@ -234,14 +234,18 @@ app.get("/api/reviews", async (req: Request, res: Response) => {
     const db = await getDatabase();
     const { status } = req.query;
 
-    let reviews = [];
+    let reviews: any[] = [];
     if (status && typeof status === 'string' && status !== 'all') {
       reviews = await queryAll(db, "SELECT * FROM reviews WHERE status = ? ORDER BY is_featured DESC, created_at DESC", [status]);
     } else {
       reviews = await queryAll(db, "SELECT * FROM reviews ORDER BY created_at DESC");
     }
 
-    res.json(reviews);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.json(reviews.map(r => ({
+      ...r,
+      isApproved: r.status === 'approved'
+    })));
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -251,10 +255,53 @@ app.get("/api/reviews", async (req: Request, res: Response) => {
 app.get("/api/reviews/approved", async (req: Request, res: Response) => {
   try {
     const db = await getDatabase();
-    const reviews = await queryAll(db, "SELECT * FROM reviews WHERE status = 'approved' ORDER BY is_featured DESC, created_at DESC");
-    res.json(reviews);
+    const reviews = await queryAll<any>(db, "SELECT * FROM reviews WHERE status = 'approved' ORDER BY is_featured DESC, created_at DESC");
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.json(reviews.map(r => ({
+      ...r,
+      isApproved: true
+    })));
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Dedicated /api/testimonials endpoint for public frontend components
+app.get("/api/testimonials", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { status, featured } = req.query;
+
+    let sql = "SELECT * FROM video_testimonials";
+    const conditions: string[] = [];
+    const params: any[] = [];
+
+    if (status && status !== 'all') {
+      conditions.push("status = ?");
+      params.push(String(status));
+    } else if (!status) {
+      conditions.push("status = 'approved'");
+    }
+
+    if (featured === 'true' || featured === '1') {
+      conditions.push("is_featured = 1");
+    }
+
+    if (conditions.length > 0) {
+      sql += " WHERE " + conditions.join(" AND ");
+    }
+
+    sql += " ORDER BY is_featured DESC, created_at DESC";
+
+    const testimonials = await queryAll<any>(db, sql, params);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.json(testimonials.map(t => ({
+      ...t,
+      isApproved: t.status === 'approved'
+    })));
+  } catch (error: any) {
+    console.error("Failed to fetch testimonials:", error);
+    res.status(500).json({ error: error.message || "Failed to fetch testimonials" });
   }
 });
 
@@ -402,8 +449,12 @@ app.get("/api/video-testimonials", async (req: Request, res: Response) => {
 
     sql += " ORDER BY is_featured DESC, created_at DESC";
 
-    const testimonials = await queryAll(db, sql, params);
-    res.json(testimonials);
+    const testimonials = await queryAll<any>(db, sql, params);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.json(testimonials.map(t => ({
+      ...t,
+      isApproved: t.status === 'approved'
+    })));
   } catch (error: any) {
     console.error("Failed to fetch video testimonials:", error);
     res.status(500).json({ error: error.message || "Failed to fetch video testimonials" });
@@ -5017,88 +5068,685 @@ app.get("/api/students/certificate-eligibility/:studentEmail", async (req: Reque
   }
 });
 
+// -------------------------------------------------------------
+// DYNAMIC CERTIFICATE MANAGEMENT SYSTEM (PRISMA + EXPRESS)
+// -------------------------------------------------------------
+
+function normalizeCertificate(raw: any) {
+  if (!raw) return null;
+  const studentName = raw.studentName || raw.student_name || "Graduating Fellow";
+  const studentEmail = raw.studentEmail || raw.student_email || "";
+  const courseName = raw.courseName || raw.course_title || "Full-Stack Software Engineering";
+  const grade = raw.grade || (raw.final_grade ? (raw.cohort ? `Grade ${raw.final_grade} - ${raw.cohort}` : raw.final_grade) : "Grade Distinction - Cohort 14");
+  const institutionName = raw.institutionName || "CODE POINT KENYA";
+  const subHeading = raw.subHeading || "INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI";
+  const addressText = raw.addressText || "Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya";
+  const signatory1Name = raw.signatory1Name || "Brenda Wambui";
+  const signatory1Title = raw.signatory1Title || "CURRICULUM DIRECTOR - Faculty of Engineering";
+  const signatory2Name = raw.signatory2Name || raw.approved_by || "Code Point Kenya Academic Board & Admin";
+  const signatory2Title = raw.signatory2Title || "ISSUED DATE";
+  const certIdNumber = raw.certIdNumber || raw.verification_id || `CPK-CERT-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+
+  let rawDate = raw.issueDate || raw.completion_date;
+  let formattedIssueDate = "";
+  if (rawDate instanceof Date) {
+    formattedIssueDate = rawDate.toISOString().split("T")[0];
+  } else if (typeof rawDate === "string") {
+    formattedIssueDate = rawDate.includes("T") ? rawDate.split("T")[0] : rawDate;
+  } else {
+    formattedIssueDate = new Date().toISOString().split("T")[0];
+  }
+
+  let completionDate = raw.completion_date;
+  if (!completionDate) {
+    try {
+      const parsedD = new Date(formattedIssueDate);
+      completionDate = isNaN(parsedD.getTime()) ? formattedIssueDate : parsedD.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    } catch {
+      completionDate = formattedIssueDate;
+    }
+  }
+
+  const id = raw.id || `cert-${Date.now()}`;
+  const createdAt = raw.createdAt instanceof Date ? raw.createdAt.toISOString() : (raw.createdAt || raw.approved_at || new Date().toISOString());
+  const updatedAt = raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : (raw.updatedAt || new Date().toISOString());
+  const qrCodePayload = raw.qr_code_payload || `https://codepointkenya.com/verify?id=${certIdNumber}`;
+
+  let cohort = raw.cohort;
+  if (!cohort) {
+    const cohortMatch = grade.match(/Cohort\s*\d+/i);
+    cohort = cohortMatch ? cohortMatch[0] : "Cohort 14";
+  }
+
+  let finalGrade = raw.final_grade;
+  if (!finalGrade) {
+    if (grade.toLowerCase().includes("distinction")) finalGrade = "Distinction";
+    else if (grade.toLowerCase().includes("merit")) finalGrade = "Merit";
+    else if (grade.toLowerCase().includes("pass")) finalGrade = "Pass";
+    else finalGrade = grade;
+  }
+
+  return {
+    id,
+    studentName,
+    studentEmail,
+    courseName,
+    grade,
+    institutionName,
+    subHeading,
+    addressText,
+    signatory1Name,
+    signatory1Title,
+    signatory2Name,
+    signatory2Title,
+    issueDate: formattedIssueDate,
+    certIdNumber,
+    createdAt,
+    updatedAt,
+    // backward compat
+    verification_id: certIdNumber,
+    student_name: studentName,
+    student_email: studentEmail,
+    course_title: courseName,
+    cohort,
+    completion_date: completionDate,
+    final_grade: finalGrade,
+    approved_by: signatory2Name,
+    approved_at: createdAt,
+    qr_code_payload: qrCodePayload
+  };
+}
+
+// 1. GET /api/certificates - Fetch all issued certificates
+app.get("/api/certificates", async (req: Request, res: Response) => {
+  try {
+    let certs: any[] = [];
+
+    // Try Prisma first
+    try {
+      const prismaCerts = await withPrisma(async (prisma) => {
+        return prisma.certificate.findMany({
+          orderBy: { createdAt: "desc" }
+        });
+      });
+      if (prismaCerts && Array.isArray(prismaCerts) && prismaCerts.length > 0) {
+        certs = prismaCerts.map(normalizeCertificate);
+      }
+    } catch (prismaErr) {
+      console.warn("[Prisma certificates findMany notice]:", (prismaErr as any)?.message || prismaErr);
+    }
+
+    // Fallback to SQLite / PostgreSQL raw database
+    if (certs.length === 0) {
+      const db = await getDatabase();
+      let rawCerts: any[] = [];
+      try {
+        rawCerts = await queryAll(db, "SELECT * FROM certificates ORDER BY rowid DESC, approved_at DESC");
+      } catch {
+        rawCerts = await queryAll(db, "SELECT * FROM certificates");
+      }
+
+      if (rawCerts && rawCerts.length > 0) {
+        certs = rawCerts.map(normalizeCertificate);
+      } else if (DEFAULT_CERTIFICATES && DEFAULT_CERTIFICATES.length > 0) {
+        certs = DEFAULT_CERTIFICATES.map(normalizeCertificate);
+      }
+    }
+
+    res.json(certs);
+  } catch (error: any) {
+    console.error("Error fetching certificates:", error);
+    res.status(500).json({ error: error.message || "Failed to fetch certificates" });
+  }
+});
+
+// 2. GET /api/certificates/:id - Fetch single certificate by ID or certIdNumber
+app.get("/api/certificates/:id", async (req: Request, res: Response) => {
+  try {
+    const param = String(req.params.id || "").trim();
+    if (!param) {
+      return res.status(400).json({ error: "Certificate ID parameter is required" });
+    }
+
+    let cert: any = null;
+
+    // Try Prisma first
+    try {
+      const prismaCert = await withPrisma(async (prisma) => {
+        return prisma.certificate.findFirst({
+          where: {
+            OR: [
+              { id: param },
+              { certIdNumber: param },
+              { certIdNumber: param.toUpperCase() }
+            ]
+          }
+        });
+      });
+      if (prismaCert) {
+        cert = normalizeCertificate(prismaCert);
+      }
+    } catch (prismaErr) {
+      console.warn("[Prisma findFirst notice]:", (prismaErr as any)?.message || prismaErr);
+    }
+
+    // Fallback to SQL database
+    if (!cert) {
+      const db = await getDatabase();
+      const raw = await queryOne(
+        db,
+        "SELECT * FROM certificates WHERE id = ? OR UPPER(verification_id) = ? OR UPPER(certIdNumber) = ?",
+        [param, param.toUpperCase(), param.toUpperCase()]
+      );
+      if (raw) {
+        cert = normalizeCertificate(raw);
+      } else {
+        const foundInDefault = DEFAULT_CERTIFICATES.find(
+          c => c.id === param || c.certIdNumber.toUpperCase() === param.toUpperCase() || c.verification_id.toUpperCase() === param.toUpperCase()
+        );
+        if (foundInDefault) {
+          cert = normalizeCertificate(foundInDefault);
+        }
+      }
+    }
+
+    if (!cert) {
+      return res.status(404).json({ error: "Certificate not found" });
+    }
+
+    res.json(cert);
+  } catch (error: any) {
+    console.error("Error retrieving certificate:", error);
+    res.status(500).json({ error: error.message || "Failed to retrieve certificate" });
+  }
+});
+
+// 3. POST /api/certificates - Create a new certificate with dynamic fields
+app.post("/api/certificates", async (req: Request, res: Response) => {
+  try {
+    const {
+      studentName,
+      student_name,
+      studentEmail,
+      student_email,
+      courseName,
+      course_title,
+      grade,
+      final_grade,
+      cohort,
+      institutionName,
+      subHeading,
+      addressText,
+      signatory1Name,
+      signatory1Title,
+      signatory2Name,
+      approved_by,
+      signatory2Title,
+      issueDate,
+      completion_date,
+      certIdNumber,
+      verification_id
+    } = req.body || {};
+
+    const name = String(studentName || student_name || "").trim();
+    const email = String(studentEmail || student_email || "").trim().toLowerCase();
+    const course = String(courseName || course_title || "").trim();
+
+    if (!name) {
+      return res.status(400).json({ error: "Student Name is required" });
+    }
+    if (!email) {
+      return res.status(400).json({ error: "Student Email is required" });
+    }
+    if (!course) {
+      return res.status(400).json({ error: "Course Name is required" });
+    }
+
+    const assignedGrade = String(grade || final_grade || "Grade Distinction - Cohort 14").trim();
+    const assignedInstitution = String(institutionName || "CODE POINT KENYA").trim();
+    const assignedSubHeading = String(subHeading || "INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI").trim();
+    const assignedAddress = String(addressText || "Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya").trim();
+    const assignedSig1Name = String(signatory1Name || "Brenda Wambui").trim();
+    const assignedSig1Title = String(signatory1Title || "CURRICULUM DIRECTOR - Faculty of Engineering").trim();
+    const assignedSig2Name = String(signatory2Name || approved_by || "Code Point Kenya Academic Board & Admin").trim();
+    const assignedSig2Title = String(signatory2Title || "ISSUED DATE").trim();
+
+    // Auto-generate unique certIdNumber if not specified
+    const randomCode = Math.floor(100000 + Math.random() * 900000);
+    const assignedCertId = String(certIdNumber || verification_id || `CPK-CERT-2026-${randomCode}`).trim().toUpperCase();
+
+    const id = `cert-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date();
+    let issueDateObj = now;
+    if (issueDate) {
+      const parsed = new Date(issueDate);
+      if (!isNaN(parsed.getTime())) issueDateObj = parsed;
+    }
+    const completionFormatted = completion_date || issueDateObj.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const qrPayload = `https://codepointkenya.com/verify?id=${assignedCertId}`;
+    const nowIso = now.toISOString();
+
+    const db = await getDatabase();
+
+    // Check duplicate certIdNumber
+    const existingWithCertId = await queryOne(
+      db,
+      "SELECT id FROM certificates WHERE UPPER(verification_id) = ? OR UPPER(certIdNumber) = ?",
+      [assignedCertId, assignedCertId]
+    );
+    if (existingWithCertId) {
+      return res.status(409).json({ error: `Certificate ID "${assignedCertId}" is already assigned to another certificate.` });
+    }
+
+    // Try Prisma create
+    try {
+      await withPrisma(async (prisma) => {
+        return prisma.certificate.create({
+          data: {
+            id,
+            studentName: name,
+            studentEmail: email,
+            courseName: course,
+            grade: assignedGrade,
+            institutionName: assignedInstitution,
+            subHeading: assignedSubHeading,
+            addressText: assignedAddress,
+            signatory1Name: assignedSig1Name,
+            signatory1Title: assignedSig1Title,
+            signatory2Name: assignedSig2Name,
+            signatory2Title: assignedSig2Title,
+            issueDate: issueDateObj,
+            certIdNumber: assignedCertId
+          }
+        });
+      });
+    } catch (prismaErr) {
+      console.warn("[Prisma Certificate create notice]:", (prismaErr as any)?.message || prismaErr);
+    }
+
+    // Persist to SQL database (SQLite / Postgres)
+    await db.run(
+      `INSERT INTO certificates (
+        id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload,
+        studentName, studentEmail, courseName, grade, institutionName, subHeading, addressText, signatory1Name, signatory1Title, signatory2Name, signatory2Title, issueDate, certIdNumber, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        assignedCertId,
+        name,
+        email,
+        course,
+        cohort || "Cohort 14",
+        completionFormatted,
+        assignedGrade,
+        assignedSig2Name,
+        nowIso,
+        qrPayload,
+        name,
+        email,
+        course,
+        assignedGrade,
+        assignedInstitution,
+        assignedSubHeading,
+        assignedAddress,
+        assignedSig1Name,
+        assignedSig1Title,
+        assignedSig2Name,
+        assignedSig2Title,
+        issueDateObj.toISOString(),
+        assignedCertId,
+        nowIso,
+        nowIso
+      ]
+    );
+    await saveDatabase(db);
+
+    const savedRecord = await queryOne(db, "SELECT * FROM certificates WHERE id = ?", [id]);
+    const normalized = normalizeCertificate(savedRecord || {
+      id,
+      studentName: name,
+      studentEmail: email,
+      courseName: course,
+      grade: assignedGrade,
+      institutionName: assignedInstitution,
+      subHeading: assignedSubHeading,
+      addressText: assignedAddress,
+      signatory1Name: assignedSig1Name,
+      signatory1Title: assignedSig1Title,
+      signatory2Name: assignedSig2Name,
+      signatory2Title: assignedSig2Title,
+      issueDate: issueDateObj.toISOString(),
+      certIdNumber: assignedCertId,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Certificate issued successfully",
+      certificate: normalized
+    });
+  } catch (error: any) {
+    console.error("Error creating certificate:", error);
+    res.status(500).json({ error: error.message || "Failed to create certificate" });
+  }
+});
+
+// 4. PUT /api/certificates/:id - Update an existing certificate
+app.put("/api/certificates/:id", async (req: Request, res: Response) => {
+  try {
+    const idParam = String(req.params.id || "").trim();
+    if (!idParam) {
+      return res.status(400).json({ error: "Certificate ID parameter is required" });
+    }
+
+    const db = await getDatabase();
+    let existing = await queryOne(
+      db,
+      "SELECT * FROM certificates WHERE id = ? OR UPPER(verification_id) = ? OR UPPER(certIdNumber) = ?",
+      [idParam, idParam.toUpperCase(), idParam.toUpperCase()]
+    );
+
+    if (!existing) {
+      return res.status(404).json({ error: "Certificate not found" });
+    }
+
+    const {
+      studentName,
+      student_name,
+      studentEmail,
+      student_email,
+      courseName,
+      course_title,
+      grade,
+      final_grade,
+      cohort,
+      institutionName,
+      subHeading,
+      addressText,
+      signatory1Name,
+      signatory1Title,
+      signatory2Name,
+      approved_by,
+      signatory2Title,
+      issueDate,
+      completion_date,
+      certIdNumber,
+      verification_id
+    } = req.body || {};
+
+    const name = studentName !== undefined ? String(studentName).trim() : (student_name !== undefined ? String(student_name).trim() : (existing.studentName || existing.student_name));
+    const email = studentEmail !== undefined ? String(studentEmail).trim().toLowerCase() : (student_email !== undefined ? String(student_email).trim().toLowerCase() : (existing.studentEmail || existing.student_email));
+    const course = courseName !== undefined ? String(courseName).trim() : (course_title !== undefined ? String(course_title).trim() : (existing.courseName || existing.course_title));
+    const updatedGrade = grade !== undefined ? String(grade).trim() : (final_grade !== undefined ? String(final_grade).trim() : (existing.grade || existing.final_grade));
+    const updatedCohort = cohort !== undefined ? String(cohort).trim() : (existing.cohort || "Cohort 14");
+    const updatedInstitution = institutionName !== undefined ? String(institutionName).trim() : (existing.institutionName || "CODE POINT KENYA");
+    const updatedSubHeading = subHeading !== undefined ? String(subHeading).trim() : (existing.subHeading || "INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI");
+    const updatedAddress = addressText !== undefined ? String(addressText).trim() : (existing.addressText || "Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya");
+    const updatedSig1Name = signatory1Name !== undefined ? String(signatory1Name).trim() : (existing.signatory1Name || "Brenda Wambui");
+    const updatedSig1Title = signatory1Title !== undefined ? String(signatory1Title).trim() : (existing.signatory1Title || "CURRICULUM DIRECTOR - Faculty of Engineering");
+    const updatedSig2Name = signatory2Name !== undefined ? String(signatory2Name).trim() : (approved_by !== undefined ? String(approved_by).trim() : (existing.signatory2Name || existing.approved_by || "Code Point Kenya Academic Board & Admin"));
+    const updatedSig2Title = signatory2Title !== undefined ? String(signatory2Title).trim() : (existing.signatory2Title || "ISSUED DATE");
+    const updatedCertId = certIdNumber !== undefined ? String(certIdNumber).trim().toUpperCase() : (verification_id !== undefined ? String(verification_id).trim().toUpperCase() : (existing.certIdNumber || existing.verification_id));
+
+    let updatedIssueDate = existing.issueDate || existing.completion_date;
+    if (issueDate !== undefined) {
+      updatedIssueDate = issueDate;
+    }
+    let updatedCompletion = completion_date !== undefined ? completion_date : existing.completion_date;
+    if (!updatedCompletion && updatedIssueDate) {
+      try {
+        const d = new Date(updatedIssueDate);
+        updatedCompletion = isNaN(d.getTime()) ? String(updatedIssueDate) : d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      } catch {
+        updatedCompletion = String(updatedIssueDate);
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    const qrPayload = `https://codepointkenya.com/verify?id=${updatedCertId}`;
+
+    // Try Prisma update
+    try {
+      await withPrisma(async (prisma) => {
+        return prisma.certificate.update({
+          where: { id: existing.id },
+          data: {
+            studentName: name,
+            studentEmail: email,
+            courseName: course,
+            grade: updatedGrade,
+            institutionName: updatedInstitution,
+            subHeading: updatedSubHeading,
+            addressText: updatedAddress,
+            signatory1Name: updatedSig1Name,
+            signatory1Title: updatedSig1Title,
+            signatory2Name: updatedSig2Name,
+            signatory2Title: updatedSig2Title,
+            certIdNumber: updatedCertId,
+            ...(updatedIssueDate ? { issueDate: new Date(updatedIssueDate) } : {})
+          }
+        });
+      });
+    } catch (prismaErr) {
+      console.warn("[Prisma Certificate update notice]:", (prismaErr as any)?.message || prismaErr);
+    }
+
+    // Update SQL database
+    await db.run(
+      `UPDATE certificates SET
+        verification_id = ?,
+        student_name = ?,
+        student_email = ?,
+        course_title = ?,
+        cohort = ?,
+        completion_date = ?,
+        final_grade = ?,
+        approved_by = ?,
+        qr_code_payload = ?,
+        studentName = ?,
+        studentEmail = ?,
+        courseName = ?,
+        grade = ?,
+        institutionName = ?,
+        subHeading = ?,
+        addressText = ?,
+        signatory1Name = ?,
+        signatory1Title = ?,
+        signatory2Name = ?,
+        signatory2Title = ?,
+        issueDate = ?,
+        certIdNumber = ?,
+        updatedAt = ?
+      WHERE id = ?`,
+      [
+        updatedCertId,
+        name,
+        email,
+        course,
+        updatedCohort,
+        updatedCompletion,
+        updatedGrade,
+        updatedSig2Name,
+        qrPayload,
+        name,
+        email,
+        course,
+        updatedGrade,
+        updatedInstitution,
+        updatedSubHeading,
+        updatedAddress,
+        updatedSig1Name,
+        updatedSig1Title,
+        updatedSig2Name,
+        updatedSig2Title,
+        String(updatedIssueDate),
+        updatedCertId,
+        nowIso,
+        existing.id
+      ]
+    );
+    await saveDatabase(db);
+
+    const updated = await queryOne(db, "SELECT * FROM certificates WHERE id = ?", [existing.id]);
+    res.json({
+      success: true,
+      message: "Certificate updated successfully",
+      certificate: normalizeCertificate(updated)
+    });
+  } catch (error: any) {
+    console.error("Error updating certificate:", error);
+    res.status(500).json({ error: error.message || "Failed to update certificate" });
+  }
+});
+
+// 5. DELETE /api/certificates/:id - Revoke/Delete a certificate record
+app.delete("/api/certificates/:id", async (req: Request, res: Response) => {
+  try {
+    const idParam = String(req.params.id || "").trim();
+    if (!idParam) {
+      return res.status(400).json({ error: "Certificate ID parameter is required" });
+    }
+
+    const db = await getDatabase();
+    const existing = await queryOne(
+      db,
+      "SELECT id FROM certificates WHERE id = ? OR UPPER(verification_id) = ? OR UPPER(certIdNumber) = ?",
+      [idParam, idParam.toUpperCase(), idParam.toUpperCase()]
+    );
+
+    if (!existing) {
+      return res.status(404).json({ error: "Certificate not found" });
+    }
+
+    // Try Prisma delete
+    try {
+      await withPrisma(async (prisma) => {
+        return prisma.certificate.delete({
+          where: { id: existing.id }
+        });
+      });
+    } catch (prismaErr) {
+      console.warn("[Prisma Certificate delete notice]:", (prismaErr as any)?.message || prismaErr);
+    }
+
+    // Delete in SQL database
+    await db.run("DELETE FROM certificates WHERE id = ?", [existing.id]);
+    await saveDatabase(db);
+
+    res.json({
+      success: true,
+      message: "Certificate revoked successfully"
+    });
+  } catch (error: any) {
+    console.error("Error deleting certificate:", error);
+    res.status(500).json({ error: error.message || "Failed to revoke certificate" });
+  }
+});
+
+// Conditional Approval Route for Students Evaluation Roster
 app.post("/api/certificates/approve", async (req: Request, res: Response) => {
   try {
     const db = await getDatabase();
     const { student_email, student_name, course_title, cohort, approved_by, final_grade } = req.body;
 
-    const email = String(student_email || '').trim().toLowerCase();
+    const email = String(student_email || "").trim().toLowerCase();
     if (!email) {
       return res.status(400).json({ error: "student_email is required" });
     }
 
     // Enforce Conditional Approval Rule
     const studentSubs = await queryAll(db, "SELECT * FROM submissions WHERE LOWER(student_email) = ?", [email]);
-    const pendingOrIncomplete = studentSubs.filter((s: any) => s.status !== 'Marked');
+    const pendingOrIncomplete = studentSubs.filter((s: any) => s.status !== "Marked");
 
     if (studentSubs.length === 0 || pendingOrIncomplete.length > 0) {
       return res.status(400).json({
         error: `Certificate approval prevented: Student has ${pendingOrIncomplete.length} unfinished or unmarked assignments. Complete all evaluations first.`,
-        pendingCount: studentSubs.filter((s: any) => s.status === 'Pending').length,
-        incompleteCount: studentSubs.filter((s: any) => s.status === 'Incomplete').length
+        pendingCount: studentSubs.filter((s: any) => s.status === "Pending").length,
+        incompleteCount: studentSubs.filter((s: any) => s.status === "Incomplete").length
       });
     }
 
     // Check if already approved
     const existing = await queryOne(db, "SELECT * FROM certificates WHERE LOWER(student_email) = ?", [email]);
     if (existing) {
-      return res.json({ success: true, certificate: existing, message: "Certificate already issued" });
+      return res.json({ success: true, certificate: normalizeCertificate(existing), message: "Certificate already issued" });
     }
 
     const certId = `cert-${Date.now()}`;
     const verificationId = `CPK-CERT-2026-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    const completionDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const completionDate = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
     const approvedAt = new Date().toISOString();
     const qrCodePayload = `https://codepointkenya.com/verify?id=${verificationId}`;
 
+    const studentNameVal = student_name || "Graduating Fellow";
+    const courseTitleVal = course_title || "Software Engineering Immersive";
+    const cohortVal = cohort || "Cohort 14";
+    const finalGradeVal = final_grade || "Distinction";
+    const approvedByVal = approved_by || "Code Point Kenya Academic Board & Admin";
+
+    // Insert into certificates with all dynamic columns
     await db.run(
-      `INSERT INTO certificates (id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO certificates (
+        id, verification_id, student_name, student_email, course_title, cohort, completion_date, final_grade, approved_by, approved_at, qr_code_payload,
+        studentName, studentEmail, courseName, grade, institutionName, subHeading, addressText, signatory1Name, signatory1Title, signatory2Name, signatory2Title, issueDate, certIdNumber, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         certId,
         verificationId,
-        student_name || "Fellow",
+        studentNameVal,
         email,
-        course_title || "Software Engineering Immersive",
-        cohort || "Cohort 14",
+        courseTitleVal,
+        cohortVal,
         completionDate,
-        final_grade || "Distinction",
-        approved_by || "Code Point Kenya Academic Board",
+        finalGradeVal,
+        approvedByVal,
         approvedAt,
-        qrCodePayload
+        qrCodePayload,
+        studentNameVal,
+        email,
+        courseTitleVal,
+        `Grade ${finalGradeVal} - ${cohortVal}`,
+        "CODE POINT KENYA",
+        "INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI",
+        "Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya",
+        "Brenda Wambui",
+        "CURRICULUM DIRECTOR - Faculty of Engineering",
+        approvedByVal,
+        "ISSUED DATE",
+        new Date().toISOString(),
+        verificationId,
+        approvedAt,
+        approvedAt
       ]
     );
 
+    // Try Prisma create as well
+    try {
+      await withPrisma(async (prisma) => {
+        return prisma.certificate.create({
+          data: {
+            id: certId,
+            studentName: studentNameVal,
+            studentEmail: email,
+            courseName: courseTitleVal,
+            grade: `Grade ${finalGradeVal} - ${cohortVal}`,
+            institutionName: "CODE POINT KENYA",
+            subHeading: "INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI",
+            addressText: "Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya",
+            signatory1Name: "Brenda Wambui",
+            signatory1Title: "CURRICULUM DIRECTOR - Faculty of Engineering",
+            signatory2Name: approvedByVal,
+            signatory2Title: "ISSUED DATE",
+            certIdNumber: verificationId
+          }
+        });
+      });
+    } catch (_) {}
+
     await saveDatabase(db);
     const createdCert = await queryOne(db, "SELECT * FROM certificates WHERE id = ?", [certId]);
-    res.status(201).json({ success: true, certificate: createdCert });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get("/api/certificates", async (req: Request, res: Response) => {
-  try {
-    const db = await getDatabase();
-    const certs = await queryAll(db, "SELECT * FROM certificates ORDER BY approved_at DESC");
-    res.json(certs);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get("/api/certificates/:verificationId", async (req: Request, res: Response) => {
-  try {
-    const db = await getDatabase();
-    const cert = await queryOne(
-      db,
-      "SELECT * FROM certificates WHERE UPPER(verification_id) = ?",
-      [req.params.verificationId.toUpperCase()]
-    );
-    if (!cert) {
-      return res.status(404).json({ error: "Certificate verification ID not found" });
-    }
-    res.json(cert);
+    res.status(201).json({ success: true, certificate: normalizeCertificate(createdCert) });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

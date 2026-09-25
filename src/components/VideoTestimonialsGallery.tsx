@@ -29,94 +29,24 @@ interface VideoTestimonialsGalleryProps {
   onExplorePrograms?: () => void;
 }
 
-const FALLBACK_TESTIMONIALS: VideoTestimonial[] = [
-  {
-    id: "vid-001",
-    student_name: "Daniel Michael",
-    photo_url: danielPhoto,
-    thumbnail_url: danielPhoto,
-    course_program: "Full-Stack Software Engineering",
-    cohort: "Cohort 14",
-    career_role: "Junior Frontend Developer",
-    company: "Safaricom PLC",
-    video_url: "https://www.youtube.com/watch?v=kqtD5dpn9C8",
-    duration: "3:12",
-    quote_highlight: "The hands-on projects at Ngong Road campus helped me land my tech job in 4 months. Going from zero TypeScript knowledge to deploying microservices was surreal.",
-    is_featured: 1,
-    status: "approved",
-    views_count: 1420,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString()
-  },
-  {
-    id: "vid-002",
-    student_name: "Cynthia Njeri",
-    photo_url: cynthiaPhoto,
-    thumbnail_url: cynthiaPhoto,
-    course_program: "Data Science & Machine Learning",
-    cohort: "Cohort 12",
-    career_role: "BI & Data Analyst",
-    company: "Equity Bank Kenya",
-    video_url: "https://www.youtube.com/watch?v=r-uOLxNrNk8",
-    duration: "2:45",
-    quote_highlight: "From zero Python background to building predictive credit models. The instructors pushed us through real East African banking datasets.",
-    is_featured: 1,
-    status: "approved",
-    views_count: 980,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString()
-  },
-  {
-    id: "vid-003",
-    student_name: "Kevin Otieno",
-    photo_url: kevinPhoto,
-    thumbnail_url: kevinPhoto,
-    course_program: "Applied AI & Cloud Engineering",
-    cohort: "Cohort 15",
-    career_role: "Cloud DevOps Associate",
-    company: "Cellulant",
-    video_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    duration: "4:05",
-    quote_highlight: "The Saturday coding clinics and pair-programming at Teamshark 5th Floor completely changed my learning curve with senior mentors.",
-    is_featured: 1,
-    status: "approved",
-    views_count: 1250,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25).toISOString()
-  },
-  {
-    id: "vid-004",
-    student_name: "Faith Mwangi",
-    photo_url: faithPhoto,
-    thumbnail_url: faithPhoto,
-    course_program: "Cyber Security & Cloud Defense",
-    cohort: "Cohort 13",
-    career_role: "Security Operations Analyst",
-    company: "KCB Group",
-    video_url: "https://www.youtube.com/watch?v=EngW7tLk6R8",
-    duration: "3:30",
-    quote_highlight: "Real penetration testing labs instead of multiple-choice quizzes made all the difference during technical whiteboard interviews.",
-    is_featured: 1,
-    status: "approved",
-    views_count: 870,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 35).toISOString()
-  }
-];
-
-// Helper to resolve bundled alumni photos if referenced by path or name
+// Helper to resolve alumni photos if referenced by path or name
 function resolveStudentPhoto(testimonial: VideoTestimonial): string {
-  const name = testimonial.student_name.toLowerCase();
+  const name = (testimonial.student_name || '').toLowerCase();
   const url = (testimonial.photo_url || testimonial.thumbnail_url || '').toLowerCase();
   
+  if (testimonial.photo_url && (testimonial.photo_url.startsWith('http') || testimonial.photo_url.startsWith('data:'))) {
+    return testimonial.photo_url;
+  }
+  if (testimonial.thumbnail_url && (testimonial.thumbnail_url.startsWith('http') || testimonial.thumbnail_url.startsWith('data:'))) {
+    return testimonial.thumbnail_url;
+  }
+
   if (name.includes('daniel') || url.includes('daniel')) return danielPhoto;
   if (name.includes('cynthia') || url.includes('cynthia')) return cynthiaPhoto;
   if (name.includes('kevin') || url.includes('kevin')) return kevinPhoto;
   if (name.includes('faith') || url.includes('faith')) return faithPhoto;
 
-  if (testimonial.photo_url && testimonial.photo_url.startsWith('http')) {
-    return testimonial.photo_url;
-  }
-  if (testimonial.thumbnail_url && testimonial.thumbnail_url.startsWith('http')) {
-    return testimonial.thumbnail_url;
-  }
-  return danielPhoto;
+  return testimonial.photo_url || testimonial.thumbnail_url || danielPhoto;
 }
 
 // Convert video URLs to standard embed formats
@@ -160,24 +90,62 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
   onApplyForCourse,
   onExplorePrograms
 }) => {
-  const [testimonials, setTestimonials] = useState<VideoTestimonial[]>(FALLBACK_TESTIMONIALS);
+  // Pure dynamic database state without hardcoded fallback/dummy data
+  const [testimonials, setTestimonials] = useState<VideoTestimonial[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [activeModalVideo, setActiveModalVideo] = useState<VideoTestimonial | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch live video testimonials from backend
+  // Fetch live video testimonials dynamically from database API with cache: 'no-store'
   const fetchTestimonials = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/video-testimonials?status=approved');
+      const res = await fetch('/api/testimonials?status=approved', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setTestimonials(data);
+        if (Array.isArray(data)) {
+          // Strictly render only approved items
+          const approved = data.filter(
+            (item: VideoTestimonial) =>
+              (item.isApproved === undefined || item.isApproved === true) &&
+              (item.status === undefined || item.status === 'approved')
+          );
+          setTestimonials(approved);
+          return;
         }
       }
+
+      // Secondary fallback to /api/video-testimonials?status=approved
+      const fallbackRes = await fetch('/api/video-testimonials?status=approved', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+      if (fallbackRes.ok) {
+        const fbData = await fallbackRes.json();
+        if (Array.isArray(fbData)) {
+          const approved = fbData.filter(
+            (item: VideoTestimonial) =>
+              (item.isApproved === undefined || item.isApproved === true) &&
+              (item.status === undefined || item.status === 'approved')
+          );
+          setTestimonials(approved);
+          return;
+        }
+      }
+
+      setTestimonials([]);
     } catch (err) {
-      console.warn('Could not load video testimonials from API, using fallback data:', err);
+      console.warn('Could not load testimonials from API:', err);
+      setTestimonials([]);
     } finally {
       setLoading(false);
     }
@@ -186,13 +154,17 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
   useEffect(() => {
     fetchTestimonials();
 
-    // Listen for live updates when an admin adds or edits video testimonials
+    // Listen for live updates when an admin adds, edits, approves, or deletes video testimonials
     const handleUpdate = () => {
       fetchTestimonials();
     };
     window.addEventListener('video-testimonials-updated', handleUpdate);
+    window.addEventListener('testimonials-updated', handleUpdate);
+    window.addEventListener('reviews-updated', handleUpdate);
     return () => {
       window.removeEventListener('video-testimonials-updated', handleUpdate);
+      window.removeEventListener('testimonials-updated', handleUpdate);
+      window.removeEventListener('reviews-updated', handleUpdate);
     };
   }, []);
 
@@ -319,182 +291,209 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
           </div>
         </div>
 
-        {/* Interactive Track Filter Bar with Dynamic Active State */}
-        <div className="flex items-center justify-center mb-8 overflow-x-auto pb-2">
-          <div className="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-xl">
-            {[
-              { id: 'all', label: 'All Alumni Stories' },
-              { id: 'software', label: 'Software Engineering' },
-              { id: 'data', label: 'Data Science & AI' },
-              { id: 'cloud', label: 'Cloud & DevOps' },
-              { id: 'security', label: 'Cyber Security' }
-            ].map(tab => {
-              const isActive = selectedFilter === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setSelectedFilter(tab.id)}
-                  style={isActive ? {
-                    backgroundColor: 'var(--primary-color)',
-                    color: '#020617',
-                    boxShadow: '0 4px 14px 0 rgba(var(--primary-rgb), 0.35)'
-                  } : undefined}
-                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                    isActive
-                      ? 'font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Video Cards Grid - Compact 3-column proportion matching Tuition/Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredList.map((item, index) => {
-            const photoSrc = resolveStudentPhoto(item);
-            const isFeatured = Number(item.is_featured) === 1;
-
-            return (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: index * 0.06 }}
-                className="group relative bg-slate-950/80 hover:bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden theme-card-hover transition-all duration-300 flex flex-col justify-between shadow-xl"
-              >
-                <div>
-                  {/* Playable Video Thumbnail Container - Sleek, compact height restricted to 190px–200px */}
-                  <div 
-                    onClick={() => handleOpenModal(item)}
-                    className="relative h-48 max-h-[200px] w-full overflow-hidden bg-slate-950 cursor-pointer"
+        {/* Interactive Track Filter Bar with Dynamic Active State (Visible when testimonials exist) */}
+        {testimonials.length > 0 && (
+          <div className="flex items-center justify-center mb-8 overflow-x-auto pb-2">
+            <div className="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-xl">
+              {[
+                { id: 'all', label: 'All Alumni Stories' },
+                { id: 'software', label: 'Software Engineering' },
+                { id: 'data', label: 'Data Science & AI' },
+                { id: 'cloud', label: 'Cloud & DevOps' },
+                { id: 'security', label: 'Cyber Security' }
+              ].map(tab => {
+                const isActive = selectedFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSelectedFilter(tab.id)}
+                    style={isActive ? {
+                      backgroundColor: 'var(--primary-color)',
+                      color: '#020617',
+                      boxShadow: '0 4px 14px 0 rgba(var(--primary-rgb), 0.35)'
+                    } : undefined}
+                    className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                      isActive
+                        ? 'font-bold'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                    }`}
                   >
-                    <img
-                      src={photoSrc}
-                      alt={`${item.student_name} testimonial thumbnail`}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                    />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-                    {/* Dark gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+        {/* Video Cards Grid / Empty States */}
+        {loading && testimonials.length === 0 ? (
+          <div className="flex items-center justify-center py-20 text-slate-400 text-xs font-mono">
+            <Clock className="w-4 h-4 animate-spin theme-text-primary mr-2.5" />
+            <span>Loading verified student testimonials...</span>
+          </div>
+        ) : testimonials.length === 0 ? (
+          <div className="text-center py-16 px-6 rounded-2xl bg-slate-950/60 border border-slate-800/80 max-w-xl mx-auto space-y-3">
+            <GraduationCap className="w-10 h-10 theme-text-primary mx-auto mb-1 opacity-80" />
+            <h4 className="text-base font-bold text-white">No Published Alumni Stories Yet</h4>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+              Student stories and graduate spotlights are currently being curated by our admissions board. Check back soon or submit your story via the student portal.
+            </p>
+          </div>
+        ) : filteredList.length === 0 ? (
+          <div className="text-center py-14 px-6 rounded-2xl bg-slate-950/40 border border-slate-800/60 max-w-md mx-auto space-y-2">
+            <p className="text-xs text-slate-400">No stories found for the selected track.</p>
+            <button
+              onClick={() => setSelectedFilter('all')}
+              className="text-xs font-semibold theme-text-primary hover:underline cursor-pointer"
+            >
+              View all tracks &rarr;
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredList.map((item, index) => {
+              const photoSrc = resolveStudentPhoto(item);
+              const isFeatured = Number(item.is_featured) === 1;
 
-                    {/* Play Button Overlay with Dynamic Theme Fill and Glow */}
-                    <div className="absolute inset-0 flex items-center justify-center">
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: index * 0.06 }}
+                  className="group relative bg-slate-950/80 hover:bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden theme-card-hover transition-all duration-300 flex flex-col justify-between shadow-xl"
+                >
+                  <div>
+                    {/* Playable Video Thumbnail Container - Sleek, compact height restricted to 190px–200px */}
+                    <div 
+                      onClick={() => handleOpenModal(item)}
+                      className="relative h-48 max-h-[200px] w-full overflow-hidden bg-slate-950 cursor-pointer"
+                    >
+                      <img
+                        src={photoSrc}
+                        alt={`${item.student_name} testimonial thumbnail`}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      />
+
+                      {/* Dark gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+
+                      {/* Play Button Overlay with Dynamic Theme Fill and Glow */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div 
+                          className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:brightness-110 transition-all duration-300"
+                          style={{
+                            backgroundColor: 'var(--primary-color)',
+                            color: '#020617',
+                            boxShadow: '0 6px 20px rgba(var(--primary-rgb), 0.45)'
+                          }}
+                        >
+                          <Play className="w-5 h-5 fill-current ml-0.5" />
+                        </div>
+                      </div>
+
+                      {/* Featured Story Badge */}
+                      <div className="absolute top-2.5 left-2.5 flex items-center gap-2">
+                        {isFeatured && (
+                          <span 
+                            className="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-md border backdrop-blur-xs flex items-center gap-1 shadow-xs theme-badge"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            <span>Featured Story</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Duration badge dynamically bound to primary theme */}
                       <div 
-                        className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:brightness-110 transition-all duration-300"
-                        style={{
-                          backgroundColor: 'var(--primary-color)',
-                          color: '#020617',
-                          boxShadow: '0 6px 20px rgba(var(--primary-rgb), 0.45)'
-                        }}
+                        className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 text-[10px] font-medium text-slate-200 bg-slate-950/90 px-2 py-0.5 rounded-md border border-slate-800"
                       >
-                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                        <Clock className="w-3 h-3 theme-text-primary" />
+                        <span className="theme-text-primary font-bold">{item.duration || '3:00'}</span>
+                        {item.views_count ? (
+                          <>
+                            <span className="text-slate-600" aria-hidden="true">·</span>
+                            <span className="flex items-center gap-1 text-slate-400">
+                              <Eye className="w-3 h-3 text-slate-400" />
+                              {item.views_count.toLocaleString()}
+                            </span>
+                          </>
+                        ) : null}
                       </div>
                     </div>
 
-                    {/* Featured Story Badge */}
-                    <div className="absolute top-2.5 left-2.5 flex items-center gap-2">
-                      {isFeatured && (
+                    {/* Card Content Area - Compact proportions */}
+                    <div className="p-5">
+                      {/* Track & Cohort (Unboxed metadata with theme color) */}
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1.5">
                         <span 
-                          className="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-md border backdrop-blur-xs flex items-center gap-1 shadow-xs theme-badge"
+                          className="font-semibold tracking-wide theme-text-primary uppercase text-[10px]"
                         >
-                          <Sparkles className="w-3 h-3" />
-                          <span>Featured Story</span>
+                          {item.course_program}
                         </span>
-                      )}
-                    </div>
+                        {item.cohort && (
+                          <>
+                            <span className="text-slate-600" aria-hidden="true">·</span>
+                            <span className="text-slate-400 font-mono text-[10px]">{item.cohort}</span>
+                          </>
+                        )}
+                      </div>
 
-                    {/* Duration badge dynamically bound to primary theme */}
-                    <div 
-                      className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 text-[10px] font-medium text-slate-200 bg-slate-950/90 px-2 py-0.5 rounded-md border border-slate-800"
-                    >
-                      <Clock className="w-3 h-3 theme-text-primary" />
-                      <span className="theme-text-primary font-bold">{item.duration || '3:00'}</span>
-                      {item.views_count ? (
-                        <>
-                          <span className="text-slate-600" aria-hidden="true">·</span>
-                          <span className="flex items-center gap-1 text-slate-400">
-                            <Eye className="w-3 h-3 text-slate-400" />
-                            {item.views_count.toLocaleString()}
-                          </span>
-                        </>
-                      ) : null}
-                    </div>
-                  </div>
+                      {/* Student Name */}
+                      <h3 className="text-base sm:text-lg font-bold text-white theme-group-hover-title transition-colors">
+                        {item.student_name}
+                      </h3>
 
-                  {/* Card Content Area - Compact proportions */}
-                  <div className="p-5">
-                    {/* Track & Cohort (Unboxed metadata with theme color) */}
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1.5">
-                      <span 
-                        className="font-semibold tracking-wide theme-text-primary uppercase text-[10px]"
+                      {/* Career Role & Company */}
+                      <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                        <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{item.career_role}</span>
+                        {item.company && (
+                          <>
+                            <span className="text-slate-500">at</span>
+                            <span className="font-semibold theme-text-secondary truncate">
+                              {item.company}
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Key Quote / Short Highlight */}
+                      <blockquote 
+                        className="mt-3 text-xs text-slate-300 leading-relaxed italic border-l-2 pl-2.5 transition-colors line-clamp-3"
+                        style={{ borderColor: 'var(--primary-color)' }}
                       >
-                        {item.course_program}
-                      </span>
-                      {item.cohort && (
-                        <>
-                          <span className="text-slate-600" aria-hidden="true">·</span>
-                          <span className="text-slate-400 font-mono text-[10px]">{item.cohort}</span>
-                        </>
-                      )}
+                        "{item.quote_highlight}"
+                      </blockquote>
                     </div>
-
-                    {/* Student Name */}
-                    <h3 className="text-base sm:text-lg font-bold text-white theme-group-hover-title transition-colors">
-                      {item.student_name}
-                    </h3>
-
-                    {/* Career Role & Company */}
-                    <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-300 font-medium">
-                      <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{item.career_role}</span>
-                      {item.company && (
-                        <>
-                          <span className="text-slate-500">at</span>
-                          <span className="font-semibold theme-text-secondary truncate">
-                            {item.company}
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Key Quote / Short Highlight */}
-                    <blockquote 
-                      className="mt-3 text-xs text-slate-300 leading-relaxed italic border-l-2 pl-2.5 transition-colors line-clamp-3"
-                      style={{ borderColor: 'var(--primary-color)' }}
-                    >
-                      "{item.quote_highlight}"
-                    </blockquote>
                   </div>
-                </div>
 
-                {/* Bottom Actions */}
-                <div className="px-5 py-3 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between text-xs">
-                  <button
-                    onClick={() => handleOpenModal(item)}
-                    className="font-bold flex items-center gap-1.5 transition-all cursor-pointer hover:opacity-85 theme-text-primary"
-                  >
-                    <Play className="w-3 h-3 fill-current" />
-                    <span>Watch Full Story</span>
-                  </button>
-
-                  {onApplyForCourse && (
+                  {/* Bottom Actions */}
+                  <div className="px-5 py-3 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between text-xs">
                     <button
-                      onClick={() => onApplyForCourse(item.course_program)}
-                      className="text-[11px] text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      onClick={() => handleOpenModal(item)}
+                      className="font-bold flex items-center gap-1.5 transition-all cursor-pointer hover:opacity-85 theme-text-primary"
                     >
-                      {item.course_program.split(' ')[0]} Track &rarr;
+                      <Play className="w-3 h-3 fill-current" />
+                      <span>Watch Full Story</span>
                     </button>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+
+                    {onApplyForCourse && (
+                      <button
+                        onClick={() => onApplyForCourse(item.course_program)}
+                        className="text-[11px] text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      >
+                        {item.course_program.split(' ')[0]} Track &rarr;
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
 
         {/* CTA Strip underneath the gallery */}
         <div className="mt-14 p-6 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">

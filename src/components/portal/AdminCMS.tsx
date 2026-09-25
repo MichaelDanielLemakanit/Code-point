@@ -27,7 +27,9 @@ import {
   GraduationCap,
   Terminal,
   Sparkles,
-  Layers
+  Layers,
+  Eye,
+  Pencil
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -46,6 +48,7 @@ import {
 } from 'recharts';
 import { Application, Course, AdminStats, ApplicationStatus, Certificate, AssignmentSubmission, SiteSettings } from '../../types';
 import { CertificateModal } from './CertificateModal';
+import { CertificateEditorModal } from './CertificateEditorModal';
 import { TechStackManager } from './TechStackManager';
 import { ClassSchedulesManager } from './ClassSchedulesManager';
 import { WhyStudyManager } from './WhyStudyManager';
@@ -98,8 +101,59 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
+  const [isCertEditorOpen, setIsCertEditorOpen] = useState(false);
+  const [editingCert, setEditingCert] = useState<Certificate | null>(null);
   const [approvingEmail, setApprovingEmail] = useState<string | null>(null);
   const [approvalFeedback, setApprovalFeedback] = useState<{ text: string; isError: boolean } | null>(null);
+
+  const handleOpenCreateCert = () => {
+    setEditingCert(null);
+    setIsCertEditorOpen(true);
+  };
+
+  const handleOpenEditCert = (cert: Certificate) => {
+    setEditingCert(cert);
+    setIsCertEditorOpen(true);
+  };
+
+  const handleRevokeCert = async (cert: Certificate) => {
+    const certId = cert.certIdNumber || cert.verification_id || cert.id;
+    const recipient = cert.studentName || cert.student_name || 'Fellow';
+    if (!window.confirm(`Are you sure you want to revoke and delete certificate ${certId} issued to ${recipient}? This action permanently revokes the credential from the database.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/certificates/${encodeURIComponent(cert.id || certId)}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to revoke certificate');
+      }
+      setApprovalFeedback({
+        text: `Certificate ${certId} successfully revoked and deleted.`,
+        isError: false
+      });
+      await fetchCertificatesAndSubmissions();
+    } catch (err: any) {
+      setApprovalFeedback({
+        text: err.message || 'Error revoking certificate',
+        isError: true
+      });
+    }
+  };
+
+  const handleCertificateSaved = (savedCert: Certificate, isNew: boolean) => {
+    setApprovalFeedback({
+      text: isNew
+        ? `Certificate ${savedCert.certIdNumber || savedCert.verification_id} issued successfully for ${savedCert.studentName || savedCert.student_name}!`
+        : `Certificate ${savedCert.certIdNumber || savedCert.verification_id} updated successfully!`,
+      isError: false
+    });
+    fetchCertificatesAndSubmissions();
+    setSelectedCert(savedCert);
+  };
 
   // Course management state
   const [showAddCourse, setShowAddCourse] = useState(false);
@@ -846,14 +900,47 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
       {activeTab === 'certificates' && (
         <div className="space-y-6">
           
-          {/* Header Policy Rule */}
-          <div className="p-5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-            <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase font-mono tracking-wider">
-              <Award className="w-4 h-4 text-amber-400" />
+          {/* Header Action Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-slate-950 border border-slate-800">
+            <div>
+              <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase font-mono tracking-wider">
+                <Award className="w-4 h-4 text-amber-400" />
+                <span>Graduation Clearance & Certificate CMS</span>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                Issue verifiable digital graduation certificates, manage signatories, customize credential metadata, and enforce coursework completion standards.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={handleOpenCreateCert}
+                className="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                <span>Issue New Certificate</span>
+              </button>
+              <button
+                type="button"
+                onClick={fetchCertificatesAndSubmissions}
+                className="px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-mono transition-colors flex items-center gap-1.5 cursor-pointer"
+                title="Refresh Certificates and Submissions"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Policy Rule & Feedback */}
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+            <div className="flex items-center gap-2 text-slate-300 font-semibold text-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
               <span>Academic Standards: Conditional Certificate Issuance Policy</span>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              In the Super-Admin CMS, certificates are subject to strict academic criteria: a student's certificate is <strong className="text-white">prevented from being approved or generated</strong> if they have any pending, unmarked, or incomplete assignments. Only once all coursework deliverables have been evaluated and marked is the <span className="text-emerald-400 font-semibold">'Approve Certificate'</span> action enabled.
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              In Code Point Kenya, certificates are subject to strict academic criteria: a student's certificate is <strong className="text-white">prevented from being auto-approved</strong> if they have any pending, unmarked, or incomplete assignments. Only once all coursework deliverables have been evaluated is the automated clearance unlocked. Administrators may also issue customized certificates directly using the <span className="text-amber-400 font-semibold">'Issue New Certificate'</span> modal above.
             </p>
 
             {approvalFeedback && (
@@ -1045,26 +1132,61 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
           {/* Issued Certificates Table */}
           {certificates.length > 0 && (
             <div className="space-y-3 pt-4 border-t border-slate-800">
-              <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider">
-                Verifiable Issued Digital Certificates ({certificates.length}):
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider flex items-center gap-2">
+                  <Award className="w-4 h-4 text-amber-400" />
+                  <span>Verifiable Issued Digital Certificates ({certificates.length}):</span>
+                </h4>
+                <span className="text-[11px] font-mono text-slate-400">Database & Blockchain Authenticated</span>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {certificates.map(cert => (
-                  <div key={cert.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                    <div>
+                  <div key={cert.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-start justify-between gap-3 hover:border-slate-700 transition-colors">
+                    <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-center gap-2">
-                        <Award className="w-4 h-4 text-amber-400" />
-                        <h5 className="text-xs font-bold text-white">{cert.student_name}</h5>
+                        <Award className="w-4 h-4 text-amber-400 shrink-0" />
+                        <h5 className="text-xs font-bold text-white truncate">{cert.studentName || cert.student_name}</h5>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{cert.course_title} • {cert.cohort}</p>
-                      <p className="text-[10px] font-mono text-emerald-400 mt-1">ID: {cert.verification_id}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{cert.studentEmail || cert.student_email}</p>
+                      <p className="text-[11px] text-amber-300 font-medium truncate">
+                        {cert.courseName || cert.course_title} • {cert.grade || cert.final_grade || 'Distinction'}
+                      </p>
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 pt-0.5">
+                        <span className="text-emerald-400 font-bold">ID: {cert.certIdNumber || cert.verification_id}</span>
+                        {cert.issueDate && (
+                          <span>• {cert.issueDate.includes('T') ? cert.issueDate.split('T')[0] : cert.issueDate}</span>
+                        )}
+                      </div>
                     </div>
-                    <button
-                      onClick={() => setSelectedCert(cert)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium border border-slate-800 transition-colors"
-                    >
-                      Inspect
-                    </button>
+
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-start">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCert(cert)}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-medium border border-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="View Certificate Live Preview"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>View Cert</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditCert(cert)}
+                        className="px-2.5 py-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 hover:text-indigo-200 text-xs font-medium border border-indigo-800/60 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Edit Certificate Data"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRevokeCert(cert)}
+                        className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 hover:text-rose-300 border border-rose-900/60 transition-colors cursor-pointer"
+                        title="Revoke / Delete Certificate"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1474,6 +1596,18 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
           onClose={() => setSelectedCert(null)}
         />
       )}
+
+      {/* CERTIFICATE EDITOR / CREATION MODAL */}
+      <CertificateEditorModal
+        isOpen={isCertEditorOpen}
+        onClose={() => {
+          setIsCertEditorOpen(false);
+          setEditingCert(null);
+        }}
+        certificate={editingCert}
+        courses={courses}
+        onSaved={handleCertificateSaved}
+      />
 
     </div>
   );

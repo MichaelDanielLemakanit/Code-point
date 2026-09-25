@@ -74,6 +74,14 @@ export const ReviewsModerator: React.FC<ReviewsModeratorProps> = ({
     fetchReviews();
   }, []);
 
+  const notifyReviewsUpdated = () => {
+    window.dispatchEvent(new CustomEvent('reviews-updated'));
+    window.dispatchEvent(new CustomEvent('testimonials-updated'));
+    if (typeof onRefreshApprovedReviews === 'function') {
+      onRefreshApprovedReviews();
+    }
+  };
+
   // Quick Action: Change Status (Approve / Reject / Pending)
   const handleUpdateStatus = async (id: string, newStatus: 'approved' | 'rejected' | 'pending') => {
     try {
@@ -95,9 +103,7 @@ export const ReviewsModerator: React.FC<ReviewsModeratorProps> = ({
           showToast('Review moved back to pending moderation queue.');
         }
 
-        if (typeof onRefreshApprovedReviews === 'function') {
-          onRefreshApprovedReviews();
-        }
+        notifyReviewsUpdated();
       } else {
         alert('Failed to update review status');
       }
@@ -120,9 +126,7 @@ export const ReviewsModerator: React.FC<ReviewsModeratorProps> = ({
       if (res.ok) {
         setReviews(prev => prev.map(r => r.id === review.id ? { ...r, is_featured: nextFeatured ? 1 : 0 } : r));
         showToast(nextFeatured ? 'Review pinned to front of marquee!' : 'Review unpinned.');
-        if (typeof onRefreshApprovedReviews === 'function') {
-          onRefreshApprovedReviews();
-        }
+        notifyReviewsUpdated();
       }
     } catch (e) {
       console.error('Error toggling featured:', e);
@@ -141,9 +145,7 @@ export const ReviewsModerator: React.FC<ReviewsModeratorProps> = ({
       if (res.ok) {
         setReviews(prev => prev.filter(r => r.id !== id));
         showToast('Review permanently deleted.');
-        if (typeof onRefreshApprovedReviews === 'function') {
-          onRefreshApprovedReviews();
-        }
+        notifyReviewsUpdated();
       } else {
         alert('Failed to delete review');
       }
@@ -215,9 +217,7 @@ export const ReviewsModerator: React.FC<ReviewsModeratorProps> = ({
           setReviews(prev => prev.map(r => r.id === activeReview.id ? data.review : r));
           setIsModalOpen(false);
           showToast('Review updated successfully.');
-          if (typeof onRefreshApprovedReviews === 'function') {
-            onRefreshApprovedReviews();
-          }
+          notifyReviewsUpdated();
         } else {
           alert('Failed to update review.');
         }
@@ -249,9 +249,7 @@ export const ReviewsModerator: React.FC<ReviewsModeratorProps> = ({
           await fetchReviews();
           setIsModalOpen(false);
           showToast('New testimonial created and saved!');
-          if (typeof onRefreshApprovedReviews === 'function') {
-            onRefreshApprovedReviews();
-          }
+          notifyReviewsUpdated();
         } else {
           alert('Failed to create review.');
         }

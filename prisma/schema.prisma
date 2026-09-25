@@ -68,6 +68,25 @@ model certificates {
   qr_code_payload String?
 }
 
+model Certificate {
+  id              String   @id @default(uuid())
+  studentName     String
+  studentEmail    String
+  courseName      String
+  grade           String
+  institutionName String   @default("CODE POINT KENYA")
+  subHeading      String   @default("INSTITUTE OF SOFTWARE ENGINEERING & APPLIED AI")
+  addressText     String   @default("Ngong Road, Twin Towers 5th Floor, Nairobi, Kenya")
+  signatory1Name  String   @default("Brenda Wambui")
+  signatory1Title String   @default("CURRICULUM DIRECTOR - Faculty of Engineering")
+  signatory2Name  String   @default("Code Point Kenya Academic Board & Admin")
+  signatory2Title String   @default("ISSUED DATE")
+  issueDate       DateTime @default(now())
+  certIdNumber    String   @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
 model class_lectures {
   id               String  @id @db.VarChar(255)
   instructor_email String  @db.VarChar(255)
