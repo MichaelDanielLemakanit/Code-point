@@ -27,7 +27,7 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
 /**
  * Dynamically binds the active theme colors across all CSS variables on :root
  */
-export function applyGlobalTheme(primaryHex?: string, secondaryHex?: string) {
+export function applyGlobalTheme(primaryHex?: string, secondaryHex?: string, mode?: string) {
   if (typeof document === 'undefined') return;
 
   const primary = primaryHex || '#10B981';
@@ -38,17 +38,25 @@ export function applyGlobalTheme(primaryHex?: string, secondaryHex?: string) {
 
   const root = document.documentElement;
 
-  // Primary variables
+  // Primary variables (canonical + standard aliases)
+  root.style.setProperty('--primary', primary);
   root.style.setProperty('--primary-color', primary);
   root.style.setProperty('--primary-rgb', `${r1}, ${g1}, ${b1}`);
   root.style.setProperty('--cpk-primary', primary);
 
   // Secondary & Accent variables
+  root.style.setProperty('--secondary', secondary);
   root.style.setProperty('--secondary-color', secondary);
   root.style.setProperty('--secondary-rgb', `${r2}, ${g2}, ${b2}`);
+  root.style.setProperty('--accent', secondary);
   root.style.setProperty('--accent-color', secondary);
+  root.style.setProperty('--accent-rgb', `${r2}, ${g2}, ${b2}`);
   root.style.setProperty('--highlight-color', primary);
   root.style.setProperty('--cpk-secondary', secondary);
+
+  // Background atmosphere variable
+  const bgDark = mode === 'slate' ? '#0B1120' : mode === 'oled' ? '#030712' : '#020617';
+  root.style.setProperty('--bg-dark', bgDark);
 
   // Badge & Status Pills variables
   root.style.setProperty('--badge-bg', `rgba(${r1}, ${g1}, ${b1}, 0.12)`);
@@ -61,7 +69,16 @@ export function applyGlobalTheme(primaryHex?: string, secondaryHex?: string) {
   root.style.setProperty('--accent-badge-border', `rgba(${r2}, ${g2}, ${b2}, 0.28)`);
 
   // Card Borders & Glows
-  root.style.setProperty('--card-highlight-border', `rgba(${r1}, ${g1}, ${b1}, 0.45)`);
-  root.style.setProperty('--card-highlight-glow', `rgba(${r1}, ${g1}, ${b1}, 0.18)`);
+  root.style.setProperty('--card-highlight-border', `rgba(${r1}, ${g1}, ${b1}, 0.35)`);
+  root.style.setProperty('--card-highlight-glow', `rgba(${r1}, ${g1}, ${b1}, 0.16)`);
+  root.style.setProperty('--card-accent-border', `rgba(${r2}, ${g2}, ${b2}, 0.35)`);
+  root.style.setProperty('--card-accent-glow', `rgba(${r2}, ${g2}, ${b2}, 0.16)`);
   root.style.setProperty('--focus-ring', `rgba(${r1}, ${g1}, ${b1}, 0.4)`);
+
+  // Persist to localStorage for zero-latency instant rendering on refresh
+  try {
+    localStorage.setItem('cpk_theme_primary', primary);
+    localStorage.setItem('cpk_theme_secondary', secondary);
+    if (mode) localStorage.setItem('cpk_theme_mode', mode);
+  } catch (_) {}
 }

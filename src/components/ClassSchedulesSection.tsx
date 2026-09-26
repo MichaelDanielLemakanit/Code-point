@@ -4,89 +4,69 @@ import {
   Calendar, 
   Clock, 
   ArrowRight, 
-  CheckCircle2, 
   Laptop, 
+  Code,
+  GraduationCap,
+  Cloud,
+  Terminal,
+  Users,
   MapPin,
-  Sparkles
+  Moon,
+  Sun
 } from 'lucide-react';
-import { SiteSettings, ClassSchedulesSectionData, ScheduleTrackItem } from '../types';
-import { renderCmsIcon } from '../utils/cmsIcons';
+import { SiteSettings } from '../types';
 
 interface ClassSchedulesSectionProps {
   onApply?: () => void;
   siteSettings?: SiteSettings;
 }
 
-const DEFAULT_SCHEDULES_DATA: ClassSchedulesSectionData = {
-  badge_text: 'Structured Timetable Tracks',
-  title: 'Flexible Class Schedules',
-  subtitle: 'Choose a timing track that fits into your daily work or school routine.',
-  items: [
-    {
-      id: 'evening-track',
-      title: 'Evening Track',
-      schedule: 'Monday – Thursday',
-      time_badge: '2:00 PM – 4:00 PM EAT',
-      accent_badge: 'Weekday Momentum',
-      recommended_for: 'Working Professionals & Students',
-      description: 'Ideal for full-time employees and university students who want to study after hours.',
-      icon_name: 'Moon',
-      highlights: [
-        'Live online lecture streaming & code walkthroughs',
-        'Daily mentor Q&A and active code review channels',
-        'Full recordings stored in student portal',
-        'Optional Ngong Road campus lab access'
-      ],
-      campus_note: 'Ngong Rd Lab Included',
-      online_note: 'Live Online Sync',
-      display_order: 1,
-      is_visible: true
-    },
-    {
-      id: 'weekend-track',
-      title: 'Weekend Track',
-      schedule: 'Saturdays Only',
-      time_badge: '9:00 AM – 4:00 PM EAT',
-      accent_badge: 'High-Impact Immersion',
-      recommended_for: 'Busy Weekday Professionals',
-      description: 'Intensive weekend coding lab designed for busy professionals during weekdays.',
-      icon_name: 'Sun',
-      highlights: [
-        'Full-day Saturday immersive coding labs & sprint reviews',
-        '1-on-1 architecture clinics at our Ngong Road campus',
-        'Weekly asynchronous assignments with midweek feedback',
-        'Collaborative peer hackathons & team project building'
-      ],
-      campus_note: 'Ngong Rd Lab Included',
-      online_note: 'Live Online Sync',
-      display_order: 2,
-      is_visible: true
-    }
-  ]
-};
+interface TrackFeature {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+}
+
+interface TrackConfig {
+  id: string;
+  type: 'evening' | 'weekend';
+  title: string;
+  days: string;
+  time: string;
+  features: TrackFeature[];
+}
+
+const TRACKS_DATA: TrackConfig[] = [
+  {
+    id: 'evening-track',
+    type: 'evening',
+    title: 'Evening Track',
+    days: 'Mon - Fri',
+    time: '6:00 PM - 9:00 PM EAT',
+    features: [
+      { icon: Laptop, label: 'Live Classes' },
+      { icon: Code, label: 'Code Labs' },
+      { icon: GraduationCap, label: 'Expert Mentors' },
+      { icon: Cloud, label: 'Recordings' }
+    ]
+  },
+  {
+    id: 'weekend-track',
+    type: 'weekend',
+    title: 'Weekend Track',
+    days: 'Sat & Sun',
+    time: '8:00 AM - 4:00 PM EAT',
+    features: [
+      { icon: Calendar, label: 'Flexible Schedule' },
+      { icon: Laptop, label: 'Hands-on Projects' },
+      { icon: Terminal, label: 'Hackathons' },
+      { icon: Users, label: 'Peer Reviews' }
+    ]
+  }
+];
 
 export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ onApply, siteSettings }) => {
-  let sectionData: ClassSchedulesSectionData = DEFAULT_SCHEDULES_DATA;
-
-  if (siteSettings?.class_schedules_section_json) {
-    try {
-      const parsed = JSON.parse(siteSettings.class_schedules_section_json);
-      if (parsed && Array.isArray(parsed.items)) {
-        sectionData = {
-          badge_text: parsed.badge_text || DEFAULT_SCHEDULES_DATA.badge_text,
-          title: parsed.title || DEFAULT_SCHEDULES_DATA.title,
-          subtitle: parsed.subtitle || DEFAULT_SCHEDULES_DATA.subtitle,
-          items: parsed.items
-        };
-      }
-    } catch (e) {
-      console.warn('Failed to parse class_schedules_section_json:', e);
-    }
-  }
-
-  const visibleItems = (sectionData.items || [])
-    .filter(item => item.is_visible !== false)
-    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+  const sectionTitle = siteSettings?.schedules_section_title || 'Flexible Class Schedules';
+  const sectionSubtitle = siteSettings?.schedules_section_subtitle || 'Choose a timing track that fits into your daily work or school routine.';
 
   return (
     <motion.section 
@@ -100,113 +80,171 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-4">
+        <div className="text-center max-w-3xl mx-auto space-y-3">
+          {/* Calendar Icon above Title */}
+          <div 
+            style={{ 
+              backgroundColor: 'rgba(var(--primary-rgb), 0.12)', 
+              borderColor: 'rgba(var(--primary-rgb), 0.3)', 
+              color: 'var(--primary-color)',
+              boxShadow: '0 0 20px rgba(var(--primary-rgb), 0.15)'
+            }}
+            className="w-12 h-12 rounded-2xl border flex items-center justify-center mx-auto shadow-sm"
+          >
+            <Calendar className="w-6 h-6" />
+          </div>
+
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-            {sectionData.title}
+            {sectionTitle}
           </h2>
 
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-            {sectionData.subtitle}
+          <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+            {sectionSubtitle}
           </p>
         </div>
 
-        {/* Track Cards Grid */}
-        <div className={`grid grid-cols-1 ${visibleItems.length > 1 ? 'md:grid-cols-2' : 'max-w-2xl'} gap-8 max-w-5xl mx-auto mt-14`}>
-          {visibleItems.map((track, index) => (
-            <motion.div
-              key={track.id}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="p-8 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-850/90 transition-all duration-200 flex flex-col justify-between space-y-6 relative overflow-hidden group shadow-lg"
-            >
-              {/* Subtle accent glow */}
-              <div 
-                style={{ backgroundColor: 'rgba(var(--primary-rgb), 0.05)' }}
-                className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10" 
-              />
+        {/* Track Cards Grid: Two side-by-side dark glassmorphic cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto mt-12">
+          {TRACKS_DATA.map((track, index) => {
+            const isEvening = track.type === 'evening';
+            const trackColor = isEvening ? 'var(--primary-color)' : 'var(--secondary-color)';
+            const trackRgb = isEvening ? 'var(--primary-rgb)' : 'var(--secondary-rgb)';
 
-              <div className="space-y-5">
-                {/* Header row: Icon & Track Type Badge */}
-                <div className="flex items-center justify-between gap-3">
-                  <div className="w-12 h-12 rounded-xl theme-icon-box flex items-center justify-center group-hover:scale-105 transition-all">
-                    {renderCmsIcon(track.icon_name, 'w-6 h-6 theme-text-primary')}
-                  </div>
-                  {track.accent_badge && (
-                    <span className="px-3 py-1 rounded-full text-xs font-mono font-medium theme-badge">
-                      {track.accent_badge}
-                    </span>
-                  )}
-                </div>
+            return (
+              <motion.div
+                key={track.id}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                style={{
+                  borderColor: `rgba(${trackRgb}, 0.25)`
+                }}
+                className="rounded-2xl border bg-slate-900/60 p-6 backdrop-blur-md shadow-xl hover:bg-slate-900/80 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
+              >
+                {/* Subtle ambient gradient glow in corner */}
+                <div 
+                  style={{
+                    backgroundColor: `rgba(${trackRgb}, 0.12)`
+                  }}
+                  className="absolute top-0 right-0 w-44 h-44 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16 transition-opacity duration-300 group-hover:opacity-100 opacity-60"
+                />
 
-                <div>
-                  <h3 className="text-2xl font-bold text-white tracking-tight group-hover:text-white transition-colors">
-                    {track.title}
-                  </h3>
+                <div className="relative z-10 space-y-2">
+                  {/* Card Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    {/* Left: Circular gradient glowing badge + Title & Live Online Badge */}
+                    <div className="flex items-center sm:items-start gap-4">
+                      <div 
+                        style={{
+                          background: isEvening 
+                            ? 'linear-gradient(135deg, rgba(var(--primary-rgb), 0.22), rgba(var(--secondary-rgb), 0.12))'
+                            : 'linear-gradient(135deg, rgba(var(--secondary-rgb), 0.22), rgba(var(--primary-rgb), 0.12))',
+                          borderColor: `rgba(${trackRgb}, 0.35)`,
+                          color: trackColor,
+                          boxShadow: `0 0 18px rgba(${trackRgb}, 0.25)`
+                        }}
+                        className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 border transition-transform duration-300 group-hover:scale-105"
+                      >
+                        {isEvening ? (
+                          <Moon className="w-6 h-6" />
+                        ) : (
+                          <Sun className="w-6 h-6" />
+                        )}
+                      </div>
 
-                  {/* Schedule & Time Badges */}
-                  <div className="flex flex-wrap items-center gap-2 mt-3">
-                    {track.schedule && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-950 border border-slate-800 text-white font-medium text-xs">
-                        <Calendar className="w-3.5 h-3.5 theme-text-primary" />
-                        {track.schedule}
-                      </span>
-                    )}
-                    {track.time_badge && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg theme-badge font-mono font-semibold text-xs">
-                        <Clock className="w-3.5 h-3.5 theme-text-primary" />
-                        {track.time_badge}
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="text-slate-300 text-sm leading-relaxed mt-4">
-                    {track.description}
-                  </p>
-                </div>
-
-                {/* Track Feature Highlights */}
-                {track.highlights && track.highlights.length > 0 && (
-                  <div className="space-y-2.5 pt-2">
-                    <div className="text-xs font-mono text-slate-400 font-semibold uppercase tracking-wider">
-                      Track Includes:
+                      <div>
+                        <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                          {track.title}
+                        </h3>
+                        {/* Status Badge right under the title */}
+                        <div className="mt-1.5">
+                          <span 
+                            style={{
+                              backgroundColor: `rgba(${trackRgb}, 0.15)`,
+                              color: trackColor,
+                              borderColor: `rgba(${trackRgb}, 0.28)`
+                            }}
+                            className="inline-block text-xs px-3 py-1 rounded-full font-medium border shadow-sm"
+                          >
+                            Live Online
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    {track.highlights.map((h, i) => (
-                      <div key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-300">
-                        <CheckCircle2 className="w-4 h-4 theme-text-primary shrink-0 mt-0.5" />
-                        <span>{h}</span>
+
+                    {/* Right: Timing Pills */}
+                    <div className="flex flex-wrap sm:flex-col sm:items-end gap-1.5 shrink-0">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-200 text-xs font-medium shadow-sm">
+                        <Calendar style={{ color: 'var(--primary-color)' }} className="w-3.5 h-3.5 shrink-0" />
+                        <span>{track.days}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-200 text-xs font-mono font-medium shadow-sm">
+                        <Clock style={{ color: 'var(--secondary-color)' }} className="w-3.5 h-3.5 shrink-0" />
+                        <span>{track.time}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 2x2 Feature Icon Grid (Replacing long text lists) */}
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 py-5 border-y border-slate-800/80 my-4">
+                    {track.features.map((feat, idx) => (
+                      <div
+                        key={idx}
+                        className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-950/40 hover:bg-slate-950/70 border border-slate-800/60 transition-all text-center group/item"
+                      >
+                        <div 
+                          style={{
+                            backgroundColor: `rgba(${trackRgb}, 0.12)`,
+                            borderColor: `rgba(${trackRgb}, 0.25)`,
+                            color: trackColor,
+                            boxShadow: `0 0 12px rgba(${trackRgb}, 0.15)`
+                          }}
+                          className="p-3 rounded-xl mx-auto w-fit mb-2 border group-hover/item:scale-110 transition-all flex items-center justify-center"
+                        >
+                          <feat.icon className="w-5 h-5 shrink-0" />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-200 text-center tracking-wide">
+                          {feat.label}
+                        </span>
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-
-              {/* Action Button & Campus Access Note */}
-              <div className="pt-6 border-t border-slate-800/80 space-y-3">
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 theme-text-primary" />
-                    {track.campus_note || 'Ngong Rd Lab Included'}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Laptop className="w-3.5 h-3.5 theme-text-primary" />
-                    {track.online_note || 'Live Online Sync'}
-                  </span>
                 </div>
 
-                {onApply && (
+                {/* Card Footer */}
+                <div className="relative z-10 space-y-4 pt-1">
+                  {/* Left Footer Badges */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-300 text-xs font-medium">
+                      <MapPin style={{ color: 'var(--primary-color)' }} className="w-3.5 h-3.5 shrink-0" />
+                      <span>Online</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-300 text-xs font-medium">
+                      <GraduationCap style={{ color: 'var(--secondary-color)' }} className="w-3.5 h-3.5 shrink-0" />
+                      <span>Campus Access: Optional</span>
+                    </span>
+                  </div>
+
+                  {/* Primary CTA Button: Gradient button with active theme colors */}
                   <button
                     onClick={onApply}
-                    className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-750 text-white font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 group/btn cursor-pointer"
+                    style={{
+                      background: isEvening
+                        ? 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))'
+                        : 'linear-gradient(135deg, var(--secondary-color), var(--primary-color))',
+                      boxShadow: `0 10px 25px -5px rgba(${trackRgb}, 0.3)`
+                    }}
+                    className="w-full py-3.5 px-5 rounded-xl text-slate-950 font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 hover:brightness-110 hover:scale-[1.01] active:scale-[0.99] cursor-pointer group/btn"
                   >
+                    <Calendar className="w-4 h-4 shrink-0" />
                     <span>Apply for {track.title}</span>
-                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-4 h-4 ml-0.5 group-hover/btn:translate-x-1 transition-transform shrink-0" />
                   </button>
-                )}
-              </div>
-            </motion.div>
-          ))}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
       </div>

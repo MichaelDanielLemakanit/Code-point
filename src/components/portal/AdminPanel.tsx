@@ -748,7 +748,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const pendingCount = pendingAppsCount + pendingMsgsCount;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-3 md:p-5 bg-slate-950/95 backdrop-blur-md animate-in fade-in overflow-hidden">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-0 sm:p-3 md:p-5 bg-slate-950/95 backdrop-blur-md animate-in fade-in overflow-hidden">
       
       {/* Toast Notification */}
       {toastMessage && (

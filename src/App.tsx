@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
-import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { Hero } from './components/Hero';
 import { CareerPathQuiz } from './components/CareerPathQuiz';
 import { ProgramsCatalog } from './components/ProgramsCatalog';
@@ -180,13 +179,7 @@ export default function App() {
   return (
     <div className="w-full max-w-full overflow-x-hidden min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
       
-      {/* Top-Bar Announcement Banner for Upcoming Intake & Next Cohort */}
-      <AnnouncementBanner
-        siteSettings={siteSettings}
-        onApplyNow={() => handleOpenApply()}
-      />
-
-      {/* Main Navigation */}
+      {/* Main Fixed Navigation (Includes Announcement Banner & Navigation Bar) */}
       <Navbar
         currentUser={currentUser}
         onOpenApply={() => handleOpenApply()}
@@ -198,8 +191,8 @@ export default function App() {
         siteSettings={siteSettings}
       />
 
-      {/* Main Public Website Content */}
-      <main className="w-full max-w-full overflow-x-hidden">
+      {/* Main Public Website Content with Fixed Header Padding Offset */}
+      <main className="w-full max-w-full overflow-x-hidden pt-24 sm:pt-28 lg:pt-28">
         {/* 1. Hero Section */}
         <Hero
           onExplorePrograms={() => handleNavigateSection('programs')}
@@ -234,10 +227,19 @@ export default function App() {
         />
 
         {/* 5. Why Study at CodePoint Kenya */}
-        <WhyStudySection />
+        <WhyStudySection 
+          siteSettings={siteSettings}
+          onApply={() => handleOpenApply()}
+          onExplorePrograms={() => handleNavigateSection('programs')}
+        />
 
         {/* 6. Online-First + Ngong Road Physical Campus Model */}
-        <LearningModel />
+        <LearningModel 
+          siteSettings={siteSettings}
+          onApply={() => handleOpenApply()}
+          onExplorePrograms={() => handleNavigateSection('programs')}
+          onVisitCampus={() => handleNavigateSection('contact')}
+        />
 
         {/* 7. Approved Alumni Reviews Marquee & Public Feedback Rating Form */}
         <ReviewsSection />

@@ -10,6 +10,43 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script>
+      (function() {
+        try {
+          var p = localStorage.getItem('cpk_theme_primary') || '#10B981';
+          var s = localStorage.getItem('cpk_theme_secondary') || '#06B6D4';
+          var m = localStorage.getItem('cpk_theme_mode') || 'dark';
+          var hexToRgb = function(hex) {
+            var c = (hex || '').replace('#', '').trim();
+            if (c.length === 3) c = c.split('').map(function(x) { return x + x; }).join('');
+            var n = parseInt(c, 16);
+            if (isNaN(n) || c.length !== 6) return '16, 185, 129';
+            return ((n >> 16) & 255) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255);
+          };
+          var r1 = hexToRgb(p);
+          var r2 = hexToRgb(s);
+          var root = document.documentElement;
+          root.style.setProperty('--primary', p);
+          root.style.setProperty('--primary-color', p);
+          root.style.setProperty('--primary-rgb', r1);
+          root.style.setProperty('--cpk-primary', p);
+          root.style.setProperty('--secondary', s);
+          root.style.setProperty('--secondary-color', s);
+          root.style.setProperty('--secondary-rgb', r2);
+          root.style.setProperty('--accent', s);
+          root.style.setProperty('--accent-color', s);
+          root.style.setProperty('--accent-rgb', r2);
+          root.style.setProperty('--highlight-color', p);
+          root.style.setProperty('--badge-bg', 'rgba(' + r1 + ', 0.12)');
+          root.style.setProperty('--badge-text', p);
+          root.style.setProperty('--badge-border', 'rgba(' + r1 + ', 0.28)');
+          root.style.setProperty('--card-highlight-border', 'rgba(' + r1 + ', 0.35)');
+          root.style.setProperty('--card-highlight-glow', 'rgba(' + r1 + ', 0.16)');
+          root.style.setProperty('--card-accent-border', 'rgba(' + r2 + ', 0.35)');
+          root.style.setProperty('--card-accent-glow', 'rgba(' + r2 + ', 0.16)');
+        } catch(e) {}
+      })();
+    </script>
   </head>
   <body class="w-full max-w-full overflow-x-hidden min-h-screen bg-slate-950 text-slate-100">
     <div id="root" class="w-full max-w-full overflow-x-hidden"></div>

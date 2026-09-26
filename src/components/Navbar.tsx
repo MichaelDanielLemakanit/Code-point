@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { User, SiteSettings } from '../types';
 import { useActiveSection } from '../hooks/useActiveSection';
+import { AnnouncementBanner } from './AnnouncementBanner';
 
 interface NavbarProps {
   currentUser: User | null;
@@ -88,8 +89,29 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 15);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 w-full bg-slate-950/95 backdrop-blur-md border-b border-slate-800 text-slate-100">
+    <header className={`fixed top-0 left-0 right-0 z-50 w-full transition-colors duration-200 ${
+      isScrolled 
+        ? 'bg-slate-950/85 backdrop-blur-md border-b border-slate-800/60 shadow-xl shadow-black/30' 
+        : 'bg-slate-950/80 backdrop-blur-md border-b border-slate-800/50 shadow-sm'
+    } text-slate-100`}>
+      {/* Top-Bar Announcement Banner for Upcoming Intake & Next Cohort */}
+      <AnnouncementBanner
+        siteSettings={siteSettings}
+        onApplyNow={() => onOpenApply()}
+      />
+
       {/* Main Navigation Bar */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-2 lg:gap-3">
         {/* Brand Logo */}
