@@ -15,14 +15,12 @@ import {
   Lock, 
   Server, 
   KeyRound, 
-  Compass,
-  Briefcase,
-  Zap,
-  Calendar,
-  Layers,
-  HelpCircle,
-  TrendingUp,
-  Award
+  Briefcase, 
+  Zap, 
+  Calendar, 
+  Layers, 
+  HelpCircle, 
+  TrendingUp 
 } from 'lucide-react';
 import { Course, SiteSettings } from '../types';
 
@@ -426,19 +424,8 @@ export const CareerPathQuiz: React.FC<CareerPathQuizProps> = ({
             className="bg-slate-900/90 border rounded-3xl p-6 sm:p-10 shadow-2xl backdrop-blur-xl relative overflow-hidden"
           >
             <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl" />
-            
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full theme-badge text-xs font-semibold">
-                <Compass className="w-3.5 h-3.5 theme-text-primary" />
-                <span>60-Second Tech Match Quiz</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <Award className="w-4 h-4 theme-text-primary" />
-                <span>Personalized Career Recommendation</span>
-              </div>
-            </div>
 
-            <div className="mt-6 space-y-4">
+            <div className="space-y-4">
               <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
                 Not Sure Where to Start in Tech? <br />
                 <span className="theme-gradient-text">

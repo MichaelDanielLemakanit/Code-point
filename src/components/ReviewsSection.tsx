@@ -417,9 +417,6 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
               <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                 Leave Feedback & Rating
               </h3>
-              <p className="text-xs sm:text-sm text-slate-400 mt-1 leading-relaxed">
-                Are you an enrolled fellow, alumni engineer, or tech hiring partner? Rate your Code Point Kenya experience. All submissions are moderated by admissions before appearing on our live wall of love.
-              </p>
 
               {/* Feedback Success Notification */}
               {submitSuccess && (

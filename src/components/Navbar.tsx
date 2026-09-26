@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Terminal, 
-  MapPin, 
-  Phone, 
-  Mail, 
   Search, 
   User as UserIcon, 
   Menu, 
@@ -55,15 +51,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     'contact'
   ], 140);
 
-  const navItems = [
+  const desktopNavItems = [
     { id: 'career-quiz', label: 'Career Quiz', icon: Compass, isSpecial: true },
     { id: 'programs', label: 'Programs' },
-    { id: 'technologies', label: 'Technologies' },
-    { id: 'schedules', label: 'Schedules' },
-    { id: 'why-study', label: 'Why CodePoint' },
+    { id: 'curriculum', label: 'Tuition (KES)' },
     { id: 'model', label: 'Campus & Lab' },
     { id: 'reviews', label: 'Reviews' },
-    { id: 'curriculum', label: 'Tuition (KES)' },
     { id: 'student-stories', label: 'Alumni Stories' },
     { id: 'contact', label: 'Contact' },
   ];
@@ -73,119 +66,38 @@ export const Navbar: React.FC<NavbarProps> = ({
     onNavigateSection(id);
   };
 
-  const cleanPhone = (siteSettings?.primary_phone || "0756295128").replace(/[^0-9]/g, '');
-
   return (
     <header className="sticky top-0 z-40 w-full bg-slate-950/95 backdrop-blur-md border-b border-slate-800 text-slate-100">
-      {/* Top Notification / Contact Strip */}
-      <div className="hidden lg:block bg-slate-900 border-b border-slate-800/80 text-xs py-2 px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-6 text-slate-300">
-            <span className="flex items-center gap-1.5 theme-text-primary font-medium">
-              <span className="relative flex h-2 w-2">
-                <span 
-                  className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                  style={{ backgroundColor: 'var(--primary-color)' }}
-                />
-                <span 
-                  className="relative inline-flex rounded-full h-2 w-2"
-                  style={{ backgroundColor: 'var(--primary-color)' }}
-                />
-              </span>
-              Next Intake Open: Online-First + Ngong Rd Lab Access
-            </span>
-            <span className="flex items-center gap-1 hover:text-white transition-colors">
-              <MapPin className="w-3.5 h-3.5 theme-text-primary" />
-              {siteSettings?.address || "Ngong Road, Teamshark, 5th Floor, Nairobi"}
-            </span>
-            <a 
-              href={`mailto:${siteSettings?.email || "info@codepointkenya.com"}`} 
-              className="flex items-center gap-1 hover:text-white transition-colors"
-            >
-              <Mail className="w-3.5 h-3.5 theme-text-primary" />
-              {siteSettings?.email || "info@codepointkenya.com"}
-            </a>
-          </div>
-
-          <div className="flex items-center space-x-5 text-slate-300">
-            <a 
-              href={`https://wa.me/${cleanPhone || "254756295128"}`} 
-              target="_blank" 
-              rel="noreferrer" 
-              className="flex items-center gap-1.5 theme-text-primary hover:brightness-110 font-medium transition-colors font-mono"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              WhatsApp: {siteSettings?.primary_phone || "0756295128"}
-            </a>
-            <span className="text-slate-600">|</span>
-            {/* Direct Admin CMS Trigger */}
-            <button
-              onClick={onOpenAdminCMS}
-              className="flex items-center gap-1 text-[11px] font-semibold text-amber-400 hover:text-amber-300 px-2 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors cursor-pointer"
-              title="Restricted Administrator Access"
-            >
-              <Lock className="w-3 h-3" />
-              <span>Admin CMS</span>
-            </button>
-            <span className="text-slate-600">|</span>
-            <button
-              onClick={onOpenTracker}
-              className="flex items-center gap-1 text-slate-300 hover:text-white transition-colors cursor-pointer"
-            >
-              <Search className="w-3.5 h-3.5 theme-text-primary" />
-              Track Application
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Main Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-2 lg:gap-4 flex-nowrap whitespace-nowrap">
         {/* Brand Logo */}
         <div 
           onClick={() => handleNavClick('hero')} 
-          className="flex items-center gap-3 cursor-pointer group select-none"
+          className="flex items-center gap-2.5 cursor-pointer group select-none flex-shrink-0 whitespace-nowrap"
         >
-          {siteSettings?.school_logo_url ? (
+          {siteSettings?.school_logo_url && (
             <img 
               src={siteSettings.school_logo_url} 
               alt={siteSettings.brand_name || "Code Point Kenya"} 
-              className="w-10 h-10 rounded-xl object-cover shadow-lg border border-slate-750" 
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover shadow-lg border border-slate-750 flex-shrink-0" 
             />
-          ) : (
-            <div 
-              style={{ background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))' }}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform"
-            >
-              <Terminal className="w-5 h-5 text-white" />
-            </div>
           )}
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg font-bold tracking-tight text-white font-sans">
-                {siteSettings?.brand_name || "Code Point"}
-              </span>
-              {!siteSettings?.brand_name && (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold theme-badge">
-                  KENYA
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] text-slate-400 tracking-wide font-mono">
-              {siteSettings?.tagline || "Nairobi Tech Institute"}
-            </p>
+          <div className="flex items-center gap-1.5 whitespace-nowrap flex-shrink-0">
+            <span className="text-base sm:text-lg font-bold tracking-tight text-white font-sans whitespace-nowrap flex-shrink-0">
+              {siteSettings?.brand_name || "Code Point Kenya"}
+            </span>
           </div>
         </div>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center space-x-0.5 lg:space-x-1 text-sm font-medium text-slate-300">
-          {navItems.map((item) => {
+        {/* Desktop Navigation Links (Visible on xl: 1280px and above) */}
+        <nav className="hidden xl:flex items-center gap-1.5 2xl:gap-3 text-xs 2xl:text-sm font-medium text-slate-300 flex-nowrap whitespace-nowrap flex-shrink-0">
+          {desktopNavItems.map((item) => {
             const isActive = activeSection === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`relative px-2.5 py-1.5 rounded-lg transition-colors text-xs lg:text-sm font-medium cursor-pointer ${
+                className={`relative px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors text-xs 2xl:text-sm font-medium cursor-pointer whitespace-nowrap flex-shrink-0 ${
                   item.isSpecial
                     ? 'theme-btn-secondary font-semibold flex items-center gap-1.5 ml-0.5'
                     : isActive
@@ -200,31 +112,42 @@ export const Navbar: React.FC<NavbarProps> = ({
                     transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                   />
                 )}
-                <span className="relative z-10 flex items-center gap-1.5">
-                  {item.icon && <item.icon className="w-3.5 h-3.5 theme-text-primary" />}
-                  {item.label}
+                <span className="relative z-10 flex items-center gap-1.5 whitespace-nowrap flex-shrink-0">
+                  {item.icon && <item.icon className="w-3.5 h-3.5 theme-text-primary shrink-0" />}
+                  <span className="whitespace-nowrap">{item.label}</span>
                 </span>
               </button>
             );
           })}
         </nav>
 
-        {/* Desktop Action Buttons */}
-        <div className="hidden md:flex items-center space-x-3">
+        {/* Pinned Action Buttons & Navigation Toggle */}
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-nowrap whitespace-nowrap flex-shrink-0">
+          {/* Admin CMS Button - Always visible and pinned right next to Portal Login */}
+          <button
+            onClick={onOpenAdminCMS}
+            className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
+            title="Dedicated Admin CMS Panel"
+          >
+            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="whitespace-nowrap">Admin CMS</span>
+          </button>
+
+          {/* Portal Login / User Profile - Always visible and pinned */}
           {currentUser ? (
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl p-1 pr-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-900 border border-slate-800 rounded-xl p-1 pr-2.5 sm:pr-3 flex-shrink-0 whitespace-nowrap">
               <button
                 onClick={onOpenPortal}
-                className="flex items-center gap-2 text-xs text-slate-200 hover:text-white font-medium px-2 py-1.5 rounded-lg"
+                className="flex items-center gap-1.5 text-xs text-slate-200 hover:text-white font-medium px-2 py-1 sm:py-1.5 rounded-lg whitespace-nowrap flex-shrink-0 cursor-pointer"
               >
-                <div className="w-6 h-6 rounded-full theme-badge flex items-center justify-center font-bold text-xs uppercase">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full theme-badge flex items-center justify-center font-bold text-[10px] sm:text-xs uppercase flex-shrink-0">
                   {currentUser.name.charAt(0)}
                 </div>
-                <span>{currentUser.name.split(' ')[0]} ({currentUser.role})</span>
+                <span className="whitespace-nowrap">{currentUser.name.split(' ')[0]} ({currentUser.role})</span>
               </button>
               <button
                 onClick={onLogout}
-                className="text-[11px] text-slate-400 hover:text-rose-400 transition-colors ml-1"
+                className="text-[11px] text-slate-400 hover:text-rose-400 transition-colors ml-0.5 sm:ml-1 whitespace-nowrap flex-shrink-0 cursor-pointer"
                 title="Sign out"
               >
                 Sign out
@@ -233,52 +156,37 @@ export const Navbar: React.FC<NavbarProps> = ({
           ) : (
             <button
               onClick={onOpenPortal}
-              className="flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-850 border border-slate-800 px-3.5 py-2 rounded-xl transition-colors"
+              className="flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-850 border border-slate-800 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
             >
-              <ShieldCheck className="w-3.5 h-3.5 theme-text-primary" />
-              Portal Login
+              <ShieldCheck className="w-3.5 h-3.5 theme-text-primary shrink-0" />
+              <span className="whitespace-nowrap">Portal Login</span>
             </button>
           )}
 
-          <button
-            onClick={onOpenAdminCMS}
-            className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-3 py-2 rounded-xl transition-colors cursor-pointer"
-            title="Dedicated Admin CMS Panel"
-          >
-            <Lock className="w-3.5 h-3.5 text-amber-400" />
-            <span>Admin CMS</span>
-          </button>
-
+          {/* Apply Now Button */}
           <button
             onClick={() => onOpenApply()}
             style={{ backgroundColor: 'var(--primary-color)' }}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-950 hover:brightness-110 px-4 py-2 rounded-xl shadow-md transition-all hover:translate-y-[-1px] cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-950 hover:brightness-110 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl shadow-md transition-all hover:translate-y-[-1px] cursor-pointer whitespace-nowrap flex-shrink-0"
           >
-            <span>Apply Now</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span className="whitespace-nowrap">Apply Now</span>
+            <ArrowRight className="w-3.5 h-3.5 shrink-0" />
           </button>
-        </div>
 
-        {/* Mobile Hamburger Button */}
-        <div className="flex md:hidden items-center gap-2">
-          <button
-            onClick={() => onOpenApply()}
-            style={{ backgroundColor: 'var(--primary-color)' }}
-            className="text-xs font-semibold text-slate-950 px-3 py-1.5 rounded-lg cursor-pointer"
-          >
-            Apply
-          </button>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-900"
-            aria-label="Toggle Menu"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          {/* Mobile & Tablet Menu Toggle (Visible below xl: 1280px) */}
+          <div className="flex xl:hidden items-center ml-0.5 sm:ml-1 flex-shrink-0">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-1.5 sm:p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-900 border border-slate-800 flex items-center justify-center transition-colors cursor-pointer"
+              aria-label="Toggle Menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile & Tablet Slide-Over Menu (screens below xl: 1280px) */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -286,7 +194,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="md:hidden border-b border-slate-800 bg-slate-950 px-4 pt-2 pb-6 space-y-3 overflow-hidden"
+            className="xl:hidden border-b border-slate-800 bg-slate-950 px-4 pt-2 pb-6 space-y-3 overflow-hidden shadow-2xl"
           >
             <div className="p-2.5 rounded-lg bg-slate-900 text-xs text-slate-300 space-y-1">
               <p className="theme-text-primary font-medium">📍 {siteSettings?.address || "Ngong Road, Teamshark, 5th Floor"}</p>
@@ -336,6 +244,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-slate-200"
               >
                 Reviews & Rating Wall
+              </button>
+              <button
+                onClick={() => handleNavClick('curriculum')}
+                className="text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-slate-200"
+              >
+                Tuition & Payment Plans (KES)
+              </button>
+              <button
+                onClick={() => handleNavClick('student-stories')}
+                className="text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-slate-200"
+              >
+                Alumni Stories & Careers
               </button>
               <button
                 onClick={() => handleNavClick('contact')}

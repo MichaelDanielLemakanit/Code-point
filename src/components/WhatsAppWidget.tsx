@@ -108,7 +108,7 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({ siteSettings }) 
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{ backgroundColor: 'var(--primary-color)' }}
-        className="group flex items-center gap-2.5 px-4 py-3 rounded-full text-slate-950 font-bold text-xs shadow-xl hover:scale-105 hover:brightness-110 transition-all cursor-pointer select-none"
+        className="group flex items-center justify-center p-3.5 rounded-full text-slate-950 font-bold text-xs shadow-xl hover:scale-105 hover:brightness-110 transition-all cursor-pointer select-none"
         title={`Chat on WhatsApp (${phone})`}
         aria-label="Open WhatsApp Chat"
       >
@@ -119,7 +119,6 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({ siteSettings }) 
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-950"></span>
           </span>
         </div>
-        <span className="hidden sm:inline">WhatsApp Support ({phone})</span>
       </button>
     </div>
   );

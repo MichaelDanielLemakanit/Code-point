@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { type Request, type Response } from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { getDatabase, queryAll, queryOne, saveDatabase, getSiteSettings, saveSiteSettings, getDatabaseStatus, DEFAULT_ANNOUNCEMENTS, DEFAULT_LOGIN_ATTEMPTS, DEFAULT_LECTURES, DEFAULT_COURSES, DEFAULT_STUDENT_PROGRESS, DEFAULT_STUDENT_FEES, DEFAULT_ACTIVITY_LOGS, DEFAULT_CERTIFICATES } from "./server/db.ts";
+import { getDatabase, queryAll, queryOne, saveDatabase, getSiteSettings, saveSiteSettings, getDatabaseStatus, DEFAULT_ANNOUNCEMENTS, DEFAULT_LOGIN_ATTEMPTS, DEFAULT_LECTURES, DEFAULT_COURSES, DEFAULT_STUDENT_PROGRESS, DEFAULT_STUDENT_FEES, DEFAULT_ACTIVITY_LOGS, DEFAULT_CERTIFICATES, DEFAULT_REVIEWS } from "./server/db.ts";
 import { runDatabaseMigrations } from "./server/migrate.ts";
 import { getPrismaClient, withPrisma } from "./server/prisma.ts";
 
@@ -277,9 +277,9 @@ app.get("/api/reviews", async (req: Request, res: Response) => {
     const db = await getDatabase();
     const { status, approved, featured } = req.query;
 
-    const isApprovedFilter = approved === 'true' || approved === '1' || approved === true;
-    const isUnapprovedFilter = approved === 'false' || approved === '0' || approved === false;
-    const isFeaturedFilter = featured === 'true' || featured === '1' || featured === true;
+    const isApprovedFilter = approved === 'true' || approved === '1';
+    const isUnapprovedFilter = approved === 'false' || approved === '0';
+    const isFeaturedFilter = featured === 'true' || featured === '1';
 
     let reviews: any[] = [];
 

@@ -1,25 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, 
   Sparkles, 
-  Terminal, 
-  Database, 
-  Cpu, 
-  ShieldCheck, 
-  CheckCircle2, 
   MapPin, 
   ChevronLeft, 
   ChevronRight, 
   Pause, 
   Play,
-  ExternalLink,
   Laptop,
   Code2,
-  Calendar,
-  Clock,
-  Flame,
-  Compass
+  Zap,
+  CreditCard,
+  Building2
 } from 'lucide-react';
 
 import kenyanCodingLab from '../assets/images/kenyan_coding_lab_1789557291842.jpg';
@@ -60,7 +53,6 @@ export const Hero: React.FC<HeroProps> = ({
   const heroTitle = siteSettings?.hero_title || "Launch Your Tech Career in Software, Data, & AI with Code Point Kenya";
   const heroEyebrow = siteSettings?.hero_eyebrow || "Online-First Training + Physical Campus Lab (Ngong Road, Nairobi)";
   const heroIntro = siteSettings?.hero_introduction || "Kenya’s premier career-accelerator coding school. Learn through intensive, project-driven cohorts taught by senior engineers from Nairobi’s top tech ecosystems. Flexible online evening sessions combined with 24/7 access to our physical innovation lab at Ngong Road, Teamshark, 5th Floor.";
-  const phoneClean = (siteSettings?.primary_phone || "+254 756 295 128").replace(/[^0-9]/g, '');
   const primaryCtaColor = siteSettings?.primary_cta_color || '#10B981';
   const heroCtaText = siteSettings?.hero_cta_text || "Apply Now for Next Cohort";
 
@@ -245,32 +237,13 @@ export const Hero: React.FC<HeroProps> = ({
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
-          
-          {/* Left Column */}
+        <div className="max-w-4xl space-y-6 sm:space-y-7">
           <motion.div 
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:col-span-7 space-y-6"
+            className="space-y-6"
           >
-            
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full theme-badge text-xs font-semibold tracking-wide backdrop-blur-md shadow-lg transition-all duration-300">
-                {activeSlide.badgeIcon}
-                <span className="truncate max-w-xs sm:max-w-md">{activeSlide.badge}</span>
-              </div>
-
-              {/* Dynamic Next Intake & Cohort Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full theme-badge text-xs font-semibold backdrop-blur-md shadow-lg">
-                <Calendar className="w-3.5 h-3.5 theme-text-primary shrink-0" />
-                <span>Next Intake: <strong className="text-white font-bold">{siteSettings?.next_intake_date || "October 15, 2026"}</strong></span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-extrabold theme-badge">
-                  {siteSettings?.intake_status || "Enrollment Open"}
-                </span>
-              </div>
-            </div>
-
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeSlide.id}
@@ -279,7 +252,7 @@ export const Hero: React.FC<HeroProps> = ({
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.35, ease: 'easeOut' }}
               >
-                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.14] min-h-[120px] sm:min-h-[140px] flex flex-col justify-center">
+                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.14] min-h-[100px] sm:min-h-[120px] flex flex-col justify-center">
                   <span>
                     {activeSlide.headlinePrefix}
                     <span className="theme-gradient-text">
@@ -289,56 +262,66 @@ export const Hero: React.FC<HeroProps> = ({
                   </span>
                 </h1>
 
-                <p className="text-sm sm:text-base lg:text-lg text-slate-300 max-w-2xl leading-relaxed min-h-[70px] flex items-center mt-3">
+                <p className="text-base md:text-lg text-slate-300 max-w-2xl leading-relaxed mt-2.5">
                   {activeSlide.description}
                 </p>
               </motion.div>
             </AnimatePresence>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs text-slate-200">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 theme-text-primary shrink-0" />
-                <span>Zero fluff: 4 production-grade portfolio projects</span>
+            {/* Streamlined Feature Bar - Icons Only */}
+            <div className="flex items-center gap-2.5 pt-1">
+              <div 
+                title="4 Real-World Projects"
+                aria-label="4 Real-World Projects"
+                className="w-10 h-10 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-800/80 flex items-center justify-center hover:border-emerald-500/40 transition-colors shadow-sm"
+              >
+                <Zap className="w-5 h-5 text-emerald-400" />
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 theme-text-primary shrink-0" />
-                <span>Flexible KES monthly installments (from KES 16.5K/mo)</span>
+
+              <div 
+                title="Flexible Installments"
+                aria-label="Flexible Installments"
+                className="w-10 h-10 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-800/80 flex items-center justify-center hover:border-emerald-500/40 transition-colors shadow-sm"
+              >
+                <CreditCard className="w-5 h-5 text-emerald-400" />
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 theme-text-primary shrink-0" />
-                <span>1-on-1 mentorship & career placement support</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 theme-text-primary shrink-0" />
-                <span>Physical campus at Ngong Road, Teamshark 5th Fl</span>
+
+              <div 
+                title="Ngong Rd Physical Lab"
+                aria-label="Ngong Rd Physical Lab"
+                className="w-10 h-10 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-800/80 flex items-center justify-center hover:border-emerald-500/40 transition-colors shadow-sm"
+              >
+                <Building2 className="w-5 h-5 text-emerald-400" />
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3.5 pt-4">
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 pt-3">
               <button
                 onClick={onApplyNow}
                 style={{ backgroundColor: 'var(--primary-color)' }}
-                className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-slate-950 text-sm font-bold shadow-lg hover:brightness-110 transition-all hover:scale-[1.02] cursor-pointer"
+                className="flex items-center justify-center gap-2 px-6 sm:px-7 py-3 rounded-xl text-slate-950 text-sm font-bold shadow-lg hover:brightness-110 transition-all hover:scale-[1.02] cursor-pointer"
               >
-                <span>{heroCtaText}</span>
+                <span>{heroCtaText || "Apply Now"}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
               {onTakeQuiz && (
                 <button
                   onClick={onTakeQuiz}
-                  className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl theme-btn-secondary text-sm font-semibold transition-all hover:scale-[1.02] cursor-pointer backdrop-blur-sm"
+                  className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl theme-btn-secondary text-sm font-semibold transition-all hover:scale-[1.02] cursor-pointer backdrop-blur-md"
                 >
-                  <Compass className="w-4 h-4 theme-text-primary" />
-                  <span>Find My Tech Path (60s Quiz)</span>
+                  <span>Take Quiz</span>
+                  <Zap className="w-4 h-4 theme-text-primary fill-current" />
                 </button>
               )}
               
               <button
                 onClick={onExplorePrograms}
-                className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 text-sm font-medium transition-colors cursor-pointer backdrop-blur-sm"
+                className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 text-sm font-medium transition-all hover:scale-[1.01] cursor-pointer backdrop-blur-md"
               >
-                <span>Explore Programs & Fees (KES)</span>
+                <span>Explore Programs</span>
+                <ChevronRight className="w-4 h-4 text-slate-400" />
               </button>
 
               <button
@@ -349,189 +332,47 @@ export const Hero: React.FC<HeroProps> = ({
               </button>
             </div>
 
-            <div className="pt-4 border-t border-slate-800/80">
+            <div className="pt-3 border-t border-slate-800/80">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Alumni Working Across Africa & Global Remote Teams:
               </p>
-              <div className="flex flex-wrap items-center gap-2.5 sm:gap-4 pt-2.5 text-slate-300 text-xs font-mono font-medium">
-                <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800">Safaricom PLC</span>
-                <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800">Equity Bank Tech</span>
-                <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800">Microsoft ADC</span>
-                <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800">Flutterwave</span>
-                <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800">Andela Network</span>
-              </div>
-            </div>
-
-          </motion.div>
-
-          {/* Right Column */}
-          <motion.div 
-            initial={{ opacity: 0, y: 32, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.75, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:col-span-5 space-y-4"
-          >
-            <div className="p-6 rounded-2xl bg-slate-900/85 backdrop-blur-md border border-slate-800/90 shadow-2xl relative overflow-hidden">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg theme-icon-box flex items-center justify-center">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white">Nairobi Campus & Lab</h3>
-                    <p className="text-[11px] text-slate-400">{siteSettings?.address || "Ngong Road, Teamshark, 5th Floor"}</p>
-                  </div>
-                </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-semibold theme-badge">
-                  {siteSettings?.short_hours_label || "Open Mon - Sat"}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-2 text-slate-300 text-xs font-mono font-medium">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-slate-750 transition-colors">
+                  <Building2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>Safaricom PLC</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-slate-750 transition-colors">
+                  <Building2 className="w-3 h-3 text-teal-400 shrink-0" />
+                  <span>Equity Bank Tech</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-slate-750 transition-colors">
+                  <Laptop className="w-3 h-3 text-indigo-400 shrink-0" />
+                  <span>Microsoft ADC</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-slate-750 transition-colors">
+                  <Zap className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span>Flutterwave</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-slate-750 transition-colors">
+                  <Code2 className="w-3 h-3 text-cyan-400 shrink-0" />
+                  <span>Andela Network</span>
                 </span>
               </div>
-
-              {/* Dynamic Next Cohort Urgency & Intake Card */}
-              <div 
-                style={{ borderColor: 'var(--card-highlight-border)' }}
-                className="mt-4 p-3.5 rounded-xl bg-slate-950/80 border shadow-inner"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-white">
-                    <Calendar className="w-4 h-4 theme-text-primary shrink-0" />
-                    <span>Next Cohort: <strong className="theme-text-primary">{siteSettings?.next_intake_date || "October 15, 2026"}</strong></span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold theme-badge uppercase tracking-wide">
-                    {siteSettings?.intake_status || "Enrollment Open"}
-                  </span>
-                </div>
-
-                <div 
-                  style={{ borderTopColor: 'var(--card-highlight-border)' }}
-                  className="mt-2 flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-300 gap-1 pt-1.5 border-t"
-                >
-                  <span className="flex items-center gap-1.5 text-amber-300">
-                    <Clock className="w-3.5 h-3.5 shrink-0" />
-                    <span>Apply before: <strong>{siteSettings?.registration_deadline || "October 10, 2026"}</strong></span>
-                  </span>
-                  <span className="theme-text-primary font-medium">Campus & Online Seats</span>
-                </div>
-
-                {siteSettings?.announcement_banner_text && (
-                  <div 
-                    style={{ borderTopColor: 'var(--card-highlight-border)' }}
-                    className="mt-2 pt-1.5 border-t text-[11px] text-slate-200 flex items-center gap-1.5"
-                  >
-                    <Sparkles className="w-3 h-3 theme-text-primary shrink-0" />
-                    <span className="truncate">{siteSettings.announcement_banner_text}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 space-y-3">
-                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-start gap-3">
-                  <Terminal className="w-5 h-5 theme-text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-white">Software Engineering Immersive</div>
-                    <div className="text-[11px] text-slate-400">16 Weeks • React, Node, Python, Cloud • KES 85,000</div>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-start gap-3">
-                  <Database className="w-5 h-5 theme-text-secondary shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-white">Data Science & Predictive Analytics</div>
-                    <div className="text-[11px] text-slate-400">16 Weeks • Python, SQL, Power BI, ML • KES 75,000</div>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-start gap-3">
-                  <Cpu className="w-5 h-5 theme-text-accent shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-white">Applied AI & LLM Systems</div>
-                    <div className="text-[11px] text-slate-400">14 Weeks • Prompting, LangChain, RAG • KES 95,000</div>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-start gap-3">
-                  <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-white">Cybersecurity & Ethical Hacking</div>
-                    <div className="text-[11px] text-slate-400">16 Weeks • SOC Defense, Pentesting • KES 80,000</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-5 pt-4 border-t border-slate-800/80 grid grid-cols-3 gap-2 text-center">
-                <div className="p-2 rounded-lg bg-slate-950/60">
-                  <div className="text-base font-extrabold theme-text-primary font-mono">94%</div>
-                  <div className="text-[10px] text-slate-400">Grad Placement</div>
-                </div>
-                <div className="p-2 rounded-lg bg-slate-950/60">
-                  <div className="text-base font-extrabold text-white font-mono">1,200+</div>
-                  <div className="text-[10px] text-slate-400">Tech Alumni</div>
-                </div>
-                <div className="p-2 rounded-lg bg-slate-950/60">
-                  <div className="text-base font-extrabold theme-text-secondary font-mono">1:1</div>
-                  <div className="text-[10px] text-slate-400">Mentor Support</div>
-                </div>
-              </div>
-
-              <a
-                href={`https://wa.me/${phoneClean || '254756295128'}?text=Hello%20${encodeURIComponent(siteSettings?.brand_name || 'Code Point Kenya')}!%20I%20would%20like%20to%20learn%20more%20about%20your%20upcoming%20tech%20programs.`}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl theme-btn-secondary text-xs font-semibold transition-all cursor-pointer"
-              >
-                <span>Chat with Admissions Advisor on WhatsApp ({siteSettings?.primary_phone || "0756295128"})</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
             </div>
-          </motion.div>
 
+          </motion.div>
         </div>
 
         {/* CAROUSEL CONTROLS */}
-        <div className="mt-12 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4">
-          
-          <div className="flex flex-wrap items-center gap-2">
-            {slides.map((slide, idx) => {
-              const isCurrent = idx === currentSlide;
-              return (
-                <button
-                  key={slide.id ?? idx}
-                  onClick={() => handleSelectSlide(idx)}
-                  style={isCurrent ? { borderColor: 'var(--primary-color)' } : undefined}
-                  className={`relative flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                    isCurrent
-                      ? 'bg-slate-900 border text-white shadow-md'
-                      : 'bg-slate-950/70 border border-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
-                  }`}
-                >
-                  <span 
-                    style={isCurrent ? { backgroundColor: 'var(--primary-color)' } : undefined}
-                    className={`w-1.5 h-1.5 rounded-full ${isCurrent ? 'animate-pulse' : 'bg-slate-600'}`} 
-                  />
-                  <span className="font-mono text-[11px] theme-text-primary">0{idx + 1}</span>
-                  <span className="hidden sm:inline">{slide.pillLabel}</span>
-
-                  {isCurrent && (
-                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full theme-bg-primary transition-all duration-75 ease-linear"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
+        <div className="mt-12 pt-6 border-t border-slate-800/80 flex items-center justify-end gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsPaused(!isPaused)}
-              className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-1.5"
+              className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
               title={isPaused ? "Resume auto-play" : "Pause auto-play"}
+              aria-label={isPaused ? "Resume auto-play" : "Pause auto-play"}
             >
-              {isPaused ? <Play className="w-3.5 h-3.5 text-emerald-400" /> : <Pause className="w-3.5 h-3.5 text-slate-400" />}
-              <span className="text-[11px] font-mono">{isPaused ? "Paused" : "Auto-playing"}</span>
+              {isPaused ? <Play className="w-4 h-4 text-emerald-400" /> : <Pause className="w-4 h-4 text-slate-400" />}
             </button>
 
             <div className="flex items-center gap-1">
@@ -554,7 +395,6 @@ export const Hero: React.FC<HeroProps> = ({
               </button>
             </div>
           </div>
-
         </div>
 
       </div>

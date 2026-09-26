@@ -249,11 +249,6 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
             Student Testimonials & Alumni Stories
           </h2>
 
-          <p className="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed font-sans">
-            Hear directly from Kenyans who transformed from coding beginners into professional software engineers, 
-            data analysts, and cloud architects working at Safaricom, Equity Bank, Cellulant, and regional tech firms.
-          </p>
-
           {/* Metric Bar with dynamic theme highlights */}
           <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm">
             <div 
@@ -501,9 +496,6 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
             <h4 className="text-lg sm:text-xl font-bold text-white">
               Ready to write your own Kenya tech success story?
             </h4>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Join the next cohort on Ngong Road or attend live online evening sessions. Applications are open for upcoming intakes.
-            </p>
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto shrink-0">

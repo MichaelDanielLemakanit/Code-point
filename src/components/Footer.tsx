@@ -40,8 +40,8 @@ export const Footer: React.FC<FooterProps> = ({
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10">
           
-          {/* Col 1: Brand & Operating Model (lg:col-span-4) */}
-          <div className="lg:col-span-4 space-y-4">
+          {/* Col 1: Brand & Operating Model (lg:col-span-5) */}
+          <div className="lg:col-span-5 space-y-4">
             <div className="flex items-center gap-3">
               <div 
                 style={{ background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))' }}
@@ -68,47 +68,6 @@ export const Footer: React.FC<FooterProps> = ({
                 {siteSettings?.address || "Ngong Road, Teamshark, 5th Floor, Nairobi, Kenya"}
               </p>
             </div>
-          </div>
-
-          {/* Col 2: Programs (lg:col-span-3) */}
-          <div className="lg:col-span-3 space-y-3">
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-              Core Tech Programs
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <button 
-                  onClick={() => onNavigateSection('programs')} 
-                  className="hover:text-emerald-400 transition-colors text-left"
-                >
-                  Software Engineering (16 Wks • KES 85K)
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => onNavigateSection('programs')} 
-                  className="hover:text-emerald-400 transition-colors text-left"
-                >
-                  Data Science & Analytics (16 Wks • KES 75K)
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => onNavigateSection('programs')} 
-                  className="hover:text-emerald-400 transition-colors text-left"
-                >
-                  Applied AI & Large Language Models (14 Wks • KES 95K)
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => onNavigateSection('programs')} 
-                  className="hover:text-emerald-400 transition-colors text-left"
-                >
-                  Cybersecurity & Ethical Hacking (16 Wks • KES 80K)
-                </button>
-              </li>
-            </ul>
           </div>
 
           {/* Col 3: Admissions & Portals (lg:col-span-2) */}

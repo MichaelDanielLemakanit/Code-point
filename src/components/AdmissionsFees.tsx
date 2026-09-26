@@ -80,9 +80,6 @@ export const AdmissionsFees: React.FC<AdmissionsFeesProps> = ({
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             Accessible Tech Education in Kenya
           </h2>
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-            Invest in your future with zero hidden fees. All tuition quotes in Kenyan Shillings (KES) include both online instruction and full access to our Ngong Road campus.
-          </p>
         </div>
 
         {/* Dynamic Upcoming Intake & Enrollment Urgency Callout */}
@@ -95,12 +92,6 @@ export const AdmissionsFees: React.FC<AdmissionsFeesProps> = ({
               <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">Next Cohort Admissions</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold theme-badge uppercase">
-                  {siteSettings?.intake_status || "Enrollment Open"}
-                </span>
-              </div>
               <div className="text-base sm:text-lg font-bold text-white mt-0.5">
                 Kickoff Date: <strong className="theme-text-primary">{siteSettings?.next_intake_date || "October 15, 2026"}</strong>
               </div>
@@ -238,15 +229,9 @@ export const AdmissionsFees: React.FC<AdmissionsFeesProps> = ({
         {courses.length > 0 && (
           <div className="mt-16 pt-12 border-t border-slate-800">
             <div className="text-center max-w-2xl mx-auto mb-8">
-              <span className="text-[10px] font-mono theme-text-primary uppercase font-semibold tracking-wider">
-                Real-Time Course Fee Schedules
-              </span>
               <h3 className="text-2xl font-bold text-white mt-1">
                 Program Tuition & Installment Schedules (KES)
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Transparent fees across all technical cohorts. Instant M-Pesa & bank installment options.
-              </p>
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/80 shadow-xl">
@@ -304,7 +289,6 @@ export const AdmissionsFees: React.FC<AdmissionsFeesProps> = ({
         <div className="mt-20 pt-12 border-t border-slate-800 max-w-3xl mx-auto">
           <div className="text-center mb-8">
             <h3 className="text-2xl font-bold text-white">Frequently Asked Questions</h3>
-            <p className="text-xs text-slate-400 mt-1">Everything you need to know about joining Code Point Kenya</p>
           </div>
 
           <div className="space-y-3">

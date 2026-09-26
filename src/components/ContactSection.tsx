@@ -8,8 +8,7 @@ import {
   Building2, 
   ExternalLink, 
   Send, 
-  CheckCircle2, 
-  MessageSquare
+  CheckCircle2
 } from 'lucide-react';
 import { SiteSettings } from '../types';
 
@@ -79,9 +78,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             Visit Our Nairobi Campus or Chat with Us
           </h2>
-          <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            While our programs offer comprehensive online-first flexibility, our doors at <span className="text-white font-medium">{siteSettings?.address || "Ngong Road, Teamshark, 5th Floor"}</span> are open for tours, code clinics, and in-person consultations.
-          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-14 items-start">
@@ -96,7 +92,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                   <MapPin className="w-6 h-6 theme-text-primary" />
                 </div>
                 <div>
-                  <div className="text-xs font-mono theme-text-primary uppercase font-semibold">Physical Headquarters</div>
                   <h3 className="text-xl font-bold text-white">Nairobi Innovation Hub</h3>
                 </div>
               </div>
@@ -188,10 +183,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
             <div className="p-7 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-6">
               
               <div>
-                <div className="inline-flex items-center gap-1 theme-text-primary text-xs font-mono font-semibold uppercase tracking-wider">
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Instant Admissions Advisory</span>
-                </div>
                 <h3 className="text-xl font-bold text-white mt-1">
                   Have a Question? Talk to Our Advisors
                 </h3>
