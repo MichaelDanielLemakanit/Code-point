@@ -75,9 +75,6 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             Transformative Tech Programs in Nairobi
           </h2>
-          <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            All programs follow our modern <span className="text-white font-medium">Online-First model</span> with interactive live evening lectures and full physical access to our high-speed collaboration hub at <span className="theme-text-primary font-medium">Ngong Road, Teamshark, 5th Floor</span>.
-          </p>
         </div>
 
         {/* Category Filters */}

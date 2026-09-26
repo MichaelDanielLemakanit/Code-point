@@ -268,33 +268,6 @@ export const Hero: React.FC<HeroProps> = ({
               </motion.div>
             </AnimatePresence>
 
-            {/* Streamlined Feature Bar - Icons Only */}
-            <div className="flex items-center gap-2.5 pt-1">
-              <div 
-                title="4 Real-World Projects"
-                aria-label="4 Real-World Projects"
-                className="w-10 h-10 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-800/80 flex items-center justify-center hover:border-emerald-500/40 transition-colors shadow-sm"
-              >
-                <Zap className="w-5 h-5 text-emerald-400" />
-              </div>
-
-              <div 
-                title="Flexible Installments"
-                aria-label="Flexible Installments"
-                className="w-10 h-10 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-800/80 flex items-center justify-center hover:border-emerald-500/40 transition-colors shadow-sm"
-              >
-                <CreditCard className="w-5 h-5 text-emerald-400" />
-              </div>
-
-              <div 
-                title="Ngong Rd Physical Lab"
-                aria-label="Ngong Rd Physical Lab"
-                className="w-10 h-10 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-800/80 flex items-center justify-center hover:border-emerald-500/40 transition-colors shadow-sm"
-              >
-                <Building2 className="w-5 h-5 text-emerald-400" />
-              </div>
-            </div>
-
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 pt-3">
               <button
@@ -333,9 +306,6 @@ export const Hero: React.FC<HeroProps> = ({
             </div>
 
             <div className="pt-3 border-t border-slate-800/80">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                Alumni Working Across Africa & Global Remote Teams:
-              </p>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-2 text-slate-300 text-xs font-mono font-medium">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-slate-750 transition-colors">
                   <Building2 className="w-3 h-3 text-emerald-400 shrink-0" />

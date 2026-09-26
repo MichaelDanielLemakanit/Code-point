@@ -101,11 +101,6 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold">
-            <Calendar className="w-3.5 h-3.5" />
-            <span>{sectionData.badge_text}</span>
-          </div>
-
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             {sectionData.title}
           </h2>
