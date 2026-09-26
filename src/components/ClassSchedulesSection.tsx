@@ -95,9 +95,9 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.1, margin: '-40px 0px' }}
       transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-      className="py-20 bg-slate-950 text-slate-100 border-t border-slate-800 relative"
+      className="w-full max-w-full overflow-x-hidden py-20 bg-slate-950 text-slate-100 border-t border-slate-800 relative scroll-mt-20"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
@@ -207,25 +207,6 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
               </div>
             </motion.div>
           ))}
-        </div>
-
-        {/* Bottom Banner Note & Next Intake Callout */}
-        <div className="mt-12 text-center flex flex-col sm:flex-row items-center justify-center gap-3">
-          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl theme-badge text-xs shadow-sm">
-            <Calendar className="w-4 h-4 theme-text-primary" />
-            <span>Next Cohort Starts: <strong className="text-white font-bold">{siteSettings?.next_intake_date || "October 15, 2026"}</strong></span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-slate-900 border border-slate-700 theme-text-primary">
-              {siteSettings?.intake_status || "Enrollment Open"}
-            </span>
-          </div>
-
-          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
-            <span className="flex items-center gap-1.5 theme-text-primary font-semibold">
-              <Sparkles className="w-4 h-4" />
-              Hybrid Flexibility:
-            </span>
-            <span>All students can switch timing tracks or review session recordings on demand via the student portal.</span>
-          </div>
         </div>
 
       </div>

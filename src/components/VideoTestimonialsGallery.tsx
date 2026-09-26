@@ -222,29 +222,22 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
   };
 
   return (
-    <section id="student-stories" className="py-20 bg-slate-900 text-slate-100 border-b border-slate-800 relative overflow-hidden">
+    <section id="alumni" className="w-full max-w-full overflow-x-hidden py-20 bg-slate-900 text-slate-100 border-b border-slate-800 relative scroll-mt-20">
       
       {/* Background ambient accents dynamically bound to theme */}
       <div 
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] rounded-full blur-3xl pointer-events-none transition-colors duration-700" 
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[700px] h-[350px] rounded-full blur-3xl pointer-events-none transition-colors duration-700" 
         style={{ backgroundColor: 'rgba(var(--primary-rgb), 0.05)' }}
       />
       <div 
-        className="absolute bottom-10 right-10 w-96 h-96 rounded-full blur-3xl pointer-events-none transition-colors duration-700" 
+        className="absolute bottom-10 right-0 w-72 h-72 rounded-full blur-3xl pointer-events-none transition-colors duration-700" 
         style={{ backgroundColor: 'rgba(var(--secondary-rgb), 0.05)' }}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
-          <div 
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold mb-3"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Alumni Career Transformations</span>
-          </div>
-
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
             Student Testimonials & Alumni Stories
           </h2>
@@ -288,7 +281,7 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
 
         {/* Interactive Track Filter Bar with Dynamic Active State (Visible when testimonials exist) */}
         {testimonials.length > 0 && (
-          <div className="flex items-center justify-center mb-8 overflow-x-auto pb-2">
+          <div className="w-full max-w-full flex items-center sm:justify-center justify-start mb-8 overflow-x-auto pb-2 no-scrollbar px-1">
             <div className="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-xl">
               {[
                 { id: 'all', label: 'All Alumni Stories' },
@@ -399,23 +392,6 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
                             <span>Featured Story</span>
                           </span>
                         )}
-                      </div>
-
-                      {/* Duration badge dynamically bound to primary theme */}
-                      <div 
-                        className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 text-[10px] font-medium text-slate-200 bg-slate-950/90 px-2 py-0.5 rounded-md border border-slate-800"
-                      >
-                        <Clock className="w-3 h-3 theme-text-primary" />
-                        <span className="theme-text-primary font-bold">{item.duration || '3:00'}</span>
-                        {item.views_count ? (
-                          <>
-                            <span className="text-slate-600" aria-hidden="true">·</span>
-                            <span className="flex items-center gap-1 text-slate-400">
-                              <Eye className="w-3 h-3 text-slate-400" />
-                              {item.views_count.toLocaleString()}
-                            </span>
-                          </>
-                        ) : null}
                       </div>
                     </div>
 

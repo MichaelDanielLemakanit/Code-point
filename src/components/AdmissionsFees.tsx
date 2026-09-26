@@ -68,8 +68,8 @@ export const AdmissionsFees: React.FC<AdmissionsFeesProps> = ({
   };
 
   return (
-    <section id="curriculum" className="py-20 bg-slate-900 text-slate-100 border-b border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="tuition" className="w-full max-w-full overflow-x-hidden py-20 bg-slate-900 text-slate-100 border-b border-slate-800 scroll-mt-20">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
@@ -234,7 +234,7 @@ export const AdmissionsFees: React.FC<AdmissionsFeesProps> = ({
               </h3>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/80 shadow-xl">
+            <div className="w-full max-w-full overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/80 shadow-xl">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-slate-800 bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px]">

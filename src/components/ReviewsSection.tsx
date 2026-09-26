@@ -180,53 +180,17 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
   const secondRow = reviews.length >= 4 ? [...reviews].reverse() : [];
 
   return (
-    <section id="reviews" className="py-24 bg-slate-950 text-slate-100 border-t border-slate-900 relative overflow-hidden">
+    <section id="reviews" className="w-full max-w-full overflow-x-hidden py-24 bg-slate-950 text-slate-100 border-t border-slate-900 relative scroll-mt-20">
       {/* Background radial glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-indigo-500/10 blur-3xl pointer-events-none -z-0" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[800px] h-[400px] bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-indigo-500/10 blur-3xl pointer-events-none -z-0" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full theme-badge text-xs font-semibold">
-            <MessageSquareHeart className="w-3.5 h-3.5" />
-            <span>Community Feedback & Alumni Endorsements</span>
-          </div>
-
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             Loved by Kenyan Fellows, Career Switchers & Tech Teams
           </h2>
-
-          <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            Read real stories from alumni who learned through our online-first cohorts and physical Ngong Road campus lab to land high-impact engineering roles.
-          </p>
-
-          {/* Social Proof Metric Bar */}
-          <div className="inline-flex flex-wrap items-center justify-center gap-4 sm:gap-8 pt-2">
-            <div className="flex items-center gap-2">
-              <div className="flex text-amber-400">
-                {[1, 2, 3, 4, 5].map(s => (
-                  <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <span className="text-xs font-bold text-white">4.95 / 5.0</span>
-              <span className="text-xs text-slate-500">Average Rating</span>
-            </div>
-
-            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
-
-            <div className="flex items-center gap-1.5 text-xs text-slate-400">
-              <ShieldCheck className="w-4 h-4 theme-text-primary" />
-              <span><strong className="text-white">100% Moderated</strong> Verified Student Reviews</span>
-            </div>
-
-            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
-
-            <div className="flex items-center gap-1.5 text-xs text-slate-400">
-              <Building2 className="w-4 h-4 theme-text-secondary" />
-              <span><strong className="text-white">Ngong Road Lab</strong> Alumni Network</span>
-            </div>
-          </div>
         </div>
 
         {/* ------------------------------------------------------------- */}
@@ -261,7 +225,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
                     return (
                       <div
                         key={`row1-${review.id}-${i}`}
-                        className="w-[320px] sm:w-[380px] p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-900 transition-all duration-300 shrink-0 shadow-lg flex flex-col justify-between"
+                        className="w-[84vw] sm:w-[350px] md:w-[380px] max-w-[380px] p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-900 transition-all duration-300 shrink-0 shadow-lg flex flex-col justify-between"
                       >
                         <div>
                           {/* Rating Stars & Quote Icon */}
@@ -335,7 +299,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
                       return (
                         <div
                           key={`row2-${review.id}-${i}`}
-                          className="w-[320px] sm:w-[380px] p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-teal-500/40 hover:bg-slate-900 transition-all duration-300 shrink-0 shadow-lg flex flex-col justify-between"
+                          className="w-[84vw] sm:w-[350px] md:w-[380px] max-w-[380px] p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-teal-500/40 hover:bg-slate-900 transition-all duration-300 shrink-0 shadow-lg flex flex-col justify-between"
                         >
                           <div>
                             <div className="flex items-center justify-between gap-2 mb-3">

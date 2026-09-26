@@ -158,7 +158,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
+    <div className="w-full max-w-full overflow-x-hidden min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
       
       {/* Top-Bar Announcement Banner for Upcoming Intake & Next Cohort */}
       <AnnouncementBanner
@@ -179,7 +179,7 @@ export default function App() {
       />
 
       {/* Main Public Website Content */}
-      <main>
+      <main className="w-full max-w-full overflow-x-hidden">
         {/* 1. Hero Section */}
         <Hero
           onExplorePrograms={() => handleNavigateSection('programs')}

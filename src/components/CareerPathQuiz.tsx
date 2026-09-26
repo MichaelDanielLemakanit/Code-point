@@ -401,13 +401,14 @@ export const CareerPathQuiz: React.FC<CareerPathQuizProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.1, margin: '-40px 0px' }}
       transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-      className="py-16 sm:py-20 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 relative overflow-hidden border-b border-slate-800/80"
+      className="w-full max-w-full overflow-x-hidden py-16 sm:py-20 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 relative border-b border-slate-800/80 scroll-mt-20"
     >
       {/* Background ambient decorative glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 sm:w-[600px] h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[600px] h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-10 right-0 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="w-full max-w-4xl mx-auto">
         
         {/* ============================================================== */}
         {/* STEP 0: QUIZ INTRO / CALL-TO-ACTION CARD */}
@@ -432,10 +433,6 @@ export const CareerPathQuiz: React.FC<CareerPathQuizProps> = ({
                   Find Your Perfect Engineering Track
                 </span>
               </h2>
-              
-              <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
-                Answer 3 quick questions about your work style, favorite problem-solving arena, and career ambition. Our matching engine will recommend your ideal program, key technologies to master, and expected salary brackets in Nairobi & global remote teams.
-              </p>
             </div>
 
             {/* Quick 3 Tracks Teaser */}
@@ -810,6 +807,7 @@ export const CareerPathQuiz: React.FC<CareerPathQuizProps> = ({
           </motion.div>
         )}
         </AnimatePresence>
+        </div>
 
       </div>
     </motion.section>

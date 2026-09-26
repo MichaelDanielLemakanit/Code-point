@@ -121,15 +121,11 @@ export const LearningModel: React.FC<LearningModelProps> = ({ siteSettings }) =>
   };
 
   return (
-    <section id="model" className="py-20 bg-slate-900 text-slate-100 border-y border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="campus" className="w-full max-w-full overflow-x-hidden py-20 bg-slate-900 text-slate-100 border-y border-slate-800 scroll-mt-20">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Title */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full theme-badge text-xs font-semibold">
-            <Building2 className="w-3.5 h-3.5" />
-            <span>The Code Point Kenya Hybrid Model</span>
-          </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             Online-First Flexibility. Physical Campus Accountability.
           </h2>
@@ -221,10 +217,6 @@ export const LearningModel: React.FC<LearningModelProps> = ({ siteSettings }) =>
         {/* Dynamic Progression Pathway: Your Path from Learner to Hired Engineer */}
         <div className="mt-16 pt-12 border-t border-slate-800">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Engineered Career Acceleration</span>
-            </div>
             <h3 className="text-2xl sm:text-3xl font-bold text-white">Your Path from Learner to Hired Engineer</h3>
             <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl mx-auto">
               A transparent, step-by-step career progression engineered for rapid transition into high-paying engineering roles.

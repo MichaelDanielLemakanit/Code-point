@@ -73,9 +73,9 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
     <div 
       id="top-intake-announcement-banner"
       style={{ borderBottomColor: 'var(--card-highlight-border)' }}
-      className="relative z-50 bg-slate-950 border-b text-slate-100 shadow-md transition-all animate-fadeIn"
+      className="w-full max-w-full overflow-x-hidden relative z-50 bg-slate-950 border-b text-slate-100 shadow-md transition-all animate-fadeIn"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-2 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-2 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
         
         {/* Left / Center Info */}
         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 text-xs">

@@ -63,22 +63,19 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.08, margin: '-40px 0px' }}
       transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-      className="py-20 bg-slate-950 text-slate-100 relative"
+      className="w-full max-w-full overflow-x-hidden py-20 bg-slate-950 text-slate-100 relative scroll-mt-20"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold">
-            <span>Career-Ready Curricula</span>
-          </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             Transformative Tech Programs in Nairobi
           </h2>
         </div>
 
         {/* Category Filters */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
+        <div className="w-full max-w-full flex flex-wrap items-center justify-center gap-2 mt-8 px-1">
           {categories.map(cat => {
             const isActive = activeCategory === cat;
             return (

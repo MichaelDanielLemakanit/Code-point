@@ -88,16 +88,11 @@ export const WhyStudySection: React.FC<WhyStudySectionProps> = ({ siteSettings }
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
 
   return (
-    <section id="why-study" className="py-20 bg-slate-900 text-slate-100 border-t border-slate-800 relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="why-codepoint" className="w-full max-w-full overflow-x-hidden py-20 bg-slate-900 text-slate-100 border-t border-slate-800 relative scroll-mt-20">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{sectionData.badge_text}</span>
-          </div>
-
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             {sectionData.title}
           </h2>

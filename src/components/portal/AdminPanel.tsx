@@ -758,7 +758,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      <div className="relative w-full h-full sm:h-[95vh] sm:max-w-[1400px] flex flex-col sm:flex-row bg-[#f8f9fa] dark:bg-slate-950 sm:rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
+      <div className="relative w-full h-full sm:h-[95vh] sm:max-w-7xl flex flex-col sm:flex-row bg-[#f8f9fa] dark:bg-slate-950 sm:rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
         
         {/* ========================================================================= */}
         {/* SCENARIO A: UNAUTHENTICATED -> STRICT LOGIN SCREEN                        */}

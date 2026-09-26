@@ -36,7 +36,7 @@ const DEFAULT_TECH_DATA: TechnologiesSectionData = {
       title: 'HTML5 & CSS3',
       category: 'Front-End Foundation',
       description: 'Semantic web structures and modern responsive design layouts.',
-      icon_name: 'Layout',
+      icon_name: 'bi-filetype-html',
       tags: ['Flexbox', 'Grid', 'Semantic HTML', 'CSS Variables'],
       display_order: 1,
       is_visible: true
@@ -46,7 +46,7 @@ const DEFAULT_TECH_DATA: TechnologiesSectionData = {
       title: 'Bootstrap 5',
       category: 'UI Framework',
       description: 'Rapid front-end UI framework and responsive mobile components.',
-      icon_name: 'Layers',
+      icon_name: 'bi-bootstrap-fill',
       tags: ['Responsive Grids', 'Components', 'Utilities', 'Mobile-First'],
       display_order: 2,
       is_visible: true
@@ -56,7 +56,7 @@ const DEFAULT_TECH_DATA: TechnologiesSectionData = {
       title: 'JavaScript (ES6+)',
       category: 'Core Language',
       description: 'Client-side interactivity, DOM manipulation, and asynchronous JS.',
-      icon_name: 'Braces',
+      icon_name: 'bi-filetype-js',
       tags: ['Async/Await', 'Fetch API', 'DOM APIs', 'ES Modules'],
       display_order: 3,
       is_visible: true
@@ -66,7 +66,7 @@ const DEFAULT_TECH_DATA: TechnologiesSectionData = {
       title: 'SQL & PostgreSQL',
       category: 'Database Systems',
       description: 'Relational database design, queries, joins, and data management.',
-      icon_name: 'Database',
+      icon_name: 'bi-database-fill-gear',
       tags: ['Schema Design', 'Complex Joins', 'Indexing', 'ACID Transactions'],
       display_order: 4,
       is_visible: true
@@ -76,7 +76,7 @@ const DEFAULT_TECH_DATA: TechnologiesSectionData = {
       title: 'Python & Flask',
       category: 'Backend & APIs',
       description: 'Backend API routes, server rendering, authentication, and SQL integrations.',
-      icon_name: 'Server',
+      icon_name: 'bi-filetype-py',
       tags: ['REST APIs', 'SQLAlchemy', 'JWT Auth', 'Jinja Templates'],
       display_order: 5,
       is_visible: true
@@ -86,7 +86,7 @@ const DEFAULT_TECH_DATA: TechnologiesSectionData = {
       title: 'Git & Vercel',
       category: 'DevOps & Deployment',
       description: 'Version control workflows, cloud deployment, and live hosting.',
-      icon_name: 'GitBranch',
+      icon_name: 'bi-git',
       tags: ['Git Branching', 'CI/CD Pipelines', 'Cloud Hosting', 'SSL/Domains'],
       display_order: 6,
       is_visible: true

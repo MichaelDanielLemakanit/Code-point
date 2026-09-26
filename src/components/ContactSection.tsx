@@ -66,15 +66,11 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
   };
 
   return (
-    <section id="contact" className="py-20 bg-slate-950 text-slate-100 relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="contact" className="w-full max-w-full overflow-x-hidden py-20 bg-slate-950 text-slate-100 relative scroll-mt-20">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold">
-            <Building2 className="w-3.5 h-3.5" />
-            <span>Connect with {siteSettings?.brand_name || "Code Point Kenya"}</span>
-          </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             Visit Our Nairobi Campus or Chat with Us
           </h2>
@@ -102,7 +98,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                   <div>
                     <span className="text-xs font-semibold text-white block">Official Office Location:</span>
                     <span className="text-slate-300">{siteSettings?.address || "Ngong Road, Teamshark, 5th Floor, Nairobi, Kenya"}</span>
-                    <span className="block text-[11px] text-slate-400 mt-0.5">Easily accessible via Ngong Road bus stages and ride-hailing stops</span>
                   </div>
                 </div>
 
@@ -112,7 +107,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                     <span className="text-xs font-semibold text-white block">Physical Office Hours:</span>
                     <span className="text-slate-300">{siteSettings?.weekday_hours || "Monday – Friday: 8:00 AM – 8:00 PM EAT"}</span>
                     <span className="block text-slate-400 text-xs">{siteSettings?.weekend_hours || "Saturday Labs & Clinics: 9:00 AM – 4:00 PM EAT"}</span>
-                    <span className="block text-slate-500 text-[11px]">Sunday: Online asynchronous support only</span>
                   </div>
                 </div>
               </div>
@@ -186,9 +180,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                 <h3 className="text-xl font-bold text-white mt-1">
                   Have a Question? Talk to Our Advisors
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Get personalized recommendations on the best track for your background and career goals.
-                </p>
               </div>
 
               {sentSuccess ? (
@@ -239,7 +230,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
 
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      Email Address <span className="text-slate-500">(Optional for syllabus/fee schedule)</span>
+                      Email Address
                     </label>
                     <input
                       type="email"

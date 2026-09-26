@@ -199,7 +199,7 @@ export const Hero: React.FC<HeroProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.7 }}
-      className="relative overflow-hidden bg-slate-950 text-slate-100 pt-10 pb-16 lg:pt-16 lg:pb-24 border-b border-slate-800/80 group"
+      className="w-full max-w-full overflow-x-hidden relative bg-slate-950 text-slate-100 pt-10 pb-16 lg:pt-16 lg:pb-24 border-b border-slate-800/80 group scroll-mt-20"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -232,11 +232,11 @@ export const Hero: React.FC<HeroProps> = ({
         <div className="absolute inset-0 bg-slate-950/30 sm:bg-slate-950/25 backdrop-blur-[0.5px] z-10" />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-950/40 to-transparent z-10" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/40 z-10" />
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-emerald-500/10 blur-[140px] rounded-full z-10" />
-        <div className="absolute top-1/3 right-10 w-[350px] h-[350px] bg-teal-500/10 blur-[110px] rounded-full z-10" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[650px] h-[350px] bg-emerald-500/10 blur-[140px] rounded-full z-10 pointer-events-none" />
+        <div className="absolute top-1/3 right-0 w-full max-w-[350px] h-[350px] bg-teal-500/10 blur-[110px] rounded-full z-10 pointer-events-none" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
         <div className="max-w-4xl space-y-6 sm:space-y-7">
           <motion.div 
             initial={{ opacity: 0, y: 28 }}
