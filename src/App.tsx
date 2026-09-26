@@ -152,10 +152,30 @@ export default function App() {
     const el = document.getElementById(sectionId);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
+      try {
+        window.history.pushState(null, '', `#${sectionId}`);
+      } catch (_) {}
     } else if (sectionId === 'hero') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      try {
+        window.history.pushState(null, '', '#');
+      } catch (_) {}
     }
   };
+
+  // Auto-scroll on initial load if URL contains a section hash
+  useEffect(() => {
+    const rawHash = window.location.hash.replace('#', '');
+    if (rawHash) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(rawHash);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <div className="w-full max-w-full overflow-x-hidden min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
@@ -213,11 +233,11 @@ export default function App() {
           siteSettings={siteSettings}
         />
 
-        {/* 5. Online-First + Ngong Road Physical Campus Model */}
-        <LearningModel />
-
-        {/* 6. Why Study at CodePoint Kenya */}
+        {/* 5. Why Study at CodePoint Kenya */}
         <WhyStudySection />
+
+        {/* 6. Online-First + Ngong Road Physical Campus Model */}
+        <LearningModel />
 
         {/* 7. Approved Alumni Reviews Marquee & Public Feedback Rating Form */}
         <ReviewsSection />

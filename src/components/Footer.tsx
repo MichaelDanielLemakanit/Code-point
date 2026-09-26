@@ -111,36 +111,40 @@ export const Footer: React.FC<FooterProps> = ({
                 </button>
               </li>
               <li>
-                <button 
-                  onClick={() => onNavigateSection('technologies')} 
-                  className="hover:text-white transition-colors text-left"
+                <a 
+                  href="#technologies"
+                  onClick={(e) => { e.preventDefault(); onNavigateSection('technologies'); }} 
+                  className="hover:text-white transition-colors text-left block"
                 >
                   Technologies You Master
-                </button>
+                </a>
               </li>
               <li>
-                <button 
-                  onClick={() => onNavigateSection('schedules')} 
-                  className="hover:text-white transition-colors text-left"
+                <a 
+                  href="#schedules"
+                  onClick={(e) => { e.preventDefault(); onNavigateSection('schedules'); }} 
+                  className="hover:text-white transition-colors text-left block"
                 >
                   Flexible Class Schedules
-                </button>
+                </a>
               </li>
               <li>
-                <button 
-                  onClick={() => onNavigateSection('why-study')} 
-                  className="hover:text-white transition-colors text-left"
+                <a 
+                  href="#why-codepoint"
+                  onClick={(e) => { e.preventDefault(); onNavigateSection('why-codepoint'); }} 
+                  className="hover:text-white transition-colors text-left block"
                 >
                   Why CodePoint Kenya
-                </button>
+                </a>
               </li>
               <li>
-                <button 
-                  onClick={() => onNavigateSection('model')} 
-                  className="hover:text-white transition-colors text-left"
+                <a 
+                  href="#campus"
+                  onClick={(e) => { e.preventDefault(); onNavigateSection('campus'); }} 
+                  className="hover:text-white transition-colors text-left block"
                 >
-                  Ngong Rd Lab Booking
-                </button>
+                  Online-First + Campus Lab
+                </a>
               </li>
             </ul>
           </div>
