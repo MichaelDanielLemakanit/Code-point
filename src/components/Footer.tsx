@@ -1,6 +1,5 @@
 import React from 'react';
 import { 
-  Terminal, 
   MapPin, 
   Phone, 
   Mail, 
@@ -43,12 +42,6 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Col 1: Brand & Operating Model (lg:col-span-5) */}
           <div className="lg:col-span-5 space-y-4">
             <div className="flex items-center gap-3">
-              <div 
-                style={{ background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))' }}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-sm"
-              >
-                <Terminal className="w-5 h-5 text-white" />
-              </div>
               <div>
                 <span className="text-base font-bold text-white tracking-tight">{siteSettings?.brand_name || "Code Point Kenya"}</span>
                 <span className="block text-[11px] theme-text-primary font-mono">Nairobi Tech Institute</span>
@@ -182,10 +175,6 @@ export const Footer: React.FC<FooterProps> = ({
                 <Instagram className="w-4 h-4 text-pink-400 shrink-0" />
                 <span>Instagram: {siteSettings?.social_instagram || "Code Point Kenya"}</span>
               </a>
-
-              <div className="pt-2 text-[11px] text-slate-500">
-                Operating Model: Online-First Live Instruction + Physical Hub at {siteSettings?.address || "Ngong Road, Teamshark 5th Floor, Nairobi"}.
-              </div>
             </div>
           </div>
 
@@ -196,13 +185,6 @@ export const Footer: React.FC<FooterProps> = ({
           <p>© {new Date().getFullYear()} {siteSettings?.brand_name || "Code Point Kenya"}. All rights reserved.</p>
 
           <div className="flex items-center gap-4">
-            <button
-              onClick={onOpenAdminCMS}
-              className="text-amber-400/80 hover:text-amber-300 flex items-center gap-1 cursor-pointer text-xs"
-            >
-              <Lock className="w-3 h-3" />
-              <span>Admin Access</span>
-            </button>
             <button 
               onClick={scrollToTop}
               className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors"

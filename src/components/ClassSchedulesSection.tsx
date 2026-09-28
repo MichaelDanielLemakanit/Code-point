@@ -81,19 +81,6 @@ export const ClassSchedulesSection: React.FC<ClassSchedulesSectionProps> = ({ on
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-3">
-          {/* Calendar Icon above Title */}
-          <div 
-            style={{ 
-              backgroundColor: 'rgba(var(--primary-rgb), 0.12)', 
-              borderColor: 'rgba(var(--primary-rgb), 0.3)', 
-              color: 'var(--primary-color)',
-              boxShadow: '0 0 20px rgba(var(--primary-rgb), 0.15)'
-            }}
-            className="w-12 h-12 rounded-2xl border flex items-center justify-center mx-auto shadow-sm"
-          >
-            <Calendar className="w-6 h-6" />
-          </div>
-
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             {sectionTitle}
           </h2>

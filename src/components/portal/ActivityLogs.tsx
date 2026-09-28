@@ -301,9 +301,6 @@ export const ActivityLogs: React.FC<ActivityLogsProps> = ({ showToast }) => {
                   Compliance Active
                 </span>
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Immutable, system-wide accountability log tracking enrollment changes, manual password resets, and portal security events.
-              </p>
             </div>
           </div>
         </div>
@@ -364,10 +361,6 @@ export const ActivityLogs: React.FC<ActivityLogsProps> = ({ showToast }) => {
           <div className="mt-2 text-2xl font-bold text-white font-mono">
             {stats?.totalCount ?? logs.length}
           </div>
-          <div className="mt-1 text-[11px] text-slate-500 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            Real-time tracking enabled
-          </div>
         </div>
 
         {/* Enrollment Changes */}
@@ -380,9 +373,6 @@ export const ActivityLogs: React.FC<ActivityLogsProps> = ({ showToast }) => {
           </div>
           <div className="mt-2 text-2xl font-bold text-emerald-400 font-mono">
             {stats?.enrollmentChangesCount ?? logs.filter(l => l.event_type === 'enrollment_status_change').length}
-          </div>
-          <div className="mt-1 text-[11px] text-slate-500">
-            Auto-synced to Access Control
           </div>
         </div>
 
@@ -397,9 +387,6 @@ export const ActivityLogs: React.FC<ActivityLogsProps> = ({ showToast }) => {
           <div className="mt-2 text-2xl font-bold text-amber-400 font-mono">
             {stats?.passwordResetsCount ?? logs.filter(l => l.event_type === 'password_reset' || l.event_type === 'password_update').length}
           </div>
-          <div className="mt-1 text-[11px] text-slate-500">
-            Manual edits & auto-generations
-          </div>
         </div>
 
         {/* Credential Dispatches */}
@@ -412,9 +399,6 @@ export const ActivityLogs: React.FC<ActivityLogsProps> = ({ showToast }) => {
           </div>
           <div className="mt-2 text-2xl font-bold text-purple-400 font-mono">
             {stats?.dispatchedCount ?? logs.filter(l => l.event_type === 'credentials_dispatched').length}
-          </div>
-          <div className="mt-1 text-[11px] text-slate-500">
-            Email & portal notices sent
           </div>
         </div>
       </div>

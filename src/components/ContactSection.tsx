@@ -124,7 +124,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                     <Phone className="w-4 h-4 theme-text-primary" />
                     <div>
                       <div className="text-[10px] uppercase font-mono theme-text-primary font-bold">WhatsApp Support</div>
-                      <div className="text-xs font-bold text-white group-hover:underline font-mono">{siteSettings?.primary_phone || "0756295128"}</div>
                     </div>
                   </div>
                   <ExternalLink className="w-3.5 h-3.5 theme-text-primary group-hover:translate-x-0.5 transition-transform" />
@@ -154,7 +153,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
                   </div>
                   <div>
                     <div className="text-[10px] font-mono uppercase text-slate-400">Instagram Community</div>
-                    <div className="text-xs font-bold text-white">{siteSettings?.social_instagram || "Code Point Kenya"} (@codepointkenya)</div>
                   </div>
                 </div>
                 <a
