@@ -5,7 +5,6 @@ import {
   HelpCircle, 
   ChevronDown, 
   ChevronUp, 
-  CreditCard, 
   ShieldCheck, 
   ArrowRight,
   MapPin,
@@ -73,10 +72,6 @@ export const AdmissionsFees: React.FC<AdmissionsFeesProps> = ({
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full theme-badge text-xs font-semibold">
-            <CreditCard className="w-3.5 h-3.5" />
-            <span>Transparent Tuition & Flexible Plans</span>
-          </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             Accessible Tech Education in Kenya
           </h2>

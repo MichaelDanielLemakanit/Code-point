@@ -8,7 +8,6 @@ import {
   MessageSquareHeart, 
   ShieldCheck, 
   Building2, 
-  UserCheck, 
   AlertCircle,
   ThumbsUp
 } from 'lucide-react';
@@ -516,12 +515,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
                 </div>
 
                 {/* Submit Action */}
-                <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                    <UserCheck className="w-3.5 h-3.5 theme-text-primary" />
-                    Sent to Admissions Moderation Desk
-                  </span>
-
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-end gap-3">
                   <button
                     type="submit"
                     disabled={isSubmitting}

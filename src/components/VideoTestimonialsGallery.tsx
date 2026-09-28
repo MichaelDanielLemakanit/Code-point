@@ -7,12 +7,10 @@ import {
   Sparkles, 
   GraduationCap, 
   Briefcase, 
-  Building2, 
   ExternalLink,
   Award,
   Clock,
   Eye,
-  CheckCircle2,
   Volume2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -241,42 +239,6 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
             Student Testimonials & Alumni Stories
           </h2>
-
-          {/* Metric Bar with dynamic theme highlights */}
-          <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm">
-            <div 
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all font-medium text-slate-200"
-              style={{
-                backgroundColor: 'rgba(var(--primary-rgb), 0.1)',
-                borderColor: 'rgba(var(--primary-rgb), 0.28)'
-              }}
-            >
-              <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: 'var(--primary-color)' }} />
-              <span>94% Job Placement Rate</span>
-            </div>
-
-            <div 
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all font-medium text-slate-200"
-              style={{
-                backgroundColor: 'rgba(var(--secondary-rgb), 0.1)',
-                borderColor: 'rgba(var(--secondary-rgb), 0.28)'
-              }}
-            >
-              <Building2 className="w-4 h-4 shrink-0" style={{ color: 'var(--secondary-color)' }} />
-              <span>Nairobi & Remote Tech Roles</span>
-            </div>
-
-            <div 
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border transition-all font-medium text-slate-200"
-              style={{
-                backgroundColor: 'rgba(var(--primary-rgb), 0.1)',
-                borderColor: 'rgba(var(--primary-rgb), 0.28)'
-              }}
-            >
-              <GraduationCap className="w-4 h-4 shrink-0" style={{ color: 'var(--primary-color)' }} />
-              <span>1,200+ Alumni Network</span>
-            </div>
-          </div>
         </div>
 
         {/* Interactive Track Filter Bar with Dynamic Active State (Visible when testimonials exist) */}

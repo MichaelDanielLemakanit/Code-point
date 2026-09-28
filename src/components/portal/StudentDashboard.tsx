@@ -144,36 +144,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
 
   return (
     <div className="space-y-6">
-
-      {/* Demo Student Account Switcher Bar (Quickly test Overdue vs Cleared vs Pending) */}
-      <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase font-mono font-bold text-slate-400 tracking-wider">
-            Active Student Account:
-          </span>
-          <select
-            value={selectedEmail}
-            onChange={(e) => setSelectedEmail(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-xs focus:outline-none focus:border-emerald-500 cursor-pointer"
-          >
-            <option value="student@codepointkenya.com">Brian Kipchumba (student@codepointkenya.com) — Pending / KES 48,000</option>
-            <option value="faith.mutua@outlook.com">Faith Mutua (faith.mutua@outlook.com) — OVERDUE / KES 75,000 [LOCKED]</option>
-            <option value="kevin.kiprono@gmail.com">Kevin Kiprono (kevin.kiprono@gmail.com) — Cleared / KES 0 [UNLOCKED]</option>
-            <option value="cynthia.njeri@example.com">Cynthia Njeri (cynthia.njeri@example.com) — Pending / KES 35,000</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => fetchStudentData(selectedEmail)}
-            disabled={refreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold cursor-pointer transition-colors"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-emerald-400' : ''}`} />
-            <span>Sync Live Status</span>
-          </button>
-        </div>
-      </div>
       
       {/* Student Welcome & Identity Banner */}
       <div className={`p-6 rounded-2xl border transition-all ${
@@ -219,6 +189,21 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
 
         {/* Quick Stats Pills */}
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => fetchStudentData(selectedEmail)}
+            disabled={refreshing}
+            title="Sync live tuition & academic status"
+            className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-center transition-colors cursor-pointer min-w-[70px]"
+          >
+            <div className="text-[10px] uppercase font-mono text-slate-400 flex items-center justify-center gap-1">
+              <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin text-emerald-400' : 'text-slate-400'}`} />
+              <span>Sync</span>
+            </div>
+            <div className="text-sm font-bold font-mono text-slate-200 mt-1">
+              {refreshing ? '...' : 'Live'}
+            </div>
+          </button>
           <a
             href="#student-announcements-board"
             className={`p-3 rounded-xl border text-center transition-colors cursor-pointer ${
