@@ -156,24 +156,12 @@ export const NextIntakeManager: React.FC<NextIntakeManagerProps> = ({
       <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-emerald-500/30 shadow-xl relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Next Intake & Cohort Control</span>
-            </div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
               Upcoming Intake & Next Cohort Management
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
-              Configure the active cohort start date, registration deadline, admissions status badge, and public announcement banner. Changes sync live to the database and update the public landing page immediately.
-            </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="px-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] font-mono flex items-center gap-2 text-slate-300">
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Storage: <strong className="text-emerald-400">{dbProvider}</strong></span>
-            </div>
-
             <button
               onClick={() => handleSave()}
               disabled={saving}
@@ -226,7 +214,6 @@ export const NextIntakeManager: React.FC<NextIntakeManagerProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-white">Cohort Dates & Admissions Status</h3>
-              <p className="text-xs text-slate-400">Specify when the upcoming training cohort kicks off and the deadline for prospective applicants.</p>
             </div>
           </div>
 
@@ -247,9 +234,6 @@ export const NextIntakeManager: React.FC<NextIntakeManagerProps> = ({
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
-              <p className="text-[11px] text-slate-400">
-                Displayed prominently in the Hero section, course cards, and enrollment section.
-              </p>
 
               {/* Quick Date Presets */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
@@ -283,9 +267,6 @@ export const NextIntakeManager: React.FC<NextIntakeManagerProps> = ({
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
-              <p className="text-[11px] text-slate-400">
-                Signals admissions urgency to encourage prompt student applications.
-              </p>
 
               {/* Quick Deadline Presets */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
@@ -344,11 +325,11 @@ export const NextIntakeManager: React.FC<NextIntakeManagerProps> = ({
 
             {/* Custom status input */}
             <div className="pt-2 flex items-center gap-3">
-              <span className="text-xs text-slate-400">Or type custom status:</span>
               <input
                 type="text"
                 value={formData.intake_status}
                 onChange={(e) => setFormData(prev => ({ ...prev, intake_status: e.target.value }))}
+                placeholder="Custom status (e.g. Enrollment Open)"
                 className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white max-w-xs focus:outline-none focus:border-emerald-500"
               />
             </div>
@@ -364,7 +345,6 @@ export const NextIntakeManager: React.FC<NextIntakeManagerProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white">Top-Bar Announcement Banner</h3>
-                <p className="text-xs text-slate-400">Control the prominent highlight banner rendered at the top of the entire public website.</p>
               </div>
             </div>
 
@@ -431,7 +411,6 @@ export const NextIntakeManager: React.FC<NextIntakeManagerProps> = ({
               <Eye className="w-4 h-4 text-emerald-400" />
               <h3 className="text-sm font-bold text-white">Live Public Display Preview</h3>
             </div>
-            <span className="text-[11px] text-slate-400">Real-time preview of public UI elements</span>
           </div>
 
           {/* Top Banner Mock Preview */}

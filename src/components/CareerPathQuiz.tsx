@@ -647,21 +647,8 @@ export const CareerPathQuiz: React.FC<CareerPathQuizProps> = ({
               className={`bg-gradient-to-br ${matchResult.track.bgGradient} border rounded-3xl p-6 sm:p-10 shadow-2xl backdrop-blur-xl relative overflow-hidden`}
             >
               
-              {/* Top Banner Tag */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-slate-800/80">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/60 text-xs font-semibold text-slate-200">
-                  <Sparkles className="w-3.5 h-3.5 theme-text-primary" />
-                  <span>Personalized Career Assessment Result</span>
-                </div>
-
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full theme-badge text-xs font-extrabold tracking-wide">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>{matchResult.matchScore}% Match!</span>
-                </div>
-              </div>
-
               {/* Matched Program Headline */}
-              <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-2">
                   <div className="text-xs uppercase font-extrabold tracking-wider text-slate-400">
                     Your Best Fit Program:
@@ -697,7 +684,6 @@ export const CareerPathQuiz: React.FC<CareerPathQuizProps> = ({
                     <Layers className="w-4 h-4 theme-text-primary" />
                     <span>Key Technologies You Will Master</span>
                   </span>
-                  <span className="text-[11px] font-normal text-slate-400">Production-Ready Tooling</span>
                 </div>
                 
                 <div className="flex flex-wrap gap-2 pt-1">
@@ -713,27 +699,6 @@ export const CareerPathQuiz: React.FC<CareerPathQuizProps> = ({
                       <span>{tech}</span>
                     </span>
                   ))}
-                </div>
-              </div>
-
-              {/* Career Roles & Expected Earnings */}
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
-                  <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                    Target Job Titles:
-                  </div>
-                  <div className="text-xs text-slate-200 font-medium leading-relaxed">
-                    {matchResult.track.careerRoles.join(' • ')}
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
-                  <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                    Starting Salary Potential:
-                  </div>
-                  <div className="text-xs font-semibold theme-text-primary">
-                    {matchResult.track.startingSalary}
-                  </div>
                 </div>
               </div>
 

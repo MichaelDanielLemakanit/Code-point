@@ -1145,10 +1145,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <div className="text-[11px] font-mono text-stone-500 uppercase tracking-wider">
                     Code Point Kenya • System Administration
                   </div>
-                  <div className="text-xs text-emerald-600 flex items-center gap-1.5 font-medium mt-0.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Connected to live website: Ngong Road Campus & Online Portal</span>
-                  </div>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -1175,9 +1171,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <h1 className="text-3xl font-serif font-bold text-stone-900 tracking-tight">
                           Graduation Clearance & Certificates
                         </h1>
-                        <p className="text-xs text-stone-500 mt-1">
-                          Enforce mandatory coursework completion before granting verified graduation credentials
-                        </p>
                       </div>
 
                       <div className="flex items-center gap-2 self-start flex-wrap">
@@ -2047,9 +2040,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <h1 className="text-3xl font-serif font-bold text-stone-900 tracking-tight">
                         Admissions & Institute Dashboard
                       </h1>
-                      <p className="text-xs text-stone-500 mt-1">
-                        Live analytics for Code Point Kenya cohorts, applications, and student metrics
-                      </p>
                     </div>
 
                     {/* Metric Cards */}
@@ -2059,7 +2049,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <div className="text-2xl font-extrabold text-stone-900 font-mono">
                           {stats?.totalApplications ?? applications.length}
                         </div>
-                        <div className="text-[10px] text-emerald-600 font-medium">+14% vs last intake</div>
                       </div>
 
                       <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-1">
@@ -2067,7 +2056,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <div className="text-2xl font-extrabold text-amber-600 font-mono">
                           {stats?.pendingCount ?? pendingCount}
                         </div>
-                        <div className="text-[10px] text-stone-500">Requires admissions feedback</div>
                       </div>
 
                       <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-1">
@@ -2075,7 +2063,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <div className="text-2xl font-extrabold text-emerald-700 font-mono">
                           {stats?.acceptedCount ?? 12}
                         </div>
-                        <div className="text-[10px] text-emerald-600 font-medium">94% Target Placement</div>
                       </div>
 
                       <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-1">
@@ -2083,7 +2070,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <div className="text-2xl font-extrabold text-stone-900 font-mono">
                           {courses.length}
                         </div>
-                        <div className="text-[10px] text-stone-500">Online-first + Ngong Rd Lab</div>
                       </div>
                     </div>
 
@@ -2126,9 +2112,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <Calendar className="w-4 h-4 text-emerald-600" />
                             <span>Next Intake & Cohort</span>
                           </div>
-                          <p className="text-xs text-stone-500">
-                            Update cohort start dates, deadlines, and announcement banners.
-                          </p>
                         </div>
                         <button
                           onClick={() => setActiveTab('intake')}
@@ -2145,9 +2128,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <CreditCard className="w-4 h-4 text-emerald-600" />
                             <span>Tuition & Portal Access</span>
                           </div>
-                          <p className="text-xs text-stone-500">
-                            Manage student fees, track KES balances, and enforce overdue class lockouts.
-                          </p>
                         </div>
                         <button
                           onClick={() => setActiveTab('fees')}
@@ -2164,9 +2144,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <BookOpen className="w-4 h-4 text-emerald-600" />
                             <span>Programs & Catalog</span>
                           </div>
-                          <p className="text-xs text-stone-500">
-                            Add or edit courses, syllabus modules, and KES tuition fees.
-                          </p>
                         </div>
                         <button
                           onClick={() => setActiveTab('programs')}
@@ -2183,9 +2160,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <FileEdit className="w-4 h-4 text-amber-600" />
                             <span>Homepage CMS</span>
                           </div>
-                          <p className="text-xs text-stone-500">
-                            Edit hero copy, carousel banners, FAQs, and contact info.
-                          </p>
                         </div>
                         <button
                           onClick={() => setActiveTab('content')}
@@ -2202,9 +2176,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <Palette className="w-4 h-4 text-indigo-600" />
                             <span>Theme & Palette</span>
                           </div>
-                          <p className="text-xs text-stone-500">
-                            Customize CTA colors, brand palette, and dark styling.
-                          </p>
                         </div>
                         <button
                           onClick={() => setActiveTab('theme')}

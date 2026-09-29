@@ -213,9 +213,6 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
             <Palette className="w-7 h-7 text-amber-500" />
             <span>Theme & Appearance Customizer</span>
           </h1>
-          <p className="text-xs text-stone-500 mt-1">
-            Customize visual themes, color palettes, and primary CTA accents applied to the live Code Point Kenya public school website
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -305,10 +302,6 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                         Bg
                       </div>
                     </div>
-
-                    <p className="text-[11px] text-stone-500 leading-relaxed">
-                      {p.description}
-                    </p>
                   </div>
                 );
               })}
@@ -322,9 +315,6 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                 <Sliders className="w-4 h-4 text-emerald-600" />
                 <span>Primary CTA & Accent Color Customizer</span>
               </h3>
-              <p className="text-xs text-stone-500">
-                Fine-tune the exact hex color for buttons, badges, highlights, and links
-              </p>
             </div>
 
             {/* Quick Swatches */}
