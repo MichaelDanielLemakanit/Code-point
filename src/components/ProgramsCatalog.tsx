@@ -13,27 +13,49 @@ import {
   BookOpen,
   X,
   Layers,
-  Laptop,
   Plus,
   Minus,
   Sparkles
 } from 'lucide-react';
-import { Course } from '../types';
+import { Course, SiteSettings } from '../types';
 
 interface ProgramsCatalogProps {
   courses: Course[];
   loading: boolean;
   onApplyCourse: (courseId: string) => void;
+  siteSettings?: SiteSettings;
 }
 
 export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
   courses,
   loading,
-  onApplyCourse
+  onApplyCourse,
+  siteSettings
 }) => {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [expandedProgramId, setExpandedProgramId] = useState<string | null>(null);
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [selectedCourseForSyllabus, setSelectedCourseForSyllabus] = useState<Course | null>(null);
+
+  // Dynamic brand/theme color resolution
+  const themeColor = siteSettings?.primary_cta_color || 'var(--primary-color, #10b981)';
+  const secondaryThemeColor = siteSettings?.secondary_cta_color || 'var(--secondary-color, #06b6d4)';
+
+  // Helper to safely generate rgba colors from hex or css variables
+  const getRgba = (colorStr: string, alpha: number) => {
+    if (colorStr.startsWith('#')) {
+      let clean = colorStr.replace('#', '').trim();
+      if (clean.length === 3) clean = clean.split('').map(c => c + c).join('');
+      const num = parseInt(clean, 16);
+      if (!isNaN(num) && clean.length === 6) {
+        const r = (num >> 16) & 255;
+        const g = (num >> 8) & 255;
+        const b = num & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+    }
+    return `rgba(var(--primary-rgb, 16, 185, 129), ${alpha})`;
+  };
 
   const categories = ['All', 'Software Development', 'Data & Analytics', 'Artificial Intelligence', 'Security & Infrastructure'];
 
@@ -46,20 +68,21 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
   };
 
   const getCourseIcon = (slug: string) => {
+    const iconProps = { className: "w-5 h-5", style: { color: themeColor } };
     switch (slug) {
       case 'software-engineering':
       case 'full-stack-software-engineering':
-        return <Terminal className="w-5 h-5 text-blue-400" />;
+        return <Terminal {...iconProps} />;
       case 'data-science':
       case 'data-science-applied-ai':
-        return <Database className="w-5 h-5 text-blue-400" />;
+        return <Database {...iconProps} />;
       case 'applied-ai':
-        return <Cpu className="w-5 h-5 text-blue-400" />;
+        return <Cpu {...iconProps} />;
       case 'cybersecurity':
       case 'cyber-security-microservices':
-        return <ShieldCheck className="w-5 h-5 text-blue-400" />;
+        return <ShieldCheck {...iconProps} />;
       default:
-        return <Layers className="w-5 h-5 text-blue-400" />;
+        return <Layers {...iconProps} />;
     }
   };
 
@@ -95,29 +118,46 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
+          <div 
+            style={{ 
+              backgroundColor: getRgba(themeColor, 0.12),
+              color: themeColor,
+              borderColor: getRgba(themeColor, 0.3)
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-mono font-semibold uppercase tracking-wider border shadow-xs"
+          >
+            <span>Industry-Standard Curricula</span>
+          </div>
+
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             Transformative Tech Programs in Nairobi
           </h2>
+          <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
+            Practical, project-based engineering tracks taught by seasoned practitioners. Gain real-world mastery with flexible evening, weekend, and lab access.
+          </p>
         </div>
 
-        {/* Category Filters */}
+        {/* Category Filter Pills with Dynamic Theme Color */}
         <div className="w-full max-w-full flex flex-wrap items-center justify-center gap-2 mt-8 px-1">
           {categories.map(cat => {
             const isActive = activeCategory === cat;
             return (
               <button
                 key={cat}
+                type="button"
                 onClick={() => setActiveCategory(cat)}
-                className={`relative px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                style={isActive ? { backgroundColor: themeColor, color: '#020617' } : undefined}
+                className={`relative px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer shadow-xs ${
                   isActive
-                    ? 'text-slate-950 font-bold'
+                    ? 'shadow-md scale-102'
                     : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800'
                 }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="programsCategoryPill"
-                    className="absolute inset-0 rounded-xl theme-bg-primary shadow-md -z-0"
+                    style={{ backgroundColor: themeColor }}
+                    className="absolute inset-0 rounded-xl shadow-md -z-0"
                     transition={{ type: 'spring', stiffness: 450, damping: 35 }}
                   />
                 )}
@@ -129,10 +169,10 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
 
         {/* Courses 3-Column Compact Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 items-start">
             {[1, 2, 3].map(i => (
-              <div key={i} className="rounded-2xl bg-slate-950 border border-slate-800 animate-pulse overflow-hidden">
-                <div className="h-36 sm:h-40 bg-slate-800/60 w-full" />
+              <div key={i} className="max-w-[400px] w-full mx-auto rounded-2xl bg-slate-950 border border-slate-800 animate-pulse overflow-hidden">
+                <div className="h-36 sm:h-40 bg-slate-850 w-full" />
                 <div className="p-4 space-y-3">
                   <div className="h-3.5 w-1/3 bg-slate-800 rounded" />
                   <div className="h-5 w-3/4 bg-slate-800 rounded" />
@@ -141,8 +181,8 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
             ))}
           </div>
         ) : courses.length === 0 ? (
-          <div className="text-center py-20 bg-slate-950/60 rounded-2xl border border-slate-800/80 p-8 mt-12 max-w-2xl mx-auto space-y-3">
-            <BookOpen className="w-10 h-10 theme-text-primary mx-auto" />
+          <div className="text-center py-20 bg-slate-950 rounded-2xl border border-slate-800 p-8 mt-12 max-w-2xl mx-auto space-y-3 shadow-xl">
+            <BookOpen className="w-10 h-10 mx-auto" style={{ color: themeColor }} />
             <h3 className="text-lg font-bold text-white">Curriculum Offerings Updating</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
               New curriculum offerings and intake dates are being published by our academic team. Check back shortly or contact our admissions advisors to inquire about upcoming cohorts.
@@ -157,6 +197,7 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
             <AnimatePresence>
             {filteredCourses.map(course => {
               const isExpanded = expandedProgramId === course.id;
+              const isHovered = hoveredCardId === course.id;
               const displayImage = course.image_url || getFallbackImage(course.category, course.slug);
               const modulesList = course.curriculum_modules || course.curriculum || [];
 
@@ -168,7 +209,21 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.25 }}
-                  className="group rounded-2xl border border-slate-800 hover:border-blue-500/40 bg-slate-950 hover:bg-slate-950/95 transition-all duration-300 shadow-xl overflow-hidden flex flex-col w-full"
+                  onMouseEnter={() => setHoveredCardId(course.id)}
+                  onMouseLeave={() => setHoveredCardId(null)}
+                  style={{
+                    borderColor: isExpanded 
+                      ? getRgba(themeColor, 0.55)
+                      : isHovered
+                      ? getRgba(themeColor, 0.38)
+                      : undefined,
+                    boxShadow: isExpanded 
+                      ? `0 14px 32px -6px ${getRgba(themeColor, 0.22)}`
+                      : isHovered
+                      ? `0 10px 24px -8px ${getRgba(themeColor, 0.16)}`
+                      : undefined
+                  }}
+                  className="group max-w-[400px] w-full mx-auto rounded-2xl border border-slate-800 bg-slate-950 transition-all duration-300 shadow-xl overflow-hidden flex flex-col"
                 >
                   {/* 1. Top Image Header - Restricted height h-36 or h-40 */}
                   <div 
@@ -185,7 +240,14 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
 
                     {/* Floating Badges on Image */}
                     <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-slate-950/85 backdrop-blur-md text-blue-400 border border-blue-500/30 shadow-md">
+                      <span 
+                        style={{
+                          backgroundColor: getRgba(themeColor, 0.2),
+                          color: themeColor,
+                          borderColor: getRgba(themeColor, 0.4)
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase backdrop-blur-md border shadow-md"
+                      >
                         {course.category}
                       </span>
                       {Boolean(course.is_featured) && (
@@ -198,11 +260,14 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
 
                     {/* Bottom Metadata Chip over Image */}
                     <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between pointer-events-none text-xs text-slate-300">
-                      <span className="px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs border border-white/10 font-mono text-[10px] text-slate-300 flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-blue-400" />
+                      <span className="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-xs border border-white/10 font-mono text-[10px] text-slate-300 flex items-center gap-1">
+                        <Clock className="w-3 h-3" style={{ color: themeColor }} />
                         {course.duration_weeks} WEEKS
                       </span>
-                      <span className="px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs border border-white/10 font-mono text-[10px] text-blue-300 font-semibold">
+                      <span 
+                        style={{ color: themeColor }}
+                        className="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-xs border border-white/10 font-mono text-[10px] font-semibold"
+                      >
                         {formatKES(course.price_kes)}
                       </span>
                     </div>
@@ -223,18 +288,24 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
                           toggleProgram(course.id);
                         }
                       }}
-                      className="w-full p-4 sm:p-4.5 flex items-start justify-between gap-3 cursor-pointer select-none transition-colors hover:bg-slate-900/60 rounded-b-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      className="w-full p-4 sm:p-4.5 flex items-start justify-between gap-3 cursor-pointer select-none transition-colors hover:bg-slate-900/60 rounded-b-2xl focus:outline-none focus-visible:ring-2"
+                      style={{ 
+                        '--tw-ring-color': getRgba(themeColor, 0.5) 
+                      } as React.CSSProperties}
                     >
                       <div className="space-y-1 flex-1 pr-1 min-w-0">
-                        <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-wider uppercase text-blue-400">
+                        <div 
+                          style={{ color: themeColor }}
+                          className="flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-wider uppercase"
+                        >
                           <span className="truncate">{course.category}</span>
                         </div>
-                        <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-blue-300 transition-colors leading-snug line-clamp-2">
+                        <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-slate-100 transition-colors leading-snug line-clamp-2">
                           {course.title}
                         </h3>
                       </div>
 
-                      {/* Interactive Expand/Collapse Toggle Icon (+ / -) */}
+                      {/* Interactive Expand/Collapse Toggle Button (+ / -) */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -242,16 +313,21 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
                           toggleProgram(course.id);
                         }}
                         aria-label={isExpanded ? `Collapse ${course.title} details` : `Expand ${course.title} details`}
+                        style={isExpanded ? {
+                          backgroundColor: getRgba(themeColor, 0.2),
+                          color: themeColor,
+                          borderColor: getRgba(themeColor, 0.5)
+                        } : undefined}
                         className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-mono text-lg font-bold transition-all duration-200 border shadow-xs cursor-pointer ${
                           isExpanded
-                            ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 hover:bg-blue-500/30'
+                            ? 'hover:brightness-110'
                             : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white hover:bg-slate-850'
                         }`}
                       >
                         {isExpanded ? (
-                          <Minus className="w-4 h-4 text-blue-400" />
+                          <Minus className="w-4 h-4" style={{ color: themeColor }} />
                         ) : (
-                          <Plus className="w-4 h-4 text-slate-300" />
+                          <Plus className="w-4 h-4 text-slate-300 group-hover:text-white" />
                         )}
                       </button>
                     </div>
@@ -277,12 +353,12 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
                             {/* Metadata Specs Grid */}
                             <div className="space-y-1.5 text-xs text-slate-300 font-mono">
                               <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-900/80 border border-slate-800">
-                                <Calendar className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: themeColor }} />
                                 <span className="text-[11px] text-slate-300 truncate">{course.schedule}</span>
                               </div>
                               <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-900/80 border border-slate-800">
                                 <div className="flex items-center gap-1.5 truncate">
-                                  <Clock className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                  <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: themeColor }} />
                                   <span className="text-[11px] text-slate-300 truncate">Intake: {course.next_intake}</span>
                                 </div>
                                 <span className="text-[10px] text-slate-400 shrink-0">{course.level || 'Beginner+'}</span>
@@ -296,17 +372,18 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => setSelectedCourseForSyllabus(course)}
-                                  className="text-blue-400 hover:text-blue-300 normal-case text-xs flex items-center gap-0.5 font-semibold cursor-pointer"
+                                  style={{ color: themeColor }}
+                                  className="hover:underline normal-case text-xs flex items-center gap-0.5 font-semibold cursor-pointer"
                                 >
                                   <span>Full Syllabus</span>
-                                  <ChevronRight className="w-3 h-3" />
+                                  <ChevronRight className="w-3 h-3" style={{ color: themeColor }} />
                                 </button>
                               </div>
 
                               <div className="space-y-1">
                                 {modulesList.slice(0, 3).map((mod, idx) => (
                                   <div key={idx} className="flex items-start gap-1.5 text-[11px] text-slate-300">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: themeColor }} />
                                     <span className="truncate">{mod.module || (mod as any).title}</span>
                                   </div>
                                 ))}
@@ -324,7 +401,10 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
                                 </div>
                                 <div className="text-right">
                                   <span className="text-[10px] text-slate-400 font-mono">Installments</span>
-                                  <div className="text-xs text-blue-400 font-mono font-semibold">
+                                  <div 
+                                    style={{ color: themeColor }}
+                                    className="text-xs font-mono font-semibold"
+                                  >
                                     {formatKES(course.monthly_kes)} / mo
                                   </div>
                                 </div>
@@ -343,8 +423,8 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => onApplyCourse(course.id)}
-                                  style={{ backgroundColor: 'var(--primary-color)' }}
-                                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-slate-950 text-xs font-bold shadow-md hover:brightness-110 transition-all hover:scale-[1.01] cursor-pointer"
+                                  style={{ backgroundColor: themeColor, color: '#020617' }}
+                                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:brightness-110 transition-all hover:scale-[1.01] cursor-pointer"
                                 >
                                   <span>Apply Now</span>
                                   <ArrowRight className="w-3.5 h-3.5" />
@@ -393,11 +473,22 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center justify-center">
+              <div 
+                style={{ 
+                  backgroundColor: getRgba(themeColor, 0.15),
+                  borderColor: getRgba(themeColor, 0.3)
+                }}
+                className="w-10 h-10 rounded-xl border flex items-center justify-center"
+              >
                 {getCourseIcon(selectedCourseForSyllabus.slug)}
               </div>
               <div>
-                <span className="text-xs font-mono text-blue-400 font-medium">{selectedCourseForSyllabus.category}</span>
+                <span 
+                  style={{ color: themeColor }}
+                  className="text-xs font-mono font-medium"
+                >
+                  {selectedCourseForSyllabus.category}
+                </span>
                 <h3 className="text-xl font-bold text-white">{selectedCourseForSyllabus.title}</h3>
               </div>
             </div>
@@ -409,7 +500,14 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
               <span className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 font-medium">
                 Level: {selectedCourseForSyllabus.level}
               </span>
-              <span className="px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-medium">
+              <span 
+                style={{
+                  backgroundColor: getRgba(themeColor, 0.15),
+                  color: themeColor,
+                  borderColor: getRgba(themeColor, 0.3)
+                }}
+                className="px-2.5 py-1 rounded border font-medium font-mono"
+              >
                 Tuition: {formatKES(selectedCourseForSyllabus.price_kes)}
               </span>
             </div>
@@ -425,13 +523,19 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
 
               {(selectedCourseForSyllabus.curriculum_modules || selectedCourseForSyllabus.curriculum || []).map((mod, idx) => (
                 <div key={idx} className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-                  <div className="text-sm font-semibold text-blue-400">
+                  <div 
+                    style={{ color: themeColor }}
+                    className="text-sm font-semibold"
+                  >
                     {mod.module || (mod as any).title}
                   </div>
                   <ul className="space-y-1">
                     {(Array.isArray(mod.topics) ? mod.topics : []).map((topic, tIdx) => (
                       <li key={tIdx} className="flex items-center gap-2 text-xs text-slate-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                        <span 
+                          style={{ backgroundColor: themeColor }}
+                          className="w-1.5 h-1.5 rounded-full shrink-0" 
+                        />
                         <span>{topic}</span>
                       </li>
                     ))}
@@ -450,8 +554,8 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
                   setSelectedCourseForSyllabus(null);
                   onApplyCourse(cId);
                 }}
-                style={{ backgroundColor: 'var(--primary-color)' }}
-                className="px-6 py-2.5 rounded-xl text-slate-950 text-xs font-bold shadow-md hover:brightness-110 transition-all cursor-pointer"
+                style={{ backgroundColor: themeColor, color: '#020617' }}
+                className="px-6 py-2.5 rounded-xl text-xs font-bold shadow-md hover:brightness-110 transition-all cursor-pointer"
               >
                 Apply for this Course
               </button>

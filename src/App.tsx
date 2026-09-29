@@ -219,6 +219,7 @@ export default function App() {
           courses={courses}
           loading={loadingCourses}
           onApplyCourse={(courseId) => handleOpenApply(courseId)}
+          siteSettings={siteSettings}
         />
 
         {/* 3. Technologies You Will Master */}
