@@ -345,9 +345,6 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
             <span>Finance & Admissions Oversight</span>
           </div>
           <h2 className="text-2xl font-bold text-white mt-1">Student Tuition & Access Restriction Control</h2>
-          <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-            Manage total program fees, payments to date, auto-calculated balances, automated SMS & Email alerts, and real-time live lecture / portal lockouts.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">

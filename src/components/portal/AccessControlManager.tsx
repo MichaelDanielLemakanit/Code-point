@@ -484,9 +484,6 @@ export const AccessControlManager: React.FC<AccessControlManagerProps> = ({ onRe
                   <span>Automated Enrollment & Credentials Sync Active</span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-semibold">Live System</span>
                 </p>
-                <p className="text-slate-400 mt-0.5">
-                  When a student is enrolled in the Admissions Inbox or Tuition Ledger, an active account is automatically created in Access Control with an auto-generated temporary password ready for instant copy or direct email dispatch.
-                </p>
               </div>
             </div>
             <button

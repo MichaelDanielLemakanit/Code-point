@@ -340,9 +340,6 @@ export const VideoTestimonialsManager: React.FC<VideoTestimonialsManagerProps> =
             <Film className="w-6 h-6 text-emerald-600" />
             <span>Student Video Testimonials CMS</span>
           </h2>
-          <p className="text-xs text-stone-500 mt-1">
-            Manage real alumni video stories, featured toggles on the homepage gallery, video URLs (YouTube, Vimeo, MP4), and review quotes.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -353,14 +350,6 @@ export const VideoTestimonialsManager: React.FC<VideoTestimonialsManagerProps> =
             title="Refresh videos"
           >
             <RefreshCw className={`w-4 h-4 text-stone-600 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-
-          <button
-            onClick={handleOpenAdd}
-            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Video Testimonial</span>
           </button>
         </div>
       </div>

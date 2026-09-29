@@ -922,24 +922,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>Dashboard</span>
                 </button>
 
-                {/* Next Intake & Cohort Management Tab */}
-                <button
-                  onClick={() => setActiveTab('intake')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition-colors cursor-pointer text-left ${
-                    activeTab === 'intake'
-                      ? 'bg-emerald-500/20 text-white font-semibold border-l-2 border-emerald-400 shadow-sm'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Calendar className={`w-4 h-4 ${activeTab === 'intake' ? 'text-emerald-400' : 'text-slate-400'}`} />
-                    <span>Next Intake & Cohort</span>
-                  </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold border border-emerald-500/30">
-                    Live
-                  </span>
-                </button>
-
                 {/* Programs & Tuition Tab */}
                 <button
                   onClick={() => setActiveTab('programs')}
@@ -955,24 +937,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-stone-300 font-mono font-bold">
                     {courses.length}
-                  </span>
-                </button>
-
-                {/* Tuition & Fees Access Control Tab */}
-                <button
-                  onClick={() => setActiveTab('fees')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition-colors cursor-pointer text-left ${
-                    activeTab === 'fees'
-                      ? 'bg-emerald-500/20 text-white font-semibold border-l-2 border-emerald-400 shadow-sm'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <CreditCard className={`w-4 h-4 ${activeTab === 'fees' ? 'text-emerald-400' : 'text-slate-400'}`} />
-                    <span>Tuition & Fees</span>
-                  </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold border border-emerald-500/30">
-                    KES Ledger
                   </span>
                 </button>
 
@@ -1148,13 +1112,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={onClose}
-                    className="px-3 py-1.5 rounded-lg border border-stone-300 bg-stone-50 hover:bg-stone-100 text-stone-700 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <span>Back to Homepage</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </button>
                 </div>
               </div>
 
@@ -2071,37 +2028,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           {courses.length}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Active Intake & Cohort Banner on Dashboard */}
-                    <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-stone-900 to-stone-950 border border-emerald-500/30 text-stone-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0">
-                          <Calendar className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs uppercase tracking-wider font-semibold text-stone-400">Current Intake Configuration</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                              {siteSettings?.intake_status || formData.intake_status || 'Enrollment Open'}
-                            </span>
-                          </div>
-                          <div className="text-base font-bold text-white mt-0.5">
-                            Next Cohort: {siteSettings?.next_intake_date || formData.next_intake_date || 'October 15, 2026'}
-                          </div>
-                          <p className="text-xs text-stone-300">
-                            Registration Deadline: {siteSettings?.registration_deadline || formData.registration_deadline || 'October 10, 2026'} • Banner: {siteSettings?.announcement_banner_enabled !== 'false' && formData.announcement_banner_enabled !== 'false' ? 'Active' : 'Disabled'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => setActiveTab('intake')}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 text-xs font-bold transition-all hover:scale-105 cursor-pointer shrink-0 shadow-md"
-                      >
-                        <span>Manage Next Intake</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
                     </div>
 
                     {/* Quick navigation prompts */}

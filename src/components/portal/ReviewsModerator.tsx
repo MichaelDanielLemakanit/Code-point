@@ -336,9 +336,6 @@ export const ReviewsModerator: React.FC<ReviewsModeratorProps> = ({
             <MessageSquareHeart className="w-7 h-7 text-emerald-600" />
             <span>Reviews & Ratings Moderation</span>
           </h1>
-          <p className="text-xs text-stone-500 mt-1">
-            Review public feedback submissions, approve endorsements to the live website marquee, edit quotes, or add verified alumni stories.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -349,14 +346,6 @@ export const ReviewsModerator: React.FC<ReviewsModeratorProps> = ({
             title="Refresh submissions"
           >
             <RefreshCw className={`w-4 h-4 text-stone-600 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-
-          <button
-            onClick={handleOpenAdd}
-            className="px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md shadow-stone-900/20 cursor-pointer"
-          >
-            <Plus className="w-4 h-4 text-emerald-400" />
-            <span>Add Testimonial</span>
           </button>
         </div>
       </div>

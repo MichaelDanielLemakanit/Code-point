@@ -6,7 +6,6 @@ import {
   CheckCircle, 
   Clock, 
   Calendar, 
-  MapPin, 
   Award, 
   FileCode,
   ExternalLink,
@@ -454,11 +453,6 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ curren
                 Curriculum Lead
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5">{displayTitle}</p>
-            <p className="text-[11px] text-indigo-300 mt-1 flex items-center gap-1 font-mono">
-              <MapPin className="w-3 h-3" />
-              <span>Saturday Labs & Clinics: Ngong Road, Teamshark 5th Floor</span>
-            </p>
           </div>
         </div>
 

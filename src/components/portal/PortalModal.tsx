@@ -213,23 +213,11 @@ export const PortalModal: React.FC<PortalModalProps> = ({
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Back to Website</span>
             </button>
-
-            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
-
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                CPK
-              </div>
-              <div>
-                <span className="text-xs font-bold text-white leading-none block">Code Point Kenya Portal</span>
-                <span className="text-[10px] text-slate-400 font-mono">Secure Access Hub</span>
-              </div>
-            </div>
           </div>
 
           {/* Current User Status */}
           <div className="flex items-center gap-3">
-            {currentUser ? (
+            {currentUser && (
               <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
                   <div className="text-xs font-bold text-white">{currentUser.name}</div>
@@ -243,11 +231,6 @@ export const PortalModal: React.FC<PortalModalProps> = ({
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
-            ) : (
-              <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-amber-400" />
-                <span>Protected Portal</span>
-              </span>
             )}
 
             <button
@@ -282,18 +265,6 @@ export const PortalModal: React.FC<PortalModalProps> = ({
                 <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                   Code Point Kenya Portal
                 </h3>
-                {/* Visual Status Pill Badge */}
-                <div 
-                  style={{ 
-                    backgroundColor: 'rgba(var(--primary-rgb), 0.1)', 
-                    borderColor: 'rgba(var(--primary-rgb), 0.25)', 
-                    color: 'var(--primary-color)' 
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-mono font-semibold border shadow-xs"
-                >
-                  <Lock className="w-3 h-3" />
-                  <span>SECURE ACCESS HUB</span>
-                </div>
               </div>
 
               {/* 4-Icon Feature Strip: Replaces wordy explanations with visual cues */}
@@ -531,13 +502,10 @@ export const PortalModal: React.FC<PortalModalProps> = ({
 
                   {/* 2. Email Address Input */}
                   <div className="space-y-1">
-                    <label htmlFor="portal-email-input" className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                    <label htmlFor="portal-email-input" className="text-xs font-semibold text-slate-300 flex items-center">
                       <span className="flex items-center gap-1.5">
                         <Mail className="w-3.5 h-3.5 theme-text-primary" />
                         <span>Email Address</span>
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {selectedRole === 'student' ? 'Application' : 'Staff'}
                       </span>
                     </label>
                     <div className="relative">
@@ -560,14 +528,11 @@ export const PortalModal: React.FC<PortalModalProps> = ({
 
                   {/* 3. Password Input */}
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center">
                       <label htmlFor="portal-password-input" className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                         <KeyRound className="w-3.5 h-3.5 theme-text-primary" />
                         <span>Password</span>
                       </label>
-                      {selectedRole === 'student' && (
-                        <span className="text-[10px] text-slate-400 font-mono">Optional</span>
-                      )}
                     </div>
                     <div className="relative">
                       <KeyRound className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />

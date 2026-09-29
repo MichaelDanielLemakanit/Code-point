@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Certificate } from '../../types';
-import { Award, CheckCircle, Printer, ShieldCheck, X, QrCode, Download, Loader2 } from 'lucide-react';
+import { Award, Printer, ShieldCheck, X, Download, Loader2 } from 'lucide-react';
 
 interface CertificateModalProps {
   certificate: Certificate;
@@ -190,16 +190,10 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
               <h4 className="text-base sm:text-lg font-bold text-white font-mono tracking-wide">
                 {certificate.courseName || certificate.course_title || 'Software Engineering Immersive'}
               </h4>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold mt-1">
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span>
-                  {certificate.grade || (certificate.final_grade ? `Grade: ${certificate.final_grade} • ${certificate.cohort || 'Cohort 14'}` : 'Grade Distinction - Cohort 14')}
-                </span>
-              </div>
             </div>
 
             {/* Signatures & Verification Meta */}
-            <div className="pt-6 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-6 items-center text-left">
+            <div className="pt-6 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-6 items-center text-left">
               
               {/* Left: Signatory 1 */}
               <div className="text-center sm:text-left space-y-1">
@@ -209,16 +203,6 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
                 <div className="text-[10px] text-slate-400 font-mono uppercase">
                   {certificate.signatory1Title || 'CURRICULUM DIRECTOR - Faculty of Engineering'}
                 </div>
-              </div>
-
-              {/* Center: Verification ID & QR */}
-              <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-900 border border-slate-800 text-center">
-                <QrCode className="w-10 h-10 text-emerald-400 mb-1" />
-                <span className="text-[9px] font-mono text-slate-400 uppercase">Verifiable ID</span>
-                <span className="text-[11px] font-mono font-bold text-amber-400 tracking-wider">
-                  {certificate.certIdNumber || certificate.verification_id || 'CPK-CERT-VERIFIED'}
-                </span>
-                <span className="text-[9px] text-emerald-400 font-mono mt-0.5">Authenticated 100%</span>
               </div>
 
               {/* Right: Signatory 2 & Issue Date */}
@@ -240,14 +224,6 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({ certificate,
 
             </div>
 
-          </div>
-
-          {/* Public Verification Link */}
-          <div className="no-print mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-400">
-            <span>Public Verification URL:</span>
-            <span className="font-mono text-emerald-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 select-all">
-              https://codepointkenya.com/verify?id={certificate.certIdNumber || certificate.verification_id}
-            </span>
           </div>
 
         </div>
