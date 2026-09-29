@@ -143,19 +143,6 @@ export const WhyStudySection: React.FC<WhyStudySectionProps> = ({
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-3">
-          {/* Top Pill Badge */}
-          <div 
-            style={{ 
-              backgroundColor: 'rgba(var(--primary-rgb), 0.1)', 
-              borderColor: 'rgba(var(--primary-rgb), 0.25)', 
-              color: 'var(--primary-color)' 
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border shadow-sm uppercase tracking-wider mx-auto"
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-            <span>LEARN • BUILD • GROW</span>
-          </div>
-
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             {sectionTitle}
           </h2>

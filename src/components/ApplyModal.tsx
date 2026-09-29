@@ -3,7 +3,6 @@ import {
   X, 
   CheckCircle2, 
   Send, 
-  Sparkles, 
   Phone, 
   Mail, 
   User, 
@@ -140,17 +139,9 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
 
         {!submittedApp ? (
           <div>
-            {/* Header */}
-            <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono font-semibold uppercase tracking-wider">
-              <Sparkles className="w-4 h-4" />
-              <span>Code Point Kenya Admissions</span>
-            </div>
-            <h2 className="text-2xl font-extrabold text-white mt-1">
+            <h2 className="text-2xl font-extrabold text-white">
               Apply for Upcoming Tech Cohort
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
-              Join Kenya's fastest growing tech community. Online-first with physical campus lab access at <span className="text-emerald-400 font-medium">Ngong Road, Teamshark 5th Floor</span>.
-            </p>
 
             {errorMsg && (
               <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
@@ -290,11 +281,6 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                     className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
                   />
                 </div>
-              </div>
-
-              {/* Payment note */}
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 text-[11px] text-slate-400">
-                💡 <span className="text-slate-300 font-medium">Application is free.</span> Tuition payments only begin after admission acceptance. Flexible monthly installment plans in KES are available.
               </div>
 
               {/* Action Buttons */}
