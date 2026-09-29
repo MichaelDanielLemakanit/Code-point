@@ -32,7 +32,9 @@ import {
   Pencil,
   Share2,
   MessageSquare,
-  Loader2
+  Loader2,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -207,12 +209,20 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
 
   // Course management state
   const [showAddCourse, setShowAddCourse] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [newCourseTitle, setNewCourseTitle] = useState('');
   const [newCourseCategory, setNewCourseCategory] = useState('Software Development');
   const [newCourseWeeks, setNewCourseWeeks] = useState(12);
-  const [newCoursePrice, setNewCoursePrice] = useState(70000);
-  const [newCourseMonthly, setNewCourseMonthly] = useState(15000);
+  const [newCoursePrice, setNewCoursePrice] = useState(75000);
+  const [newCourseMonthly, setNewCourseMonthly] = useState(16500);
   const [newCourseSummary, setNewCourseSummary] = useState('');
+  const [newCourseImageUrl, setNewCourseImageUrl] = useState('');
+  const [newCourseSchedule, setNewCourseSchedule] = useState('Mon–Thu 7:00 PM – 9:30 PM EAT & Saturday Coding Clinics');
+  const [newCourseModules, setNewCourseModules] = useState<{ module: string; topics: string }[]>([
+    { module: 'Module 1: Foundations & Architecture', topics: 'Syntax, Git, Problem Solving, Data Structures' },
+    { module: 'Module 2: Core Engineering & Systems', topics: 'APIs, Relational DBs, Async Patterns, Testing' },
+    { module: 'Module 3: Production Capstone Project', topics: 'Cloud Deployment, CI/CD, Code Review, Security' }
+  ]);
   const [addingCourseLoading, setAddingCourseLoading] = useState(false);
 
   const fetchApplications = async () => {
@@ -344,48 +354,115 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
     }
   };
 
-  const handleCreateCourse = async (e: React.FormEvent) => {
+  const handleCourseFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      alert("Please select an image smaller than 8MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const dataUrl = uploadEvent.target?.result as string;
+      setNewCourseImageUrl(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleOpenAddCourse = () => {
+    setEditingCourseId(null);
+    setNewCourseTitle('');
+    setNewCourseCategory('Software Development');
+    setNewCourseWeeks(12);
+    setNewCoursePrice(75000);
+    setNewCourseMonthly(16500);
+    setNewCourseSummary('');
+    setNewCourseImageUrl('https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=1200&auto=format&fit=crop');
+    setNewCourseSchedule('Mon–Thu 7:00 PM – 9:30 PM EAT & Saturday Coding Clinics');
+    setNewCourseModules([
+      { module: 'Module 1: Foundations & Architecture', topics: 'Syntax, Git, Problem Solving, Data Structures' },
+      { module: 'Module 2: Core Engineering & Systems', topics: 'APIs, Relational DBs, Async Patterns, Testing' },
+      { module: 'Module 3: Production Capstone Project', topics: 'Cloud Deployment, CI/CD, Code Review, Security' }
+    ]);
+    setShowAddCourse(true);
+  };
+
+  const handleOpenEditCourse = (course: Course) => {
+    setEditingCourseId(course.id);
+    setNewCourseTitle(course.title);
+    setNewCourseCategory(course.category);
+    setNewCourseWeeks(course.duration_weeks || 12);
+    setNewCoursePrice(course.price_kes);
+    setNewCourseMonthly(course.monthly_kes || Math.round(course.price_kes / 5));
+    setNewCourseSummary(course.summary || '');
+    setNewCourseImageUrl(course.image_url || '');
+    setNewCourseSchedule(course.schedule || 'Mon–Thu 7:00 PM – 9:30 PM EAT & Saturday Coding Clinics');
+    
+    const mods = course.curriculum_modules || course.curriculum || [];
+    if (Array.isArray(mods) && mods.length > 0) {
+      setNewCourseModules(mods.map((m: any) => ({
+        module: m.module || m.title || 'Module',
+        topics: Array.isArray(m.topics) ? m.topics.join(', ') : (m.topics || '')
+      })));
+    } else {
+      setNewCourseModules([
+        { module: 'Module 1: Core Fundamentals', topics: 'Foundations, Industry Tools, System Setup' },
+        { module: 'Module 2: Production Applications', topics: 'Full Stack Engineering, Production Deployments' }
+      ]);
+    }
+    setShowAddCourse(true);
+  };
+
+  const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCourseTitle.trim() || !newCoursePrice) return;
     setAddingCourseLoading(true);
 
     try {
-      const res = await fetch('/api/courses', {
-        method: 'POST',
+      const formattedCurriculum = newCourseModules.map((m, idx) => ({
+        module: m.module.trim() || `Module ${idx + 1}`,
+        topics: m.topics.split(',').map(t => t.trim()).filter(Boolean)
+      }));
+
+      const payload = {
+        title: newCourseTitle.trim(),
+        category: newCourseCategory,
+        duration_weeks: Number(newCourseWeeks) || 12,
+        price_kes: Number(newCoursePrice),
+        monthly_kes: Number(newCourseMonthly) || Math.round(Number(newCoursePrice) / 5),
+        summary: newCourseSummary.trim() || 'Comprehensive tech curriculum with hands-on projects and career coaching.',
+        schedule: newCourseSchedule.trim() || 'Mon–Thu 7:00 PM – 9:30 PM EAT & Saturday Coding Clinics',
+        delivery_mode: 'Online-First + Ngong Rd Campus Lab Access',
+        next_intake: 'Upcoming Cohort',
+        level: 'Beginner to Intermediate',
+        is_featured: 1,
+        image_url: newCourseImageUrl.trim(),
+        imageUrl: newCourseImageUrl.trim(),
+        curriculum: formattedCurriculum,
+        curriculum_modules: formattedCurriculum
+      };
+
+      const endpoint = editingCourseId ? `/api/courses/${editingCourseId}` : '/api/courses';
+      const method = editingCourseId ? 'PUT' : 'POST';
+
+      const res = await fetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: newCourseTitle.trim(),
-          category: newCourseCategory,
-          duration_weeks: Number(newCourseWeeks),
-          price_kes: Number(newCoursePrice),
-          monthly_kes: Number(newCourseMonthly),
-          summary: newCourseSummary.trim() || 'Comprehensive tech curriculum with hands-on projects and career coaching.',
-          curriculum: [
-            { module: 'Phase 1: Foundations', topics: ['Core Syntax & Principles', 'Data Structures', 'Git Workflows'] },
-            { module: 'Phase 2: Core Engineering', topics: ['Modern Architecture', 'Databases & APIs', 'Testing'] },
-            { module: 'Phase 3: Production Capstone', topics: ['Deployment', 'Portfolio Defense', 'Job Mock Interviews'] }
-          ],
-          level: 'Beginner to Intermediate',
-          delivery_mode: 'Online-First + Ngong Rd Campus Lab Access',
-          schedule: 'Flexible Evenings & Saturday Clinics',
-          next_intake: 'Upcoming Cohort',
-          is_featured: 1
-        })
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
         onRefreshCourses();
         setShowAddCourse(false);
-        setNewCourseTitle('');
-        setNewCourseSummary('');
+        setEditingCourseId(null);
       } else {
         const errorData = await res.json().catch(() => null);
         const errorMsg = errorData?.error || errorData?.message || `Server returned HTTP ${res.status}`;
-        console.error('Failed to create course:', { status: res.status, errorData });
+        console.error('Failed to save course:', { status: res.status, errorData });
         alert(`Failed to save course: ${errorMsg}`);
       }
     } catch (e: any) {
-      console.error('Failed to create course', e);
+      console.error('Failed to save course', e);
       alert(`Network or system error: ${e?.message || 'Failed to save course'}`);
     } finally {
       setAddingCourseLoading(false);
@@ -810,15 +887,20 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
 
       {/* TAB 2: COURSE CATALOG CMS */}
       {activeTab === 'courses' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-sm font-bold text-white">Course Offerings & Tuition</h3>
-              <p className="text-xs text-slate-400">All changes persist directly to the Code Point Kenya SQLite database.</p>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-emerald-400" />
+                <span>Tech Programs & Tuition Manager</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Configure programs, feature card images, schedules, and KES tuition rates published on the public website.
+              </p>
             </div>
             <button
-              onClick={() => setShowAddCourse(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-bold shadow-md cursor-pointer"
+              onClick={handleOpenAddCourse}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-bold shadow-md cursor-pointer transition-all hover:scale-[1.02] self-start sm:self-auto"
             >
               <Plus className="w-4 h-4" />
               <span>Add New Program</span>
@@ -826,121 +908,382 @@ export const AdminCMS: React.FC<AdminCMSProps> = ({
           </div>
 
           {showAddCourse && (
-            <form onSubmit={handleCreateCourse} className="p-6 rounded-2xl bg-slate-950 border border-emerald-500/40 space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-white">Add New Tech Program</h4>
+            <form onSubmit={handleSaveCourse} className="p-6 rounded-2xl bg-slate-950 border border-emerald-500/40 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div>
+                  <h4 className="text-base font-bold text-white">
+                    {editingCourseId ? 'Edit Program Offering' : 'Add New Tech Program'}
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Fields will update public accordion cards and tuition calculations immediately.
+                  </p>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setShowAddCourse(false)}
-                  className="text-xs text-slate-400 hover:text-white"
+                  onClick={() => {
+                    setShowAddCourse(false);
+                    setEditingCourseId(null);
+                  }}
+                  className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-800 cursor-pointer"
                 >
                   Cancel
                 </button>
               </div>
 
+              {/* 2.a. Card Image Section */}
+              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4" />
+                      <span>Program Feature Card Image (Header Image)</span>
+                    </label>
+                    <p className="text-[11px] text-slate-400">
+                      Renders at the top of the expandable program card with rounded corners.
+                    </p>
+                  </div>
+                  {newCourseImageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setNewCourseImageUrl('')}
+                      className="text-[11px] text-rose-400 hover:text-rose-300 font-medium cursor-pointer"
+                    >
+                      Clear Image
+                    </button>
+                  )}
+                </div>
+
+                {/* Live Card Image Preview */}
+                {newCourseImageUrl ? (
+                  <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden border border-slate-700 shadow-md group">
+                    <img 
+                      src={newCourseImageUrl} 
+                      alt="Program Card Header Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-3 left-3 text-white">
+                      <span className="text-[10px] font-mono font-bold uppercase bg-black/60 px-2 py-0.5 rounded border border-white/20">
+                        {newCourseCategory}
+                      </span>
+                      <div className="text-sm font-bold mt-1 text-white drop-shadow">
+                        {newCourseTitle || 'Program Title Preview'}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-24 rounded-xl border-2 border-dashed border-slate-800 bg-slate-950 flex flex-col items-center justify-center text-slate-500 text-xs">
+                    <ImageIcon className="w-5 h-5 mb-1 text-slate-600" />
+                    <span>No image set — select local file or enter URL below</span>
+                  </div>
+                )}
+
+                {/* Upload Local File & Direct URL Input */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Upload from Computer:
+                    </label>
+                    <label className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-750 text-slate-200 text-xs font-medium cursor-pointer transition-colors">
+                      <Upload className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Choose Local File...</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCourseFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Or Direct Image URL:
+                    </label>
+                    <input
+                      type="url"
+                      value={newCourseImageUrl}
+                      onChange={(e) => setNewCourseImageUrl(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="pt-2 border-t border-slate-800/80">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                    Quick Preset Tech Photography:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { label: 'Software Dev Lab', url: 'https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=1200&auto=format&fit=crop' },
+                      { label: 'Applied AI & Data', url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop' },
+                      { label: 'Cybersecurity Ops', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1200&auto=format&fit=crop' },
+                      { label: 'Cloud Infrastructure', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop' }
+                    ].map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setNewCourseImageUrl(preset.url)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all cursor-pointer ${
+                          newCourseImageUrl === preset.url
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500 font-bold'
+                            : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 2.b. Category Tag, Title, Duration, Tuition Price, and Schedule */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-slate-300 block mb-1">Program Title *</label>
+                <div className="sm:col-span-2">
+                  <label className="text-xs text-slate-300 block mb-1 font-semibold">Program Title *</label>
                   <input
                     type="text"
                     required
                     value={newCourseTitle}
                     onChange={(e) => setNewCourseTitle(e.target.value)}
-                    placeholder="e.g. Cloud DevOps & Infrastructure"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    placeholder="e.g. Applied AI & Machine Learning Engineering"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-300 block mb-1">Category</label>
+                  <label className="text-xs text-slate-300 block mb-1 font-semibold">Category Tag</label>
                   <select
                     value={newCourseCategory}
                     onChange={(e) => setNewCourseCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500"
                   >
                     <option value="Software Development">Software Development</option>
                     <option value="Data & Analytics">Data & Analytics</option>
                     <option value="Artificial Intelligence">Artificial Intelligence</option>
                     <option value="Security & Infrastructure">Security & Infrastructure</option>
+                    <option value="Cloud Computing">Cloud Computing</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-300 block mb-1">Total Tuition (KES) *</label>
+                  <label className="text-xs text-slate-300 block mb-1 font-semibold">Duration (Weeks)</label>
                   <input
                     type="number"
-                    required
-                    value={newCoursePrice}
-                    onChange={(e) => setNewCoursePrice(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                    min={1}
+                    max={52}
+                    value={newCourseWeeks}
+                    onChange={(e) => setNewCourseWeeks(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-300 block mb-1">Monthly Installment (KES)</label>
+                  <label className="text-xs text-slate-300 block mb-1 font-semibold">Total Tuition Fee (KES) *</label>
                   <input
                     type="number"
+                    required
+                    min={1000}
+                    value={newCoursePrice}
+                    onChange={(e) => setNewCoursePrice(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1 font-semibold">Monthly Installment (KES)</label>
+                  <input
+                    type="number"
+                    min={1000}
                     value={newCourseMonthly}
                     onChange={(e) => setNewCourseMonthly(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="text-xs text-slate-300 block mb-1 font-semibold">Cohort Schedule</label>
+                  <input
+                    type="text"
+                    value={newCourseSchedule}
+                    onChange={(e) => setNewCourseSchedule(e.target.value)}
+                    placeholder="Mon–Thu 7:00 PM – 9:30 PM EAT & Saturday Coding Clinics"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs text-slate-300 block mb-1">Program Summary</label>
-                <textarea
-                  rows={2}
-                  value={newCourseSummary}
-                  onChange={(e) => setNewCourseSummary(e.target.value)}
-                  placeholder="Outline key learning outcomes and tools taught..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500"
-                />
+              {/* 2.c. Program Summary & Curriculum Highlights Array */}
+              <div className="space-y-4 pt-2 border-t border-slate-800">
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1 font-semibold">
+                    Program Overview / Rich Text Description *
+                  </label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={newCourseSummary}
+                    onChange={(e) => setNewCourseSummary(e.target.value)}
+                    placeholder="Detailed program summary, career tracks, and industry outcomes..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500 leading-relaxed"
+                  />
+                </div>
+
+                {/* Curriculum Modules Highlights */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                        Curriculum Highlights & Modules ({newCourseModules.length})
+                      </label>
+                      <p className="text-[11px] text-slate-400">Key modules shown in public accordion expansion</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNewCourseModules(prev => [
+                        ...prev,
+                        { module: `Module ${prev.length + 1}: Technical Specialization`, topics: 'Core Frameworks, Capstone Defense' }
+                      ])}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Module</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {newCourseModules.map((mod, idx) => (
+                      <div key={idx} className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <input
+                            type="text"
+                            value={mod.module}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setNewCourseModules(prev => prev.map((m, i) => i === idx ? { ...m, module: val } : m));
+                            }}
+                            placeholder={`Module ${idx + 1} Title`}
+                            className="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-emerald-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setNewCourseModules(prev => prev.filter((_, i) => i !== idx))}
+                            className="p-1.5 text-slate-400 hover:text-rose-400 rounded cursor-pointer"
+                            title="Remove module"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={mod.topics}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setNewCourseModules(prev => prev.map((m, i) => i === idx ? { ...m, topics: val } : m));
+                          }}
+                          placeholder="Topics (comma-separated): e.g. React 19, TypeScript, Tailwind, REST APIs"
+                          className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-[11px] text-slate-300 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <div className="flex justify-end gap-2">
+              {/* Submit Controls */}
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setShowAddCourse(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300"
+                  onClick={() => {
+                    setShowAddCourse(false);
+                    setEditingCourseId(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addingCourseLoading}
-                  className="px-5 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-bold"
+                  className="px-6 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
                 >
-                  {addingCourseLoading ? 'Saving...' : 'Publish Program to Catalog'}
+                  {addingCourseLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      <span>{editingCourseId ? 'Save Program Changes' : 'Publish Program to Catalog'}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {courses.map((course) => (
-              <div key={course.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between space-y-3">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-emerald-400 uppercase font-semibold">{course.category}</span>
-                    <span className="text-xs font-mono font-bold text-white">KES {course.price_kes.toLocaleString()}</span>
+          {/* Programs Catalog Cards List */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {courses.map((course) => {
+              const displayImg = course.image_url || 'https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=1200&auto=format&fit=crop';
+              return (
+                <div key={course.id} className="rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden flex flex-col justify-between shadow-lg group hover:border-slate-700 transition-all">
+                  {/* Top Card Image Header */}
+                  <div className="relative w-full h-40 overflow-hidden bg-slate-900">
+                    <img
+                      src={displayImg}
+                      alt={course.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent" />
+                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold bg-slate-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                        {course.category}
+                      </span>
+                    </div>
+                    <div className="absolute bottom-2.5 right-3 text-right">
+                      <span className="text-sm font-mono font-bold text-white drop-shadow">
+                        KES {course.price_kes.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                  <h4 className="text-sm font-bold text-white mt-1">{course.title}</h4>
-                  <p className="text-xs text-slate-400 mt-1 line-clamp-2">{course.summary}</p>
-                </div>
 
-                <div className="pt-2 border-t border-slate-850 flex items-center justify-between text-xs text-slate-400">
-                  <span>{course.duration_weeks} Weeks • {course.schedule}</span>
-                  <button
-                    onClick={() => handleDeleteCourse(course.id)}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                    title="Delete course"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {/* Body Content */}
+                  <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h4 className="text-base font-bold text-white">{course.title}</h4>
+                      <p className="text-xs text-slate-400 line-clamp-2 mt-1 leading-relaxed">{course.summary}</p>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-850 flex items-center justify-between text-xs text-slate-400">
+                      <span className="font-mono text-[11px] truncate max-w-[200px]">
+                        {course.duration_weeks} Weeks • {course.schedule}
+                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleOpenEditCourse(course)}
+                          className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Edit course details"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCourse(course.id)}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="Delete course"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
         </div>

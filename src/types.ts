@@ -20,6 +20,7 @@ export interface Course {
   next_intake: string;
   is_featured: number;
   created_at: string;
+  image_url?: string;
 }
 
 export type ApplicationStatus =

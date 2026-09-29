@@ -99,7 +99,7 @@ export function convertSqlForPostgres(sql: string): string {
     converted = converted.replace(
       /INSERT\s+OR\s+REPLACE\s+INTO\s+courses/i,
       "INSERT INTO courses"
-    ) + " ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, slug = EXCLUDED.slug, category = EXCLUDED.category, duration_weeks = EXCLUDED.duration_weeks, price_kes = EXCLUDED.price_kes, monthly_kes = EXCLUDED.monthly_kes, summary = EXCLUDED.summary, curriculum = EXCLUDED.curriculum, level = EXCLUDED.level, delivery_mode = EXCLUDED.delivery_mode, schedule = EXCLUDED.schedule, next_intake = EXCLUDED.next_intake, is_featured = EXCLUDED.is_featured";
+    ) + " ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, slug = EXCLUDED.slug, category = EXCLUDED.category, duration_weeks = EXCLUDED.duration_weeks, price_kes = EXCLUDED.price_kes, monthly_kes = EXCLUDED.monthly_kes, summary = EXCLUDED.summary, curriculum = EXCLUDED.curriculum, level = EXCLUDED.level, delivery_mode = EXCLUDED.delivery_mode, schedule = EXCLUDED.schedule, next_intake = EXCLUDED.next_intake, is_featured = EXCLUDED.is_featured, image_url = EXCLUDED.image_url";
   }
 
   // SQLite 'INSERT OR REPLACE INTO programs (...) VALUES (...)'
@@ -107,7 +107,7 @@ export function convertSqlForPostgres(sql: string): string {
     converted = converted.replace(
       /INSERT\s+OR\s+REPLACE\s+INTO\s+programs/i,
       "INSERT INTO programs"
-    ) + " ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, slug = EXCLUDED.slug, category = EXCLUDED.category, duration_weeks = EXCLUDED.duration_weeks, price_kes = EXCLUDED.price_kes, monthly_kes = EXCLUDED.monthly_kes, summary = EXCLUDED.summary, curriculum = EXCLUDED.curriculum, level = EXCLUDED.level, delivery_mode = EXCLUDED.delivery_mode, schedule = EXCLUDED.schedule, next_intake = EXCLUDED.next_intake, is_featured = EXCLUDED.is_featured";
+    ) + " ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, slug = EXCLUDED.slug, category = EXCLUDED.category, duration_weeks = EXCLUDED.duration_weeks, price_kes = EXCLUDED.price_kes, monthly_kes = EXCLUDED.monthly_kes, summary = EXCLUDED.summary, curriculum = EXCLUDED.curriculum, level = EXCLUDED.level, delivery_mode = EXCLUDED.delivery_mode, schedule = EXCLUDED.schedule, next_intake = EXCLUDED.next_intake, is_featured = EXCLUDED.is_featured, image_url = EXCLUDED.image_url";
   }
 
   // SQLite 'INSERT OR REPLACE INTO tuition_fees (...) VALUES (...)'
@@ -484,6 +484,7 @@ export const DEFAULT_COURSES = [
     schedule: "Mon-Thu 7:00 PM - 9:30 PM EAT & Saturday Coding Clinics (9 AM - 4 PM)",
     next_intake: "October 15, 2026",
     is_featured: 1,
+    image_url: "https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=1200&auto=format&fit=crop",
     created_at: new Date().toISOString()
   },
   {
@@ -506,6 +507,7 @@ export const DEFAULT_COURSES = [
     schedule: "Mon-Thu 7:00 PM - 9:30 PM EAT & Saturday Coding Clinics (9 AM - 4 PM)",
     next_intake: "October 15, 2026",
     is_featured: 1,
+    image_url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop",
     created_at: new Date().toISOString()
   },
   {
@@ -528,6 +530,7 @@ export const DEFAULT_COURSES = [
     schedule: "Mon-Thu 7:00 PM - 9:30 PM EAT & Saturday Coding Clinics (9 AM - 4 PM)",
     next_intake: "October 15, 2026",
     is_featured: 1,
+    image_url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1200&auto=format&fit=crop",
     created_at: new Date().toISOString()
   }
 ];
@@ -1624,7 +1627,9 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT true",
       "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"isFeatured\" BOOLEAN DEFAULT true",
       "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS created_at VARCHAR(100)",
-      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"createdAt\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+      "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS \"createdAt\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT ''",
+      "ALTER TABLE programs ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT ''"
     ];
     for (const sql of alterColumns) {
       await pool.query(sql).catch((err: any) => console.warn("[Database] Alter column notice:", err?.message));
@@ -1637,11 +1642,18 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       console.log("[Database] Seeding default flagship courses in PostgreSQL...");
       for (const c of DEFAULT_COURSES) {
         await pool.query(
-          `INSERT INTO courses (id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          `INSERT INTO courses (id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, image_url, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
            ON CONFLICT (id) DO NOTHING`,
-          [c.id, c.title, c.slug, c.category, c.duration_weeks, c.price_kes, c.monthly_kes, c.summary, c.curriculum, c.level, c.delivery_mode, c.schedule, c.next_intake, c.is_featured, c.created_at]
+          [c.id, c.title, c.slug, c.category, c.duration_weeks, c.price_kes, c.monthly_kes, c.summary, c.curriculum, c.level, c.delivery_mode, c.schedule, c.next_intake, c.is_featured, c.image_url || '', c.created_at]
         );
+      }
+    } else {
+      for (const c of DEFAULT_COURSES) {
+        await pool.query(
+          `UPDATE courses SET image_url = $1 WHERE (id = $2 OR slug = $3) AND (image_url IS NULL OR image_url = '')`,
+          [c.image_url || '', c.id, c.slug]
+        ).catch(() => {});
       }
     }
 
@@ -3087,6 +3099,12 @@ async function initSqlite(): Promise<AppDatabase | null> {
     try {
       sqliteInstance.run("ALTER TABLE student_fee_accounts ADD COLUMN last_alert_type TEXT");
     } catch (_) {}
+    try {
+      sqliteInstance.run("ALTER TABLE courses ADD COLUMN image_url TEXT DEFAULT ''");
+    } catch (_) {}
+    try {
+      sqliteInstance.run("ALTER TABLE programs ADD COLUMN image_url TEXT DEFAULT ''");
+    } catch (_) {}
 
     // Ensure columns in certificates if table already existed
     const certAlterStatements = [
@@ -3142,10 +3160,20 @@ async function initSqlite(): Promise<AppDatabase | null> {
     if (!hasCourses) {
       for (const c of DEFAULT_COURSES) {
         sqliteInstance.run(
-          `INSERT INTO courses (id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [c.id, c.title, c.slug, c.category, c.duration_weeks, c.price_kes, c.monthly_kes, c.summary, c.curriculum, c.level, c.delivery_mode, c.schedule, c.next_intake, c.is_featured, c.created_at]
+          `INSERT INTO courses (id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, image_url, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [c.id, c.title, c.slug, c.category, c.duration_weeks, c.price_kes, c.monthly_kes, c.summary, c.curriculum, c.level, c.delivery_mode, c.schedule, c.next_intake, c.is_featured, c.image_url || '', c.created_at]
         );
+      }
+    } else {
+      // Ensure default flagship courses have their image_url populated
+      for (const c of DEFAULT_COURSES) {
+        try {
+          sqliteInstance.run(
+            `UPDATE courses SET image_url = ? WHERE (id = ? OR slug = ?) AND (image_url IS NULL OR image_url = '')`,
+            [c.image_url || '', c.id, c.slug]
+          );
+        } catch (_) {}
       }
     }
 

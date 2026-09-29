@@ -90,6 +90,7 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
       "ALTER TABLE courses ADD COLUMN IF NOT EXISTS schedule VARCHAR(255) DEFAULT 'Mon-Thu 7:00 PM - 9:30 PM EAT'",
       "ALTER TABLE courses ADD COLUMN IF NOT EXISTS next_intake VARCHAR(100) DEFAULT 'Upcoming Cohort'",
       "ALTER TABLE courses ADD COLUMN IF NOT EXISTS is_featured INTEGER DEFAULT 1",
+      "ALTER TABLE courses ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT ''",
       "ALTER TABLE courses ADD COLUMN IF NOT EXISTS created_at VARCHAR(100) DEFAULT CURRENT_TIMESTAMP::text"
     ];
 
@@ -114,9 +115,11 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
         schedule VARCHAR(255) NOT NULL DEFAULT 'Mon-Thu 7:00 PM - 9:30 PM EAT',
         next_intake VARCHAR(100) NOT NULL DEFAULT 'Upcoming Cohort',
         is_featured INTEGER DEFAULT 1,
+        image_url TEXT DEFAULT '',
         created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
       );
     `);
+    await client.query("ALTER TABLE programs ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT ''");
 
     // 3. Table: course_modules (Normalized curriculum module units)
     await client.query(`
@@ -435,18 +438,25 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
       console.log("[Migration] Seeding default flagship courses in PostgreSQL...");
       for (const c of DEFAULT_COURSES) {
         await client.query(
-          `INSERT INTO courses (id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          `INSERT INTO courses (id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, image_url, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
            ON CONFLICT (id) DO NOTHING`,
-          [c.id, c.title, c.slug, c.category, c.duration_weeks, c.price_kes, c.monthly_kes, c.summary, c.curriculum, c.level, c.delivery_mode, c.schedule, c.next_intake, c.is_featured, c.created_at]
+          [c.id, c.title, c.slug, c.category, c.duration_weeks, c.price_kes, c.monthly_kes, c.summary, c.curriculum, c.level, c.delivery_mode, c.schedule, c.next_intake, c.is_featured, c.image_url || '', c.created_at]
         );
+      }
+    } else {
+      for (const c of DEFAULT_COURSES) {
+        await client.query(
+          `UPDATE courses SET image_url = $1 WHERE (id = $2 OR slug = $3) AND (image_url IS NULL OR image_url = '')`,
+          [c.image_url || '', c.id, c.slug]
+        ).catch(() => {});
       }
     }
 
     // Synchronize programs table from courses
     await client.query(`
-      INSERT INTO programs (id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, created_at)
-      SELECT id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, created_at
+      INSERT INTO programs (id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, image_url, created_at)
+      SELECT id, title, slug, category, duration_weeks, price_kes, monthly_kes, summary, curriculum, level, delivery_mode, schedule, next_intake, is_featured, COALESCE(image_url, ''), created_at
       FROM courses
       ON CONFLICT (id) DO UPDATE SET
         title = EXCLUDED.title,
@@ -461,7 +471,8 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
         delivery_mode = EXCLUDED.delivery_mode,
         schedule = EXCLUDED.schedule,
         next_intake = EXCLUDED.next_intake,
-        is_featured = EXCLUDED.is_featured;
+        is_featured = EXCLUDED.is_featured,
+        image_url = EXCLUDED.image_url;
     `);
 
     // Synchronize course_modules and modules from courses curriculum JSON

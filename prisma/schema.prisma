@@ -136,6 +136,7 @@ model courses {
   schedule       String           @default("Mon-Thu 7:00 PM - 9:30 PM EAT") @db.VarChar(255)
   next_intake    String           @default("Upcoming Cohort") @db.VarChar(100)
   is_featured    Int?             @default(1)
+  image_url      String?          @default("")
   created_at     String           @db.VarChar(100)
   course_modules course_modules[]
 }
@@ -194,6 +195,7 @@ model programs {
   schedule       String  @default("Mon-Thu 7:00 PM - 9:30 PM EAT") @db.VarChar(255)
   next_intake    String  @default("Upcoming Cohort") @db.VarChar(100)
   is_featured    Int?    @default(1)
+  image_url      String? @default("")
   created_at     String  @default(dbgenerated("(CURRENT_TIMESTAMP)::text")) @db.VarChar(100)
 }
 

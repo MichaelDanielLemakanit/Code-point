@@ -1577,13 +1577,20 @@ async function handleGetCourses(req: Request, res: Response) {
               })()
             }));
           }
+          const defaultImg = (c.slug?.includes('ai') || c.category?.includes('Artificial') || c.category?.includes('Data'))
+            ? "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop"
+            : (c.slug?.includes('security') || c.category?.includes('Security') || c.category?.includes('Infrastructure'))
+            ? "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1200&auto=format&fit=crop"
+            : "https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=1200&auto=format&fit=crop";
+
           return {
             ...c,
             price_kes: Number(c.price_kes),
             monthly_kes: Number(c.monthly_kes),
             curriculum: modules,
             curriculum_modules: modules,
-            is_featured: Boolean(c.is_featured)
+            is_featured: Boolean(c.is_featured),
+            image_url: c.image_url || defaultImg
           };
         });
       }
@@ -1596,13 +1603,20 @@ async function handleGetCourses(req: Request, res: Response) {
       const rows = await queryAll(db, "SELECT * FROM courses ORDER BY is_featured DESC, title ASC");
       courses = rows.map((c: any) => {
         const modules = normalizeCurriculum(c.curriculum);
+        const defaultImg = (c.slug?.includes('ai') || c.category?.includes('Artificial') || c.category?.includes('Data'))
+          ? "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop"
+          : (c.slug?.includes('security') || c.category?.includes('Security') || c.category?.includes('Infrastructure'))
+          ? "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1200&auto=format&fit=crop"
+          : "https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=1200&auto=format&fit=crop";
+
         return {
           ...c,
           price_kes: Number(c.price_kes),
           monthly_kes: Number(c.monthly_kes),
           curriculum: modules,
           curriculum_modules: modules,
-          is_featured: Boolean(c.is_featured)
+          is_featured: Boolean(c.is_featured),
+          image_url: c.image_url || defaultImg
         };
       });
     }
@@ -1657,13 +1671,20 @@ async function handleGetCourseById(req: Request, res: Response) {
       }));
     }
 
+    const defaultImg = (course.slug?.includes('ai') || course.category?.includes('Artificial') || course.category?.includes('Data'))
+      ? "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop"
+      : (course.slug?.includes('security') || course.category?.includes('Security') || course.category?.includes('Infrastructure'))
+      ? "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1200&auto=format&fit=crop"
+      : "https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=1200&auto=format&fit=crop";
+
     const formatted = {
       ...course,
       price_kes: Number(course.price_kes),
       monthly_kes: Number(course.monthly_kes),
       curriculum: modules,
       curriculum_modules: modules,
-      is_featured: Boolean(course.is_featured)
+      is_featured: Boolean(course.is_featured),
+      image_url: course.image_url || defaultImg
     };
 
     res.json(formatted);
@@ -1721,7 +1742,8 @@ async function syncCourseRelations(db: any, course: any, modules: any[]) {
           delivery_mode: course.delivery_mode || "Online-First + Ngong Rd Campus Lab Access",
           schedule: course.schedule || "Mon-Thu 7:00 PM - 9:30 PM EAT",
           next_intake: course.next_intake || "Upcoming Cohort",
-          is_featured: course.is_featured ? 1 : 0
+          is_featured: course.is_featured ? 1 : 0,
+          image_url: course.image_url || ""
         },
         update: {
           title: course.title,
@@ -1736,7 +1758,8 @@ async function syncCourseRelations(db: any, course: any, modules: any[]) {
           delivery_mode: course.delivery_mode || "Online-First + Ngong Rd Campus Lab Access",
           schedule: course.schedule || "Mon-Thu 7:00 PM - 9:30 PM EAT",
           next_intake: course.next_intake || "Upcoming Cohort",
-          is_featured: course.is_featured ? 1 : 0
+          is_featured: course.is_featured ? 1 : 0,
+          image_url: course.image_url || ""
         }
       });
     });
@@ -1750,8 +1773,8 @@ async function syncCourseRelations(db: any, course: any, modules: any[]) {
         `INSERT OR REPLACE INTO programs (
            id, title, slug, category, duration_weeks, price_kes, monthly_kes,
            summary, curriculum, level, delivery_mode, schedule, next_intake,
-           is_featured, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           is_featured, image_url, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           course.id,
           course.title,
@@ -1767,6 +1790,7 @@ async function syncCourseRelations(db: any, course: any, modules: any[]) {
           course.schedule || "Mon-Thu 7:00 PM - 9:30 PM EAT",
           course.next_intake || "Upcoming Cohort",
           course.is_featured ? 1 : 0,
+          course.image_url || "",
           course.created_at || new Date().toISOString()
         ]
       ).catch(() => {});
@@ -2032,6 +2056,10 @@ async function handleCreateCourse(req: Request, res: Response) {
       ? body.summary.trim()
       : "Intensive technical program designed for real-world Kenyan and global tech careers.";
 
+    const cleanImageUrl = typeof (body.image_url || body.imageUrl) === "string"
+      ? (body.image_url || body.imageUrl).trim()
+      : "";
+
     const isFeaturedInt = body.is_featured ? 1 : 0;
 
     let createdRecord: any = null;
@@ -2057,6 +2085,7 @@ async function handleCreateCourse(req: Request, res: Response) {
               schedule: cleanSchedule,
               next_intake: cleanNextIntake,
               is_featured: isFeaturedInt,
+              image_url: cleanImageUrl,
               created_at: new Date().toISOString(),
               course_modules: sanitizedModules.length > 0 ? {
                 create: sanitizedModules.map((m: any, idx: number) => ({
@@ -2090,6 +2119,7 @@ async function handleCreateCourse(req: Request, res: Response) {
               schedule: cleanSchedule,
               next_intake: cleanNextIntake,
               is_featured: isFeaturedInt,
+              image_url: cleanImageUrl,
               created_at: new Date().toISOString()
             }
           });
@@ -2106,8 +2136,8 @@ async function handleCreateCourse(req: Request, res: Response) {
           `INSERT INTO courses (
              id, title, slug, category, duration_weeks, price_kes, monthly_kes,
              summary, curriculum, level, delivery_mode, schedule, next_intake,
-             is_featured, created_at
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             is_featured, image_url, created_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             id,
             rawTitle,
@@ -2123,6 +2153,7 @@ async function handleCreateCourse(req: Request, res: Response) {
             cleanSchedule,
             cleanNextIntake,
             isFeaturedInt,
+            cleanImageUrl,
             new Date().toISOString()
           ]
         );
@@ -2138,8 +2169,8 @@ async function handleCreateCourse(req: Request, res: Response) {
             `INSERT INTO courses (
                id, title, slug, category, duration_weeks, price_kes, monthly_kes,
                summary, curriculum, level, delivery_mode, schedule, next_intake,
-               is_featured, created_at
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+               is_featured, image_url, created_at
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               id,
               rawTitle,
@@ -2155,6 +2186,7 @@ async function handleCreateCourse(req: Request, res: Response) {
               cleanSchedule,
               cleanNextIntake,
               isFeaturedInt,
+              cleanImageUrl,
               new Date().toISOString()
             ]
           );
@@ -2202,7 +2234,8 @@ async function handleCreateCourse(req: Request, res: Response) {
       next_intake: createdRecord?.next_intake || cleanNextIntake,
       curriculum: sanitizedModules,
       curriculum_modules: sanitizedModules,
-      is_featured: Boolean(createdRecord?.is_featured ?? isFeaturedInt)
+      is_featured: Boolean(createdRecord?.is_featured ?? isFeaturedInt),
+      image_url: createdRecord?.image_url || cleanImageUrl
     };
 
     return res.status(201).json(result);
@@ -2356,6 +2389,10 @@ async function handleUpdateCourse(req: Request, res: Response) {
 
     const finalFeatured = body.is_featured !== undefined ? (body.is_featured ? 1 : 0) : (existing.is_featured ? 1 : 0);
 
+    const finalImageUrl = (body.image_url !== undefined || body.imageUrl !== undefined)
+      ? String(body.image_url || body.imageUrl || "").trim()
+      : (existing.image_url || "");
+
     // 7. Modules validation
     let finalModules = [];
     if (body.curriculum !== undefined || body.curriculum_modules !== undefined) {
@@ -2417,6 +2454,7 @@ async function handleUpdateCourse(req: Request, res: Response) {
               schedule: finalSchedule,
               next_intake: finalNextIntake,
               is_featured: finalFeatured,
+              image_url: finalImageUrl,
               course_modules: finalModules.length > 0 ? {
                 create: finalModules.map((m: any, idx: number) => ({
                   id: `${courseId}-mod-${idx + 1}`,
@@ -2447,7 +2485,8 @@ async function handleUpdateCourse(req: Request, res: Response) {
               delivery_mode: finalDelivery,
               schedule: finalSchedule,
               next_intake: finalNextIntake,
-              is_featured: finalFeatured
+              is_featured: finalFeatured,
+              image_url: finalImageUrl
             }
           });
         }
@@ -2472,7 +2511,8 @@ async function handleUpdateCourse(req: Request, res: Response) {
              delivery_mode = ?,
              schedule = ?,
              next_intake = ?,
-             is_featured = ?
+             is_featured = ?,
+             image_url = ?
            WHERE id = ?`,
           [
             finalTitle,
@@ -2488,6 +2528,7 @@ async function handleUpdateCourse(req: Request, res: Response) {
             finalSchedule,
             finalNextIntake,
             finalFeatured,
+            finalImageUrl,
             courseId
           ]
         );
@@ -2512,7 +2553,8 @@ async function handleUpdateCourse(req: Request, res: Response) {
                delivery_mode = ?,
                schedule = ?,
                next_intake = ?,
-               is_featured = ?
+               is_featured = ?,
+               image_url = ?
              WHERE id = ?`,
             [
               finalTitle,
@@ -2528,6 +2570,7 @@ async function handleUpdateCourse(req: Request, res: Response) {
               finalSchedule,
               finalNextIntake,
               finalFeatured,
+              finalImageUrl,
               courseId
             ]
           );
@@ -2554,7 +2597,8 @@ async function handleUpdateCourse(req: Request, res: Response) {
       delivery_mode: finalDelivery,
       schedule: finalSchedule,
       next_intake: finalNextIntake,
-      is_featured: finalFeatured
+      is_featured: finalFeatured,
+      image_url: finalImageUrl
     }, finalModules).catch((syncErr) => console.warn("[Courses Sync PUT Warning]:", syncErr));
 
     console.log(`[Courses API PUT] Successfully updated course "${finalTitle}" (${courseId})`);
@@ -2575,7 +2619,8 @@ async function handleUpdateCourse(req: Request, res: Response) {
       next_intake: updatedRecord?.next_intake || finalNextIntake,
       curriculum: finalModules,
       curriculum_modules: finalModules,
-      is_featured: Boolean(updatedRecord?.is_featured ?? finalFeatured)
+      is_featured: Boolean(updatedRecord?.is_featured ?? finalFeatured),
+      image_url: updatedRecord?.image_url || finalImageUrl
     };
 
     return res.json(result);
@@ -2668,6 +2713,20 @@ app.put("/api/courses/:id", handleUpdateCourse);
 app.put("/api/admin/courses/:id", handleUpdateCourse);
 app.delete("/api/courses/:id", handleDeleteCourse);
 app.delete("/api/admin/courses/:id", handleDeleteCourse);
+
+// Upload program image (supports base64 data URLs or image URLs)
+app.post("/api/upload-program-image", async (req: Request, res: Response) => {
+  try {
+    const { image } = req.body || {};
+    if (!image || typeof image !== "string") {
+      return res.status(400).json({ error: "Missing image data payload" });
+    }
+    return res.json({ success: true, imageUrl: image });
+  } catch (err: any) {
+    console.error("[Upload Program Image Error]:", err);
+    return res.status(500).json({ error: err.message || "Failed to process program image" });
+  }
+});
 
 // Submit student application
 app.post("/api/applications", async (req: Request, res: Response) => {

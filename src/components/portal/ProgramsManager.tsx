@@ -16,7 +16,9 @@ import {
   Save, 
   RefreshCw,
   ExternalLink,
-  Laptop
+  Laptop,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Course, CourseModule } from '../../types';
 
@@ -33,6 +35,14 @@ const CATEGORIES = [
   'Artificial Intelligence',
   'Security & Infrastructure',
   'Cloud Computing'
+];
+
+const PRESET_PROGRAM_IMAGES = [
+  { label: 'Software Dev Lab', url: 'https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=1200&auto=format&fit=crop' },
+  { label: 'Data & Applied AI', url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop' },
+  { label: 'Cybersecurity Ops', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1200&auto=format&fit=crop' },
+  { label: 'Nairobi Tech Campus', url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1200&auto=format&fit=crop' },
+  { label: 'Cloud Architecture', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop' }
 ];
 
 export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
@@ -61,10 +71,26 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
     next_intake: 'May 2025 Cohort',
     level: 'Beginner to Intermediate',
     is_featured: false,
+    image_url: 'https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=1200&auto=format&fit=crop',
     curriculum_modules: []
   });
 
   const [moduleList, setModuleList] = useState<{ title: string; topics: string }[]>([]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      alert("Please select an image smaller than 8MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const dataUrl = uploadEvent.target?.result as string;
+      setFormData(prev => ({ ...prev, image_url: dataUrl }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleOpenAdd = () => {
     setEditingCourse(null);
@@ -81,6 +107,7 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
       next_intake: 'May 2025 Cohort',
       level: 'Beginner to Intermediate',
       is_featured: false,
+      image_url: 'https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=1200&auto=format&fit=crop',
       curriculum_modules: []
     });
     setModuleList([
@@ -94,7 +121,8 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
   const handleOpenEdit = (course: Course) => {
     setEditingCourse(course);
     setFormData({
-      ...course
+      ...course,
+      image_url: course.image_url || ''
     });
 
     const modules = course.curriculum_modules || course.curriculum || [];
@@ -175,6 +203,8 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
         next_intake: formData.next_intake?.trim() || 'May 2026 Cohort',
         level: formData.level?.trim() || 'Beginner to Intermediate',
         is_featured: formData.is_featured ? 1 : 0,
+        image_url: formData.image_url?.trim() || '',
+        imageUrl: formData.image_url?.trim() || '',
         curriculum: formattedModules,
         curriculum_modules: formattedModules
       };
@@ -363,55 +393,60 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
           {filteredCourses.map((c) => (
             <div
               key={c.id}
-              className="p-5 rounded-2xl bg-white border border-stone-200 hover:border-emerald-500/50 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+              className="rounded-2xl bg-white border border-stone-200 hover:border-emerald-500/50 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden"
             >
-              <div>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-mono font-bold uppercase text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                        {c.category}
-                      </span>
-                      {c.is_featured && (
-                        <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-amber-500" />
-                          Featured
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="text-base font-bold text-stone-900 tracking-tight">{c.title}</h3>
+              {/* Program Card Feature Image Header */}
+              <div className="relative h-36 w-full bg-stone-900 overflow-hidden">
+                <img
+                  src={c.image_url || 'https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=1200&auto=format&fit=crop'}
+                  alt={c.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <div className="absolute top-3 left-3 flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold uppercase text-white bg-black/60 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-white/20">
+                    {c.category}
+                  </span>
+                  {c.is_featured && (
+                    <span className="text-[10px] font-bold text-amber-300 bg-black/60 backdrop-blur-xs border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      Featured
+                    </span>
+                  )}
+                </div>
+                <div className="absolute bottom-2.5 right-3 text-right">
+                  <div className="text-base font-extrabold text-white font-mono drop-shadow">
+                    {formatKES(c.price_kes)}
                   </div>
-
-                  {/* KES Pricing */}
-                  <div className="text-right shrink-0">
-                    <div className="text-base font-extrabold text-stone-900 font-mono">
-                      {formatKES(c.price_kes)}
-                    </div>
-                    <div className="text-[11px] text-emerald-700 font-mono font-semibold">
-                      {formatKES(c.monthly_kes)} / mo
-                    </div>
+                  <div className="text-[10px] text-emerald-300 font-mono font-semibold drop-shadow">
+                    {formatKES(c.monthly_kes)} / mo
                   </div>
                 </div>
+              </div>
 
-                <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed mt-2.5">
-                  {c.summary}
-                </p>
+              <div className="p-5 flex flex-col justify-between flex-1 space-y-4">
+                <div>
+                  <h3 className="text-base font-bold text-stone-900 tracking-tight">{c.title}</h3>
 
-                {/* Course Metadata Strip */}
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-500 mt-3.5 pt-3 border-t border-stone-100 font-mono">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-stone-400" />
-                    <span>{c.duration_weeks} Weeks</span>
+                  <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed mt-1.5">
+                    {c.summary}
+                  </p>
+
+                  {/* Course Metadata Strip */}
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-500 mt-3 pt-3 border-t border-stone-100 font-mono">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-stone-400" />
+                      <span>{c.duration_weeks} Weeks</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-stone-400" />
+                      <span>{c.next_intake}</span>
+                    </div>
+                    <div className="col-span-2 flex items-center gap-1.5 text-stone-600">
+                      <Laptop className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{c.delivery_mode}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-stone-400" />
-                    <span>{c.next_intake}</span>
-                  </div>
-                  <div className="col-span-2 flex items-center gap-1.5 text-stone-600">
-                    <Laptop className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{c.delivery_mode}</span>
-                  </div>
-                </div>
 
                 {/* Modules Summary */}
                 {Array.isArray(c.curriculum_modules) && c.curriculum_modules.length > 0 && (
@@ -453,9 +488,10 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
+    )}
 
       {/* Add / Edit Course Modal */}
       {isModalOpen && (
@@ -479,8 +515,112 @@ export const ProgramsManager: React.FC<ProgramsManagerProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSaveCourse} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleSaveCourse} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
               
+              {/* Card Image Section */}
+              <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-stone-800 flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-emerald-600" />
+                      <span>Program Feature Card Image (Header Image)</span>
+                    </label>
+                    <p className="text-[11px] text-stone-500">
+                      Renders in the public expandable accordion card header. Upload local file or enter a direct image URL.
+                    </p>
+                  </div>
+                  {formData.image_url && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+                      className="text-[11px] text-red-600 hover:text-red-700 font-medium"
+                    >
+                      Clear Image
+                    </button>
+                  )}
+                </div>
+
+                {/* Live Preview Box */}
+                {formData.image_url ? (
+                  <div className="relative w-full h-44 rounded-xl overflow-hidden border border-stone-200 shadow-inner group">
+                    <img 
+                      src={formData.image_url} 
+                      alt="Program Card Header Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute bottom-2.5 left-3 text-white">
+                      <span className="text-[10px] font-mono font-bold uppercase bg-black/60 px-2 py-0.5 rounded border border-white/20">
+                        {formData.category || 'PROGRAM CATEGORY'}
+                      </span>
+                      <div className="text-xs font-bold mt-1 drop-shadow">
+                        {formData.title || 'Program Title Preview'}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-28 rounded-xl border-2 border-dashed border-stone-300 bg-white flex flex-col items-center justify-center text-stone-400 text-xs">
+                    <ImageIcon className="w-6 h-6 mb-1 text-stone-300" />
+                    <span>No image set yet — upload an image or choose a preset below</span>
+                  </div>
+                )}
+
+                {/* Upload & Direct URL Controls */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="text-[11px] font-semibold text-stone-700 block mb-1">
+                      Upload from Computer:
+                    </label>
+                    <label className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-stone-300 bg-white hover:bg-stone-100 text-stone-700 text-xs font-medium cursor-pointer transition-colors shadow-xs">
+                      <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Choose Local File...</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-stone-700 block mb-1">
+                      Or Direct Image URL:
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.image_url || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-none focus:border-stone-900 bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="pt-2 border-t border-stone-200">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 block mb-1.5">
+                    Or select high-resolution preset:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PRESET_PROGRAM_IMAGES.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, image_url: preset.url }))}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] border transition-all cursor-pointer ${
+                          formData.image_url === preset.url
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-500 font-bold'
+                            : 'bg-white hover:bg-stone-100 text-stone-600 border-stone-200'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Title */}
                 <div className="sm:col-span-2 space-y-1">
