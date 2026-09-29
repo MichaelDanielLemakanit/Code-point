@@ -151,9 +151,6 @@ export const AnnouncementsBoard: React.FC<AnnouncementsBoardProps> = ({
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Important updates broadcast directly by faculty leads and academic directors
-            </p>
           </div>
         </div>
 

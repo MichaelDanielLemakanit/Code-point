@@ -794,9 +794,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <Lock className="w-7 h-7" />
                   </div>
                   <h1 className="text-2xl font-bold text-white tracking-tight">Admin Authentication</h1>
-                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                    Restricted administrative portal. Authenticate with verified Code Point Kenya administrator credentials to access the CMS and inbox.
-                  </p>
                 </div>
 
                 {authError && (

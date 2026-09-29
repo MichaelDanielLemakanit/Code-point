@@ -210,9 +210,6 @@ export const CourseProgressTracker: React.FC<CourseProgressTrackerProps> = ({
               Course Progress & Module Completion Tracking
             </h4>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Submit each module for teacher review. Once approved by your instructor, you can mark the module as complete to update your overall graduation progress.
-          </p>
         </div>
 
         {/* Multi-Course Selector if student is enrolled in or viewing multiple programs */}
