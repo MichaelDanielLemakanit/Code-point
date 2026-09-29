@@ -148,16 +148,20 @@ export default function App() {
   };
 
   const handleNavigateSection = (sectionId: string) => {
-    const el = document.getElementById(sectionId);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-      try {
-        window.history.pushState(null, '', `#${sectionId}`);
-      } catch (_) {}
-    } else if (sectionId === 'hero') {
+    const cleanId = sectionId.replace(/^#/, '');
+    if (cleanId === 'hero') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       try {
         window.history.pushState(null, '', '#');
+      } catch (_) {}
+      return;
+    }
+    const selector = `#${cleanId}`;
+    const el = document.querySelector(selector) || document.getElementById(cleanId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      try {
+        window.history.pushState(null, '', selector);
       } catch (_) {}
     }
   };

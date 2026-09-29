@@ -69,23 +69,38 @@ export const Navbar: React.FC<NavbarProps> = ({
     if (e) {
       e.preventDefault();
     }
-    closeMobileMenu();
+    // 2. AUTO-CLOSE MOBILE MENU ON SELECTION
+    setMobileMenuOpen(false);
 
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      try {
-        window.history.pushState(null, '', `#${id}`);
-      } catch (_) {}
-    } else if (id === 'hero') {
+    const cleanId = id.replace(/^#/, '');
+
+    // 1. ENABLE CLICK & ROUTING HANDLERS ON MOBILE NAV ITEMS
+    if (cleanId === 'hero') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       try {
         window.history.pushState(null, '', '#');
       } catch (_) {}
+    } else {
+      const selector = `#${cleanId}`;
+      const element = document.querySelector(selector) || document.getElementById(cleanId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        try {
+          window.history.pushState(null, '', selector);
+        } catch (_) {}
+      }
+
+      // Secondary smooth-scroll trigger ensures accurate target placement once menu collapse starts
+      setTimeout(() => {
+        const delayedEl = document.querySelector(selector) || document.getElementById(cleanId);
+        if (delayedEl) {
+          delayedEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
     }
 
     if (typeof onNavigateSection === 'function') {
-      onNavigateSection(id);
+      onNavigateSection(cleanId);
     }
   };
 
@@ -179,10 +194,14 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Mobile & Tablet Header Right (strictly Quick Action "Admin CMS" or "Portal" + Hamburger Icon only) */}
-        <div className="flex lg:hidden items-center gap-2 shrink-0">
+        <div className="flex lg:hidden items-center gap-2 shrink-0 relative z-30 pointer-events-auto">
           <button
-            onClick={onOpenAdminCMS}
-            className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            type="button"
+            onClick={() => {
+              setMobileMenuOpen(false);
+              onOpenAdminCMS();
+            }}
+            className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 pointer-events-auto"
             title="Admin CMS"
           >
             <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -190,8 +209,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-900 border border-slate-800 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+            className="p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-900 border border-slate-800 transition-colors cursor-pointer flex items-center justify-center shrink-0 pointer-events-auto"
             aria-label="Toggle Navigation Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-slate-200" />}
@@ -252,6 +272,21 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
+      {/* Mobile Backdrop Overlay (screens below lg: 1024px) */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setMobileMenuOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 lg:hidden pointer-events-auto"
+            aria-hidden="true"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Mobile & Tablet Slide-Over Menu (screens below lg: 1024px) */}
       <AnimatePresence>
         {mobileMenuOpen && (
@@ -259,8 +294,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:hidden border-b border-slate-800 bg-slate-950 px-4 pt-3 pb-6 space-y-3.5 max-h-[calc(100vh-4.5rem)] overflow-y-auto shadow-2xl"
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-40 lg:hidden border-b border-slate-800 bg-slate-950 px-4 pt-3 pb-6 space-y-3.5 max-h-[calc(100vh-4.5rem)] overflow-y-auto shadow-2xl pointer-events-auto"
           >
             <div className="p-2.5 rounded-lg bg-slate-900 text-xs text-slate-300 space-y-1">
               <p className="theme-text-primary font-medium">📍 {siteSettings?.address || "Ngong Road, Teamshark, 5th Floor"}</p>
@@ -268,29 +303,25 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <div className="flex flex-col space-y-1.5 text-sm font-medium">
+              {/* Career Path Quiz Link */}
               <a
                 href="#career-quiz"
-                onClick={(e) => {
-                  closeMobileMenu();
-                  handleNavClick('career-quiz', e);
-                }}
-                className="text-left px-3 py-2 rounded-lg theme-btn-secondary font-semibold flex items-center gap-2 cursor-pointer"
+                onClick={(e) => handleNavClick('career-quiz', e)}
+                className="text-left px-3 py-2.5 rounded-lg theme-btn-secondary font-semibold flex items-center gap-2 cursor-pointer relative z-20 pointer-events-auto"
               >
-                <Compass className="w-4 h-4 theme-text-primary" />
+                <Compass className="w-4 h-4 theme-text-primary shrink-0" />
                 <span>Career Path Quiz (60 Seconds)</span>
               </a>
 
+              {/* Section Anchor Navigation Links */}
               {navLinks.map((link) => {
                 const isActive = activeSection === link.id;
                 return (
                   <a
                     key={link.id}
                     href={`#${link.id}`}
-                    onClick={(e) => {
-                      closeMobileMenu();
-                      handleNavClick(link.id, e);
-                    }}
-                    className={`text-left px-3 py-2 rounded-lg transition-colors cursor-pointer block ${
+                    onClick={(e) => handleNavClick(link.id, e)}
+                    className={`text-left px-3 py-2.5 rounded-lg transition-colors cursor-pointer block relative z-20 pointer-events-auto ${
                       isActive
                         ? 'bg-slate-900 text-white font-semibold border-l-2 theme-text-primary'
                         : 'text-slate-200 hover:bg-slate-900 hover:text-white'
@@ -300,42 +331,50 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </a>
                 );
               })}
+
+              {/* Track My Application Status */}
               <button
+                type="button"
                 onClick={() => {
-                  closeMobileMenu();
+                  setMobileMenuOpen(false);
                   onOpenTracker();
                 }}
-                className="text-left px-3 py-2 rounded-lg hover:bg-slate-900 theme-text-primary flex items-center gap-2 cursor-pointer"
+                className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-900 theme-text-primary flex items-center gap-2 cursor-pointer relative z-20 pointer-events-auto transition-colors"
               >
-                <Search className="w-4 h-4" />
-                Track My Application Status
+                <Search className="w-4 h-4 shrink-0" />
+                <span>Track My Application Status</span>
               </button>
+
+              {/* Admin CMS Panel */}
               <button
+                type="button"
                 onClick={() => {
-                  closeMobileMenu();
+                  setMobileMenuOpen(false);
                   onOpenAdminCMS();
                 }}
-                className="text-left px-3 py-2 rounded-lg hover:bg-amber-950/40 text-amber-400 flex items-center gap-2 border border-amber-500/20 bg-amber-500/5 font-semibold cursor-pointer"
+                className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-amber-950/40 text-amber-400 flex items-center gap-2 border border-amber-500/20 bg-amber-500/5 font-semibold cursor-pointer relative z-20 pointer-events-auto transition-colors"
               >
-                <Lock className="w-4 h-4 text-amber-400" />
-                Admin CMS Panel (Protected)
+                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Admin CMS Panel (Protected)</span>
               </button>
             </div>
 
-            <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
+            <div className="pt-3 border-t border-slate-800 flex flex-col gap-2 relative z-20 pointer-events-auto">
               <button
+                type="button"
                 onClick={() => {
-                  closeMobileMenu();
+                  setMobileMenuOpen(false);
                   onOpenPortal();
                 }}
-                className="w-full py-2.5 rounded-xl border border-slate-800 bg-slate-900 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 rounded-xl border border-slate-800 bg-slate-900 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-slate-850"
               >
-                <ShieldCheck className="w-4 h-4 theme-text-primary" />
-                {currentUser ? `Access Portal (${currentUser.role})` : 'Access Student/Instructor Portal'}
+                <ShieldCheck className="w-4 h-4 theme-text-primary shrink-0" />
+                <span>{currentUser ? `Access Portal (${currentUser.role})` : 'Access Student/Instructor Portal'}</span>
               </button>
               <button
+                type="button"
                 onClick={() => {
-                  closeMobileMenu();
+                  setMobileMenuOpen(false);
                   onOpenApply();
                 }}
                 style={{ backgroundColor: 'var(--primary-color)' }}
