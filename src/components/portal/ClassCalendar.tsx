@@ -193,9 +193,6 @@ export const ClassCalendar: React.FC<ClassCalendarProps> = ({
                   Live Sync
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
-                Manage recurring synchronous lectures, physical lab sessions, and upcoming student assignment deadlines.
-              </p>
             </div>
           </div>
         </div>

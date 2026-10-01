@@ -9,14 +9,8 @@ import {
   UserPlus,
   BookOpen, 
   GraduationCap,
-  Calendar, 
-  Code,
   Target,
   Pencil,
-  Shield,
-  Users,
-  Rocket,
-  Award,
   ArrowLeft,
   ExternalLink,
   Copy,
@@ -147,7 +141,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
               <UserPlus className="w-6 h-6 text-white" />
             </div>
 
-            {/* Center/Right: Title with blue gradient text highlight on "Upcoming Cohort" & Subtitle */}
+            {/* Center/Right: Title with blue gradient text highlight on "Upcoming Cohort" */}
             <div>
               <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                 Apply for{' '}
@@ -155,9 +149,6 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                   Upcoming Cohort
                 </span>
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-                Join our next intake and grow your skills.
-              </p>
             </div>
           </div>
 
@@ -270,103 +261,38 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                 </div>
               </div>
 
-              {/* Row 3: Select Program & Preferred Cohort Intake row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                
-                {/* Select Program Group */}
-                <div className="flex items-start gap-2.5">
-                  {/* Left side icon badge for Program (Graduation cap / Book icon badge) */}
-                  <div 
-                    title="Select Program"
-                    className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center text-cyan-400 shrink-0 mt-5.5 shadow-sm"
-                  >
-                    <GraduationCap className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Select Program <span className="text-rose-400">*</span>
-                    </label>
-                    <div className="relative">
-                      {/* Inside Input Field inner icon */}
-                      <BookOpen className="w-4 h-4 text-cyan-400/60 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <select
-                        value={selectedCourseId}
-                        onChange={(e) => setSelectedCourseId(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-blue-900/50 bg-[#0d1326] text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-colors cursor-pointer"
-                      >
-                        {courses.map((c) => (
-                          <option key={c.id} value={c.id} className="bg-slate-900 text-white">
-                            {c.title} ({c.duration_weeks} Wks - KES {c.price_kes.toLocaleString()})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Preferred Cohort Intake Group */}
-                <div className="flex items-start gap-2.5">
-                  {/* Left side icon badge for Preferred Cohort Intake (Calendar icon badge) */}
-                  <div 
-                    title="Preferred Cohort Intake"
-                    className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/25 flex items-center justify-center text-purple-400 shrink-0 mt-5.5 shadow-sm"
-                  >
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Preferred Cohort Intake
-                    </label>
-                    <div className="relative">
-                      {/* Inside Input Field inner icon */}
-                      <Calendar className="w-4 h-4 text-purple-400/60 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <select
-                        value={intake}
-                        onChange={(e) => setIntake(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-blue-900/50 bg-[#0d1326] text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-colors cursor-pointer"
-                      >
-                        <option value="April 2026 Intake (Part-Time Evening)" className="bg-slate-900 text-white">April 2026 (Evening Online + Lab)</option>
-                        <option value="May 2026 Intake (Part-Time Evening)" className="bg-slate-900 text-white">May 2026 (Evening Online + Lab)</option>
-                        <option value="Full-Time Immersion Cohort" className="bg-slate-900 text-white">Full-Time Immersion (Day)</option>
-                        <option value="Weekend Masterclass Cohort" className="bg-slate-900 text-white">Weekend-Only Immersion</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Row 4: Coding Experience row */}
+              {/* Row 3: Select Program */}
               <div className="flex items-start gap-2.5">
-                {/* Left side icon badge (Code </> icon badge) */}
+                {/* Left side icon badge for Program (Graduation cap / Book icon badge) */}
                 <div 
-                  title="Coding Experience"
-                  className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/25 flex items-center justify-center text-blue-400 shrink-0 mt-5.5 shadow-sm"
+                  title="Select Program"
+                  className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center text-cyan-400 shrink-0 mt-5.5 shadow-sm"
                 >
-                  <Code className="w-5 h-5" />
+                  <GraduationCap className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Coding Experience
+                    Select Program <span className="text-rose-400">*</span>
                   </label>
                   <div className="relative">
                     {/* Inside Input Field inner icon */}
-                    <Code className="w-4 h-4 text-blue-400/60 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <BookOpen className="w-4 h-4 text-cyan-400/60 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <select
-                      value={experienceLevel}
-                      onChange={(e) => setExperienceLevel(e.target.value)}
+                      value={selectedCourseId}
+                      onChange={(e) => setSelectedCourseId(e.target.value)}
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-blue-900/50 bg-[#0d1326] text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-colors cursor-pointer"
                     >
-                      <option value="Complete Beginner" className="bg-slate-900 text-white">Complete Beginner (No prior code)</option>
-                      <option value="Basic Self-Taught" className="bg-slate-900 text-white">Self-Taught / Basic Python/HTML</option>
-                      <option value="Intermediate Developer" className="bg-slate-900 text-white">Intermediate / Upskilling</option>
-                      <option value="CS Student/Graduate" className="bg-slate-900 text-white">Computer Science Student/Grad</option>
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id} className="bg-slate-900 text-white">
+                          {c.title} ({c.duration_weeks} Wks - KES {c.price_kes.toLocaleString()})
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
               </div>
 
-              {/* Row 5: Why do you want to join? row */}
+              {/* Row 4: Why do you want to join? row */}
               <div className="flex items-start gap-2.5">
                 {/* Left side icon badge (Target/Goal icon badge) */}
                 <div 
@@ -390,28 +316,6 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-blue-900/50 bg-[#0d1326] text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-colors leading-relaxed resize-none"
                     />
                   </div>
-                </div>
-              </div>
-
-              {/* 3. FOOTER FEATURES BAR & ACTION BUTTONS */}
-              
-              {/* Feature Badges Bar (above action buttons: 4-column horizontal feature strip inside modal) */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-blue-950/20 border border-blue-500/20 text-xs">
-                <div className="flex items-center gap-2 text-slate-300 font-medium">
-                  <Shield className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span className="text-[11px] truncate">Hands-on Projects</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-300 font-medium">
-                  <Users className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span className="text-[11px] truncate">Mentorship Support</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-300 font-medium">
-                  <Rocket className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <span className="text-[11px] truncate">Career Guidance</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-300 font-medium">
-                  <Award className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span className="text-[11px] truncate">Certificate on Completion</span>
                 </div>
               </div>
 

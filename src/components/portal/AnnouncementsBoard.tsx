@@ -6,13 +6,10 @@ import {
   AlertCircle, 
   Bell, 
   CheckCircle2, 
-  ExternalLink, 
   Calendar, 
   Clock, 
   User, 
   Filter, 
-  ChevronDown, 
-  ChevronUp, 
   Sparkles,
   BookmarkCheck,
   Radio
@@ -185,7 +182,6 @@ export const AnnouncementsBoard: React.FC<AnnouncementsBoardProps> = ({
         <div className="space-y-3.5">
           {filtered.map(item => {
             const isRead = readIds.has(item.id);
-            const isExpanded = expandedIds.has(item.id);
             const isPinned = Boolean(item.is_pinned);
             const isUrgent = item.priority === 'Urgent';
 
@@ -245,27 +241,8 @@ export const AnnouncementsBoard: React.FC<AnnouncementsBoardProps> = ({
                   </h5>
                 </div>
 
-                {/* Content */}
-                <div className="mt-2 text-xs text-slate-300 leading-relaxed font-sans">
-                  <p className={isExpanded ? '' : 'line-clamp-2'}>
-                    {item.content}
-                  </p>
-                  {item.content.length > 180 && (
-                    <button
-                      onClick={() => toggleExpand(item.id)}
-                      className="text-emerald-400 text-[11px] font-medium mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
-                    >
-                      {isExpanded ? (
-                        <>Show less <ChevronUp className="w-3 h-3" /></>
-                      ) : (
-                        <>Read full update <ChevronDown className="w-3 h-3" /></>
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {/* Footer: Author & Action Button */}
-                <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Footer: Author */}
+                <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-xs text-slate-400">
                     <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] text-emerald-300 font-mono font-bold">
                       {item.author_name ? item.author_name.charAt(0) : 'F'}
@@ -275,18 +252,6 @@ export const AnnouncementsBoard: React.FC<AnnouncementsBoardProps> = ({
                       <span className="text-slate-400 text-[11px] ml-1.5">• {item.author_role}</span>
                     </div>
                   </div>
-
-                  {item.action_url && (
-                    <a
-                      href={item.action_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-colors"
-                    >
-                      <span>{item.action_label || 'View Details'}</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
                 </div>
 
               </div>
