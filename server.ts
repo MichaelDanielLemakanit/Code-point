@@ -6,6 +6,7 @@ import { createServer as createViteServer } from "vite";
 import { getDatabase, queryAll, queryOne, saveDatabase, getSiteSettings, saveSiteSettings, getDatabaseStatus, DEFAULT_ANNOUNCEMENTS, DEFAULT_LOGIN_ATTEMPTS, DEFAULT_LECTURES, DEFAULT_COURSES, DEFAULT_STUDENT_PROGRESS, DEFAULT_STUDENT_FEES, DEFAULT_ACTIVITY_LOGS, DEFAULT_CERTIFICATES, DEFAULT_REVIEWS } from "./server/db.ts";
 import { runDatabaseMigrations } from "./server/migrate.ts";
 import { getPrismaClient, withPrisma } from "./server/prisma.ts";
+import { sendOtpEmail, sendOtpSms, getNotificationServiceStatus } from "./server/notificationService.ts";
 
 // Password hashing and verification using PBKDF2
 export function hashPassword(plainText: string): string {
@@ -1586,12 +1587,24 @@ app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
     await saveDatabase(db);
 
     const masked = maskDestination(cleanTarget);
+    const recipientName = matchedUser?.name || matchedAttempt?.name || (isEmail ? cleanTarget.split("@")[0] : "Code Point Kenya Member");
+    const expiryMinutes = parseInt(process.env.OTP_EXPIRY_MINUTES || "10", 10);
 
-    // Simulated / live dispatch to SMS gateway (Africa's Talking / Twilio) or Email Service
+    // Dispatch via configured Email (SMTP / Resend) or SMS (Africa's Talking / Twilio) service
+    let dispatchResult: any = { success: true, provider: "simulated" };
     if (chosenMethod === "sms") {
-      console.log(`[SMS Gateway Africa's Talking / Twilio -> ${cleanTarget}]: "CODEPOINT KENYA OTP: Your 6-digit password reset verification code is ${otp}. Valid for 10 minutes. Do not share this code with anyone."`);
+      dispatchResult = await sendOtpSms({
+        toPhone: cleanTarget,
+        otpCode: otp,
+        expiryMinutes
+      });
     } else {
-      console.log(`[Email Service Dispatch -> ${cleanTarget}]: Subject: "Code Point Kenya: Password Reset OTP", Code: "${otp}" (Valid for 10 minutes).`);
+      dispatchResult = await sendOtpEmail({
+        toEmail: cleanTarget,
+        otpCode: otp,
+        recipientName,
+        expiryMinutes
+      });
     }
 
     return res.status(200).json({
@@ -1600,7 +1613,9 @@ app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
       target: cleanTarget,
       maskedTarget: masked,
       deliveryMethod: chosenMethod,
-      expiresInSeconds: 600,
+      provider: dispatchResult.provider,
+      deliveryStatus: dispatchResult.details || "Dispatched successfully",
+      expiresInSeconds: expiryMinutes * 60,
       debugOtp: otp // Transparently available for developer / evaluation testing
     });
   } catch (error: any) {
@@ -1609,6 +1624,19 @@ app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
       success: false,
       error: error.message || "Failed to dispatch verification code."
     });
+  }
+});
+
+// Diagnostic endpoint to view notification service configuration status (safe, no secrets leaked)
+app.get("/api/notifications/status", (req: Request, res: Response) => {
+  try {
+    const status = getNotificationServiceStatus();
+    return res.status(200).json({
+      success: true,
+      ...status
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
