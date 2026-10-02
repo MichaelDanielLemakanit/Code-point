@@ -30,6 +30,7 @@ import {
 import { User, UserRole, Course, SiteSettings } from '../../types';
 import { StudentDashboard } from './StudentDashboard';
 import { InstructorDashboard } from './InstructorDashboard';
+import { PasswordStrengthMeter } from './PasswordStrengthMeter';
 
 interface PortalModalProps {
   isOpen: boolean;
@@ -75,6 +76,9 @@ export const PortalModal: React.FC<PortalModalProps> = ({
   const [resetConfirmPassword, setResetConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSetupPassword, setShowSetupPassword] = useState(false);
+  const [showSetupConfirm, setShowSetupConfirm] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
   const [maskedDestination, setMaskedDestination] = useState('');
   const [resetFeedback, setResetFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
@@ -562,15 +566,24 @@ export const PortalModal: React.FC<PortalModalProps> = ({
                       <KeyRound className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
                         id="portal-new-password"
-                        type="password"
+                        type={showSetupPassword ? 'text' : 'password'}
                         required
                         minLength={6}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="At least 6 characters"
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowSetupPassword(!showSetupPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition cursor-pointer"
+                      >
+                        {showSetupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
+                    {/* Real-time Password Strength Meter */}
+                    <PasswordStrengthMeter password={newPassword} themeColor="#6366f1" showRequirements={true} />
                   </div>
 
                   <div className="space-y-1">
@@ -582,15 +595,37 @@ export const PortalModal: React.FC<PortalModalProps> = ({
                       <KeyRound className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
                         id="portal-confirm-password"
-                        type="password"
+                        type={showSetupConfirm ? 'text' : 'password'}
                         required
                         minLength={6}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Re-enter password"
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowSetupConfirm(!showSetupConfirm)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition cursor-pointer"
+                      >
+                        {showSetupConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
+                    {confirmPassword && (
+                      <div className="flex items-center gap-1.5 text-[11px] pt-1">
+                        {newPassword === confirmPassword ? (
+                          <span className="text-emerald-400 flex items-center gap-1 font-medium">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>Passwords match</span>
+                          </span>
+                        ) : (
+                          <span className="text-rose-400 flex items-center gap-1 font-medium">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            <span>Passwords do not match yet</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <button
@@ -948,6 +983,8 @@ export const PortalModal: React.FC<PortalModalProps> = ({
                         {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {/* Real-time Password Strength Meter */}
+                    <PasswordStrengthMeter password={resetNewPassword} themeColor={primaryBrandColor} showRequirements={true} />
                   </div>
 
                   {/* Confirm New Password field (with show/hide password toggle) */}
@@ -976,6 +1013,21 @@ export const PortalModal: React.FC<PortalModalProps> = ({
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {resetConfirmPassword && (
+                      <div className="flex items-center gap-1.5 text-[11px] pt-1">
+                        {resetNewPassword === resetConfirmPassword ? (
+                          <span className="text-emerald-400 flex items-center gap-1 font-medium">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>Passwords match</span>
+                          </span>
+                        ) : (
+                          <span className="text-rose-400 flex items-center gap-1 font-medium">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            <span>Passwords do not match yet</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Action Button: "Reset Password & Login" (style={{ background: themeColor }}) */}
@@ -1150,14 +1202,26 @@ export const PortalModal: React.FC<PortalModalProps> = ({
                       <KeyRound className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
                         id="portal-password-input"
-                        type="password"
+                        type={showLoginPassword ? 'text' : 'password'}
                         required={selectedRole !== 'student'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••"
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition-colors"
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition-colors"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition cursor-pointer"
+                        title={showLoginPassword ? "Hide password" : "Show password"}
+                      >
+                        {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
+                    {/* Real-time Password Strength feedback when typing credentials */}
+                    {password && (
+                      <PasswordStrengthMeter password={password} themeColor={primaryBrandColor} showRequirements={false} />
+                    )}
                   </div>
 
                   {/* 4. Action CTA Button */}

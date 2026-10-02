@@ -22,6 +22,7 @@ import {
   Building2, 
   BookOpen, 
   Eye, 
+  EyeOff,
   Trash2, 
   ArrowRight, 
   MessageSquare, 
@@ -55,6 +56,7 @@ import { CertificateModal } from './CertificateModal';
 import { CertificateEditorModal } from './CertificateEditorModal';
 import { NextIntakeManager } from './NextIntakeManager';
 import { ActivityLogs } from './ActivityLogs';
+import { PasswordStrengthMeter } from './PasswordStrengthMeter';
 
 interface AdminPanelProps {
   isOpen: boolean;
@@ -127,6 +129,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Authentication form states
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
@@ -828,14 +831,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div className="relative">
                       <KeyRound className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
-                        type="password"
+                        type={showAdminPassword ? 'text' : 'password'}
                         required
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         placeholder="••••••••••••"
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-amber-400 transition-colors font-mono"
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-amber-400 transition-colors font-mono"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminPassword(!showAdminPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition cursor-pointer"
+                        title={showAdminPassword ? "Hide password" : "Show password"}
+                      >
+                        {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
+                    {loginPassword && (
+                      <PasswordStrengthMeter password={loginPassword} themeColor="#f59e0b" showRequirements={false} />
+                    )}
                   </div>
 
                   <button
