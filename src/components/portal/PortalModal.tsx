@@ -17,9 +17,6 @@ import {
   Check,
   GraduationCap,
   Briefcase,
-  Code2,
-  Award,
-  Radio,
   ArrowRight,
   Phone,
   MessageSquare,
@@ -471,34 +468,6 @@ export const PortalModal: React.FC<PortalModalProps> = ({
                 <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                   Code Point Kenya Portal
                 </h3>
-              </div>
-
-              {/* 4-Icon Feature Strip: Replaces wordy explanations with visual cues */}
-              <div className="grid grid-cols-4 gap-2 py-3 border-y border-slate-800/80 my-2">
-                <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950/60 border border-slate-800/70 text-center">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-1">
-                    <GraduationCap className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-[10px] font-semibold text-slate-200">Classes</span>
-                </div>
-                <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950/60 border border-slate-800/70 text-center">
-                  <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mb-1">
-                    <Code2 className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-[10px] font-semibold text-slate-200">Labs</span>
-                </div>
-                <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950/60 border border-slate-800/70 text-center">
-                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center mb-1">
-                    <Award className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-[10px] font-semibold text-slate-200">Certs</span>
-                </div>
-                <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950/60 border border-slate-800/70 text-center">
-                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-1">
-                    <Radio className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-[10px] font-semibold text-slate-200">Live Sync</span>
-                </div>
               </div>
 
               {errorMsg && (
