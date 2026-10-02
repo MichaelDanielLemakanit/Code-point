@@ -235,6 +235,21 @@ export async function runDatabaseMigrations(customConnectionString?: string): Pr
       );
     `);
 
+    // 10b. Table: password_reset_otps
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_otps (
+        id VARCHAR(255) PRIMARY KEY,
+        target VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        phone VARCHAR(100),
+        otp_code VARCHAR(10) NOT NULL,
+        delivery_method VARCHAR(20) NOT NULL DEFAULT 'email',
+        expires_at VARCHAR(100) NOT NULL,
+        used INTEGER NOT NULL DEFAULT 0,
+        created_at VARCHAR(100) NOT NULL
+      );
+    `);
+
     // 11. Table: assignments
     await client.query(`
       CREATE TABLE IF NOT EXISTS assignments (

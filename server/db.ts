@@ -1256,6 +1256,20 @@ async function initPostgres(connectionString: string): Promise<AppDatabase | nul
       );
       CREATE INDEX IF NOT EXISTS idx_test_pg_status ON testimonials(status);
       CREATE INDEX IF NOT EXISTS idx_test_pg_featured ON testimonials(is_featured);
+
+      CREATE TABLE IF NOT EXISTS password_reset_otps (
+        id VARCHAR(255) PRIMARY KEY,
+        target VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        phone VARCHAR(100),
+        otp_code VARCHAR(10) NOT NULL,
+        delivery_method VARCHAR(20) NOT NULL DEFAULT 'email',
+        expires_at VARCHAR(100) NOT NULL,
+        used INTEGER NOT NULL DEFAULT 0,
+        created_at VARCHAR(100) NOT NULL DEFAULT CURRENT_TIMESTAMP::text
+      );
+      CREATE INDEX IF NOT EXISTS idx_otp_pg_target ON password_reset_otps(target);
+      CREATE INDEX IF NOT EXISTS idx_otp_pg_code ON password_reset_otps(otp_code);
     `);
 
     // Ensure all required columns exist on courses if created earlier
@@ -2781,6 +2795,20 @@ async function initSqlite(): Promise<AppDatabase | null> {
       );
       CREATE INDEX IF NOT EXISTS idx_sqlite_test_status ON testimonials(status);
       CREATE INDEX IF NOT EXISTS idx_sqlite_test_featured ON testimonials(is_featured);
+
+      CREATE TABLE IF NOT EXISTS password_reset_otps (
+        id TEXT PRIMARY KEY,
+        target TEXT NOT NULL,
+        email TEXT,
+        phone TEXT,
+        otp_code TEXT NOT NULL,
+        delivery_method TEXT NOT NULL DEFAULT 'email',
+        expires_at TEXT NOT NULL,
+        used INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_sqlite_otp_target ON password_reset_otps(target);
+      CREATE INDEX IF NOT EXISTS idx_sqlite_otp_code ON password_reset_otps(otp_code);
     `);
 
     // Ensure columns in student_fee_accounts if table already existed
