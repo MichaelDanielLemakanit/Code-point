@@ -15,7 +15,29 @@
         try {
           var p = localStorage.getItem('cpk_theme_primary') || '#10B981';
           var s = localStorage.getItem('cpk_theme_secondary') || '#06B6D4';
-          var m = localStorage.getItem('cpk_theme_mode') || 'dark';
+          var m = localStorage.getItem('cpk_theme_mode') || 'system';
+          var customBg = localStorage.getItem('cpk_canvas_bg') || '';
+
+          var isSystemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var isDark = m === 'dark' || (m === 'system' && isSystemDark);
+
+          var root = document.documentElement;
+          if (isDark) {
+            root.classList.add('dark');
+          } else {
+            root.classList.remove('dark');
+          }
+
+          var activeBg = customBg;
+          if (!activeBg) {
+            activeBg = isDark ? '#020617' : '#FFFFFF';
+          }
+          var activeText = isDark ? '#F8FAFC' : '#0F172A';
+
+          root.style.setProperty('--color-canvas-bg', activeBg);
+          root.style.setProperty('--color-text-main', activeText);
+          root.style.setProperty('--bg-dark', isDark ? activeBg : '#020617');
+
           var hexToRgb = function(hex) {
             var c = (hex || '').replace('#', '').trim();
             if (c.length === 3) c = c.split('').map(function(x) { return x + x; }).join('');
@@ -25,7 +47,6 @@
           };
           var r1 = hexToRgb(p);
           var r2 = hexToRgb(s);
-          var root = document.documentElement;
           root.style.setProperty('--primary', p);
           root.style.setProperty('--primary-color', p);
           root.style.setProperty('--primary-rgb', r1);

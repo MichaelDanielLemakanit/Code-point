@@ -340,7 +340,11 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
       {/* Top Header Card */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/30 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Student Tuition & Access Restriction Control</h2>
+          <div className="flex items-center gap-2 text-xs font-mono font-semibold text-emerald-400 uppercase tracking-wider">
+            <CreditCard className="w-4 h-4" />
+            <span>Finance & Admissions Oversight</span>
+          </div>
+          <h2 className="text-2xl font-bold text-white mt-1">Student Tuition & Access Restriction Control</h2>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
@@ -406,6 +410,10 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
           <div className="text-2xl font-bold font-mono text-white">
             KES {summary.totalBilledKes.toLocaleString()}
           </div>
+          <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+            <span className="font-mono font-medium text-slate-300">{summary.totalStudents}</span>
+            <span>enrolled students tracked</span>
+          </div>
         </div>
 
         {/* Total Collected */}
@@ -441,6 +449,9 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
           <div className="text-2xl font-bold font-mono text-amber-400">
             KES {summary.totalBalanceKes.toLocaleString()}
           </div>
+          <div className="text-[11px] text-slate-400">
+            Across {summary.pendingCount + summary.overdueCount} student accounts
+          </div>
         </div>
 
         {/* Overdue / Locked Out */}
@@ -453,6 +464,10 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
           </div>
           <div className="text-2xl font-bold font-mono text-rose-400">
             {summary.overdueCount}
+          </div>
+          <div className="text-[11px] text-rose-300 flex items-center gap-1 font-medium">
+            <Lock className="w-3 h-3 text-rose-400" />
+            <span>Portal access automatically restricted</span>
           </div>
         </div>
       </div>
@@ -752,6 +767,7 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
                   <h3 className="text-base font-bold text-white">
                     {editingAccount.id ? 'Edit Student Tuition & Access Control' : 'Register New Student Fee Account'}
                   </h3>
+                  <p className="text-xs text-slate-400">Configure tuition numbers, payment dates, and portal access rights</p>
                 </div>
               </div>
               <button
@@ -1050,6 +1066,11 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
                         Grant/Deny Online Portal & Live Class Access
                       </span>
                     </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      {(editingAccount.portal_access_granted === 1 || editingAccount.portal_access_granted === true)
+                        ? "Currently GRANTED. Student has full access to Zoom/Meet lectures, recorded lessons, curriculum materials, and lab reservations."
+                        : "Currently DENIED / LOCKED OUT. Student is immediately barred from joining live calls, viewing recordings, booking lab seats, and submitting coursework."}
+                    </p>
                   </div>
 
                   {/* Toggle Switch */}
@@ -1100,6 +1121,9 @@ export const StudentFeeManager: React.FC<StudentFeeManagerProps> = ({
                     <Bell className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Send Automated Email & SMS Notification</span>
                   </span>
+                  <p className="text-[11px] text-slate-400">
+                    Immediately dispatch updated fee statement, deadline notice, or lockout status to student's contacts.
+                  </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer shrink-0">
                   <input

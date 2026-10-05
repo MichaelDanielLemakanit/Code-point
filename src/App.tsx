@@ -115,11 +115,13 @@ export default function App() {
     fetchSiteSettings();
   }, []);
 
-  // Dynamically synchronize theme colors and root CSS variables
+  // Dynamically synchronize theme colors, mode, and root CSS variables
   useEffect(() => {
     const primary = siteSettings?.primary_cta_color || '#10B981';
     const secondary = siteSettings?.secondary_cta_color || '#06B6D4';
-    applyGlobalTheme(primary, secondary);
+    const mode = siteSettings?.theme_mode || 'system';
+    const canvasBg = siteSettings?.canvas_bg || '';
+    applyGlobalTheme(primary, secondary, mode, canvasBg);
   }, [siteSettings]);
 
   // Listen for real-time theme updates dispatched across components
@@ -181,7 +183,14 @@ export default function App() {
   }, []);
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
+    <div 
+      className="w-full max-w-full overflow-x-hidden min-h-screen font-sans selection:bg-emerald-500/30 selection:text-emerald-300"
+      style={{ 
+        backgroundColor: 'var(--color-canvas-bg)', 
+        color: 'var(--color-text-main)', 
+        transition: 'background-color 0.2s ease, color 0.2s ease' 
+      }}
+    >
       
       {/* Main Fixed Navigation (Includes Announcement Banner & Navigation Bar) */}
       <Navbar

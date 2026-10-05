@@ -5,14 +5,11 @@ import { CourseProgressTracker } from './CourseProgressTracker';
 import { 
   BookOpen, 
   Calendar, 
-  MapPin, 
-  Wifi, 
   Video, 
   CheckCircle2, 
   Clock, 
   CreditCard, 
   Download, 
-  ExternalLink, 
   User, 
   Code, 
   FileText,
@@ -383,99 +380,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
         studentProgram={student.program} 
       />
 
-      {/* Grid: Campus Lab Pass & Tuition Ledger */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Physical Campus Lab Pass Card */}
-        <div className={`p-6 rounded-2xl bg-slate-950 border transition-all space-y-4 ${
-          isLockedOut ? 'border-rose-500/40 shadow-inner' : 'border-slate-800'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className={`flex items-center gap-2 text-xs font-mono font-semibold uppercase ${
-              isLockedOut ? 'text-rose-400' : 'text-emerald-400'
-            }`}>
-              <MapPin className="w-4 h-4" />
-              <span>Nairobi Campus Access Pass</span>
-            </div>
-            
-            {isLockedOut ? (
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">
-                <Lock className="w-3 h-3 text-rose-400" />
-                <span>Pass Suspended</span>
-              </span>
-            ) : (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Active Member Pass
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-3 text-xs text-slate-300">
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center">
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-mono block">Physical Facility</span>
-                <span className="font-semibold text-white">{student.campusAccess.facility}</span>
-              </div>
-              <span className="text-[11px] text-emerald-400 font-mono">Teamshark 5th Fl</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-mono block">Lab Reservation</span>
-                {isLockedOut ? (
-                  <span className="font-semibold text-rose-400 flex items-center gap-1 mt-0.5">
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Access Revoked</span>
-                  </span>
-                ) : (
-                  <span className="font-semibold text-white mt-0.5 block">{student.campusAccess.deskReservation}</span>
-                )}
-              </div>
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-mono block">Campus Gigabit Wi-Fi</span>
-                {isLockedOut ? (
-                  <span className="font-semibold text-rose-400 flex items-center gap-1 mt-0.5">
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Wi-Fi Suspended</span>
-                  </span>
-                ) : (
-                  <span className="font-semibold text-teal-300 font-mono flex items-center gap-1 mt-0.5">
-                    <Wifi className="w-3.5 h-3.5" />
-                    {student.campusAccess.highSpeedWifi}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className={`p-3 rounded-xl border text-[11px] flex items-center justify-between ${
-            isLockedOut 
-              ? 'bg-rose-500/10 border-rose-500/20 text-rose-300' 
-              : 'bg-emerald-500/5 border border-emerald-500/20 text-slate-300'
-          }`}>
-            <span>
-              {isLockedOut 
-                ? 'Campus lab stations and study pods are suspended until tuition balance is cleared.' 
-                : 'Need help locating the office or booking a quiet meeting pod?'}
-            </span>
-            <a
-              href="https://wa.me/254756295128?text=Hello%20Campus%20Team,%20I'm%20at%20Teamshark%205th%20Floor."
-              target="_blank"
-              rel="noreferrer"
-              className="text-emerald-400 font-semibold hover:underline flex items-center gap-1 shrink-0 ml-2"
-            >
-              <span>WhatsApp Concierge</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-        </div>
-
-        {/* ========================================================================= */}
-        {/* TUITION STATEMENT & INSTALLMENT SCHEDULE (REQUIREMENT 2)                  */}
-        {/* ========================================================================= */}
-        <div className={`p-6 rounded-2xl bg-slate-950 border transition-all space-y-4 ${
-          isLockedOut ? 'border-rose-500/50 shadow-md' : 'border-slate-800'
-        }`}>
+      {/* ========================================================================= */}
+      {/* TUITION STATEMENT & INSTALLMENT SCHEDULE (REQUIREMENT 2)                  */}
+      {/* ========================================================================= */}
+      <div className={`p-6 rounded-2xl bg-slate-950 border transition-all space-y-4 ${
+        isLockedOut ? 'border-rose-500/50 shadow-md' : 'border-slate-800'
+      }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-mono font-semibold text-teal-400 uppercase">
               <CreditCard className="w-4 h-4" />
@@ -558,8 +468,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
           )}
         </div>
 
-      </div>
-
       {/* ========================================================================= */}
       {/* UPCOMING LIVE SESSIONS & LECTURES (LOCKABLE CALL LINKS)                   */}
       {/* ========================================================================= */}
@@ -601,9 +509,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
                 <div className="flex items-center justify-between">
                   <span className={`text-xs font-semibold ${isLockedOut ? 'text-slate-400' : 'text-emerald-400'}`}>
                     {session.date}
-                  </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                    {session.mode}
                   </span>
                 </div>
                 <h5 className="text-sm font-bold text-white mt-1">{session.title}</h5>
@@ -656,9 +561,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser 
               Class Recordings & Lecture Archive
             </h4>
           </div>
-          <span className="text-xs text-slate-400 font-mono">
-            {classRecordings.length} Replays Available
-          </span>
         </div>
 
         {isLockedOut ? (

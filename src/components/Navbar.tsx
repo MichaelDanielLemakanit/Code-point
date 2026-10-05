@@ -14,6 +14,7 @@ import {
 import { User, SiteSettings } from '../types';
 import { useActiveSection } from '../hooks/useActiveSection';
 import { AnnouncementBanner } from './AnnouncementBanner';
+import { ThemeModeToggle } from './ThemeModeToggle';
 
 interface NavbarProps {
   currentUser: User | null;
@@ -220,6 +221,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Desktop Header Right (Visible on lg: 1024px and above) */}
         <div className="hidden lg:flex items-center gap-2 xl:gap-2.5 flex-nowrap whitespace-nowrap shrink-0">
+          {/* Theme Mode Segmented Control (Auto / System, Dark, Light) */}
+          <ThemeModeToggle size="sm" variant="dark" />
+
           {/* Admin CMS Button */}
           <button
             onClick={onOpenAdminCMS}
@@ -357,6 +361,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Lock className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>Admin CMS Panel (Protected)</span>
               </button>
+
+              {/* Theme Mode Segmented Control (Mobile) */}
+              <div className="flex items-center justify-between px-3 py-2.5 bg-slate-900/60 rounded-xl border border-slate-800">
+                <span className="text-xs font-semibold text-slate-300">Theme Appearance</span>
+                <ThemeModeToggle size="xs" variant="dark" />
+              </div>
             </div>
 
             <div className="pt-3 border-t border-slate-800 flex flex-col gap-2 relative z-20 pointer-events-auto">

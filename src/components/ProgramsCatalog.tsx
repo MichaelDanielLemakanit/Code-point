@@ -6,7 +6,9 @@ import {
   Cpu, 
   ShieldCheck, 
   Clock, 
+  Calendar, 
   CheckCircle2, 
+  ChevronRight, 
   ArrowRight,
   BookOpen,
   X,
@@ -350,6 +352,10 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
 
                             {/* Metadata Specs Grid */}
                             <div className="space-y-1.5 text-xs text-slate-300 font-mono">
+                              <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+                                <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: themeColor }} />
+                                <span className="text-[11px] text-slate-300 truncate">{course.schedule}</span>
+                              </div>
                               <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-900/80 border border-slate-800">
                                 <div className="flex items-center gap-1.5 truncate">
                                   <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: themeColor }} />
@@ -361,8 +367,17 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
 
                             {/* Core Curriculum Highlights */}
                             <div className="space-y-1.5">
-                              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
                                 <span>Curriculum Highlights:</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedCourseForSyllabus(course)}
+                                  style={{ color: themeColor }}
+                                  className="hover:underline normal-case text-xs flex items-center gap-0.5 font-semibold cursor-pointer"
+                                >
+                                  <span>Full Syllabus</span>
+                                  <ChevronRight className="w-3 h-3" style={{ color: themeColor }} />
+                                </button>
                               </div>
 
                               <div className="space-y-1">

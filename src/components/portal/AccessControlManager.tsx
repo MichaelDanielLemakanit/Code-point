@@ -32,7 +32,6 @@ import {
 } from 'lucide-react';
 import { LoginAttempt, UserRole, AccessStatus } from '../../types';
 import { StudentFeeManager } from './StudentFeeManager';
-import { PasswordStrengthMeter } from './PasswordStrengthMeter';
 
 interface AccessControlManagerProps {
   onRefreshStats?: () => void;
@@ -1201,9 +1200,6 @@ export const AccessControlManager: React.FC<AccessControlManagerProps> = ({ onRe
                         className="w-full pl-9 pr-3 py-2 text-sm text-gray-900 font-mono font-bold bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-slate-900"
                       />
                     </div>
-                    {passwordEditModal.newPassword && (
-                      <PasswordStrengthMeter password={passwordEditModal.newPassword} themeColor="#4f46e5" showRequirements={true} />
-                    )}
                     <p className="text-[10px] text-slate-400 mt-1">
                       This password will immediately become active for portal authentication.
                     </p>

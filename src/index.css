@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 100px;
@@ -14,12 +16,22 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
+body {
+  background-color: var(--color-canvas-bg, #020617);
+  color: var(--color-text-main, #F8FAFC);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
 section[id],
 [id].scroll-mt-20 {
   scroll-margin-top: 100px;
 }
 
 :root {
+  /* Dynamic Canvas & Text Mode Variables */
+  --color-canvas-bg: #020617;
+  --color-text-main: #F8FAFC;
+
   /* Dynamic Theme Variables (canonical & aliases) */
   --primary: #10b981;
   --primary-color: #10b981;

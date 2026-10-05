@@ -211,6 +211,7 @@ export interface SiteSettings {
   why_study_section_json?: string;
   theme_palette?: string;
   theme_mode?: string;
+  canvas_bg?: string;
   primary_cta_color?: string;
   secondary_cta_color?: string;
   accent_style?: string;

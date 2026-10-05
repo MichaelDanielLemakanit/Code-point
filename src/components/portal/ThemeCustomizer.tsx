@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Palette, 
   Check, 
   Sparkles, 
   Sun, 
   Moon, 
+  Monitor, 
   Laptop, 
   Save, 
   RefreshCw, 
@@ -17,7 +18,8 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { SiteSettings } from '../../types';
-import { applyGlobalTheme } from '../../utils/theme';
+import { applyGlobalTheme, ThemeMode, resolveEffectiveMode } from '../../utils/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ThemeCustomizerProps {
   siteSettings?: SiteSettings;
@@ -116,11 +118,21 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
   onSettingsUpdated,
   showToast
 }) => {
+  const { 
+    mode: contextMode, 
+    setMode: setContextMode, 
+    canvasBg: contextCanvasBg, 
+    setCanvasBg: setContextCanvasBg 
+  } = useTheme();
+
   const [selectedPalette, setSelectedPalette] = useState<string>(
     siteSettings?.theme_palette || 'emerald'
   );
-  const [selectedMode, setSelectedMode] = useState<string>(
-    siteSettings?.theme_mode || 'dark'
+  const [selectedMode, setSelectedMode] = useState<ThemeMode>(
+    (siteSettings?.theme_mode as ThemeMode) || contextMode || 'system'
+  );
+  const [canvasBgHex, setCanvasBgHex] = useState<string>(
+    siteSettings?.canvas_bg || contextCanvasBg || ''
   );
   const [primaryColor, setPrimaryColor] = useState<string>(
     siteSettings?.primary_cta_color || '#10B981'
@@ -131,6 +143,25 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
 
   const [isSaving, setIsSaving] = useState(false);
 
+  // Sync with context if context changes externally
+  useEffect(() => {
+    if (contextMode && contextMode !== selectedMode) {
+      setSelectedMode(contextMode);
+    }
+  }, [contextMode]);
+
+  const handleModeChange = (newMode: ThemeMode) => {
+    setSelectedMode(newMode);
+    setContextMode(newMode);
+    applyGlobalTheme(primaryColor, secondaryColor, newMode, canvasBgHex);
+  };
+
+  const handleCanvasBgChange = (newBg: string) => {
+    setCanvasBgHex(newBg);
+    setContextCanvasBg(newBg);
+    applyGlobalTheme(primaryColor, secondaryColor, selectedMode, newBg);
+  };
+
   // Apply a preset palette
   const handleSelectPreset = (preset: PalettePreset) => {
     setSelectedPalette(preset.id);
@@ -138,29 +169,30 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
     setSecondaryColor(preset.secondary);
 
     // Apply immediate global CSS variable binding to document root
-    applyGlobalTheme(preset.primary, preset.secondary);
+    applyGlobalTheme(preset.primary, preset.secondary, selectedMode, canvasBgHex);
   };
 
   const handlePrimaryColorChange = (color: string) => {
     setPrimaryColor(color);
-    applyGlobalTheme(color, secondaryColor);
+    applyGlobalTheme(color, secondaryColor, selectedMode, canvasBgHex);
   };
 
   const handleSecondaryColorChange = (color: string) => {
     setSecondaryColor(color);
-    applyGlobalTheme(primaryColor, color);
+    applyGlobalTheme(primaryColor, color, selectedMode, canvasBgHex);
   };
 
   const handleSaveTheme = async () => {
     setIsSaving(true);
     try {
       // Ensure all CSS variables on root are updated
-      applyGlobalTheme(primaryColor, secondaryColor);
+      applyGlobalTheme(primaryColor, secondaryColor, selectedMode, canvasBgHex);
 
       const updatedSettings: SiteSettings = {
         ...(siteSettings || {} as SiteSettings),
         theme_palette: selectedPalette,
         theme_mode: selectedMode,
+        canvas_bg: canvasBgHex,
         primary_cta_color: primaryColor,
         secondary_cta_color: secondaryColor
       };
@@ -183,7 +215,7 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
 
       // Notify the app and components of theme update
       window.dispatchEvent(new CustomEvent('cpk_theme_updated', {
-        detail: { primary: primaryColor, secondary: secondaryColor }
+        detail: { primary: primaryColor, secondary: secondaryColor, mode: selectedMode, canvasBg: canvasBgHex }
       }));
 
       if (success) {
@@ -201,7 +233,8 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
 
   const handleResetDefaults = () => {
     handleSelectPreset(PALETTE_PRESETS[0]);
-    setSelectedMode('dark');
+    handleModeChange('system');
+    handleCanvasBgChange('');
   };
 
   return (
@@ -215,7 +248,34 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Segmented Mode Control UI */}
+          <div className="flex items-center bg-stone-100 p-1 rounded-xl border border-stone-300 shadow-inner">
+            {[
+              { id: 'system' as ThemeMode, label: 'Auto / System', icon: Monitor },
+              { id: 'dark' as ThemeMode, label: 'Dark', icon: Moon },
+              { id: 'light' as ThemeMode, label: 'Light', icon: Sun },
+            ].map((opt) => {
+              const isActive = selectedMode === opt.id;
+              const Icon = opt.icon;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => handleModeChange(opt.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-white text-stone-900 shadow-xs border border-stone-200 font-bold'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-500' : 'text-stone-400'}`} />
+                  <span>{opt.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <button
             type="button"
             onClick={handleResetDefaults}
@@ -384,38 +444,138 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
             </div>
           </div>
 
-          {/* Section 3: Visual Canvas Atmosphere */}
-          <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-xs space-y-4">
+          {/* Section 3: System Auto-Detect & Dark/Light Mode + Canvas Atmosphere */}
+          <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-xs space-y-5">
             <div>
               <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
-                <Moon className="w-4 h-4 text-indigo-500" />
-                <span>Theme Canvas Atmosphere</span>
+                <Monitor className="w-4 h-4 text-indigo-500" />
+                <span>System Auto-Detect & Dark / Light Mode</span>
               </h3>
-              <p className="text-xs text-stone-500">
-                Choose the background contrast ratio and ambient depth
+              <p className="text-xs text-stone-500 mt-0.5">
+                Configure auto-detection with OS sync, or force dark/light mode and ambient canvas background
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Segmented Mode Selector Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
-                { id: 'dark', label: 'Dark Studio', desc: 'Deep Slate #020617 (Recommended)' },
-                { id: 'slate', label: 'Navy Slate', desc: 'Midnight Blue #0B1120' },
-                { id: 'oled', label: 'Onyx OLED', desc: 'Pure Obsidian #030712' },
-                { id: 'light', label: 'Studio Light', desc: 'Clean White & Stone' }
-              ].map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => setSelectedMode(m.id)}
-                  className={`p-3 rounded-xl border text-center cursor-pointer transition-all ${
-                    selectedMode === m.id
-                      ? 'border-stone-900 bg-stone-100 font-bold text-stone-900 ring-1 ring-stone-900'
-                      : 'border-stone-200 hover:border-stone-300 text-stone-600 bg-white'
-                  }`}
-                >
-                  <div className="text-xs font-bold">{m.label}</div>
-                  <div className="text-[10px] text-stone-400 mt-0.5 truncate">{m.desc}</div>
-                </div>
-              ))}
+                { 
+                  id: 'system' as ThemeMode, 
+                  label: 'Auto / System', 
+                  desc: 'Syncs automatically with user OS dark/light mode', 
+                  icon: Monitor 
+                },
+                { 
+                  id: 'dark' as ThemeMode, 
+                  label: 'Dark Mode', 
+                  desc: 'High contrast dark canvas (#020617 fallback)', 
+                  icon: Moon 
+                },
+                { 
+                  id: 'light' as ThemeMode, 
+                  label: 'Light Mode', 
+                  desc: 'Clean studio white canvas (#FFFFFF fallback)', 
+                  icon: Sun 
+                }
+              ].map((m) => {
+                const isSelected = selectedMode === m.id;
+                const Icon = m.icon;
+                return (
+                  <div
+                    key={m.id}
+                    onClick={() => handleModeChange(m.id)}
+                    className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all select-none relative ${
+                      isSelected
+                        ? 'border-stone-900 bg-stone-50 ring-2 ring-stone-900/10 shadow-xs'
+                        : 'border-stone-200 hover:border-stone-300 text-stone-600 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <Icon className={`w-4 h-4 ${isSelected ? 'text-amber-500' : 'text-stone-400'}`} />
+                        <span className="text-xs font-bold text-stone-900">{m.label}</span>
+                      </div>
+                      {isSelected && (
+                        <span className="w-4 h-4 rounded-full bg-stone-900 text-white flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5" />
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-stone-500 leading-snug">{m.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Canvas Atmosphere Hex Selector */}
+            <div className="pt-2 border-t border-stone-100 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600">
+                  Custom Canvas Background Hex
+                </label>
+                <span className="text-[10px] font-mono text-stone-400">
+                  {canvasBgHex || (resolveEffectiveMode(selectedMode) === 'dark' ? '#020617 (Dark Default)' : '#FFFFFF (Light Default)')}
+                </span>
+              </div>
+
+              {/* Quick Background Swatches */}
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { name: 'Dark Slate', hex: '#020617', mode: 'dark' },
+                  { name: 'Midnight Navy', hex: '#0B1120', mode: 'dark' },
+                  { name: 'Obsidian OLED', hex: '#030712', mode: 'dark' },
+                  { name: 'Studio Pure White', hex: '#FFFFFF', mode: 'light' },
+                  { name: 'Slate Light', hex: '#F8FAFC', mode: 'light' },
+                  { name: 'Warm Stone', hex: '#FAFAF9', mode: 'light' },
+                ].map((bg) => {
+                  const isActive = canvasBgHex === bg.hex;
+                  return (
+                    <button
+                      key={bg.hex}
+                      type="button"
+                      onClick={() => handleCanvasBgChange(bg.hex)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+                        isActive
+                          ? 'border-stone-900 bg-stone-100 font-bold text-stone-900 shadow-xs'
+                          : 'border-stone-200 hover:border-stone-300 text-stone-700 bg-white'
+                      }`}
+                    >
+                      <span
+                        className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0 shadow-inner"
+                        style={{ backgroundColor: bg.hex }}
+                      />
+                      <span>{bg.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom Input */}
+              <div className="flex items-center gap-2 pt-1 max-w-sm">
+                <input
+                  type="color"
+                  value={canvasBgHex || (resolveEffectiveMode(selectedMode) === 'dark' ? '#020617' : '#FFFFFF')}
+                  onChange={(e) => handleCanvasBgChange(e.target.value)}
+                  className="w-10 h-10 rounded-xl border border-stone-300 p-1 cursor-pointer bg-white"
+                />
+                <input
+                  type="text"
+                  placeholder={resolveEffectiveMode(selectedMode) === 'dark' ? '#020617' : '#FFFFFF'}
+                  value={canvasBgHex}
+                  onChange={(e) => handleCanvasBgChange(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-xl border border-stone-300 text-xs font-mono text-stone-900 uppercase focus:outline-none focus:border-stone-900"
+                />
+                {canvasBgHex && (
+                  <button
+                    type="button"
+                    onClick={() => handleCanvasBgChange('')}
+                    className="px-2.5 py-2 text-xs text-stone-500 hover:text-stone-800 border border-stone-200 rounded-xl hover:bg-stone-50"
+                    title="Reset to mode default"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -423,128 +583,193 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
 
         {/* Right Column: Live Interactive Mock Preview (5 cols) */}
         <div className="xl:col-span-5 space-y-4">
-          <div className="bg-stone-900 text-white rounded-2xl p-6 shadow-xl border border-stone-800 space-y-5 sticky top-6">
-            
-            <div className="flex items-center justify-between pb-3 border-b border-stone-800">
-              <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4 text-amber-400" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-300">
-                  Live Real-Time Theme Preview
-                </h3>
-              </div>
-              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                Live Rendering
-              </span>
-            </div>
+          {(() => {
+            const isPreviewDark = resolveEffectiveMode(selectedMode) === 'dark';
+            const previewBg = canvasBgHex || (isPreviewDark ? '#020617' : '#FFFFFF');
+            const previewCardBg = isPreviewDark ? '#0b1120' : '#f8fafc';
+            const previewBorder = isPreviewDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+            const previewTextColor = isPreviewDark ? '#F8FAFC' : '#0F172A';
+            const previewMutedColor = isPreviewDark ? '#94A3B8' : '#64748B';
 
-            {/* Mock Mini Website Header */}
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs text-slate-950 font-mono shadow-sm"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    CP
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-white leading-none">Code Point Kenya</div>
-                    <div className="text-[9px] text-slate-400 font-mono">Nairobi Tech Institute</div>
-                  </div>
-                </div>
-
-                <div
-                  className="px-2 py-0.5 rounded text-[10px] font-bold"
-                  style={{ 
-                    backgroundColor: `${primaryColor}20`,
-                    color: primaryColor,
-                    borderColor: `${primaryColor}40`,
-                    borderWidth: 1
-                  }}
-                >
-                  Ngong Rd Lab
-                </div>
-              </div>
-            </div>
-
-            {/* Mock Mini Hero Section */}
-            <div className="p-5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3.5">
-              <span
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold"
-                style={{ 
-                  backgroundColor: `${primaryColor}20`,
-                  color: primaryColor
+            return (
+              <div 
+                className="rounded-2xl p-6 shadow-xl border space-y-5 sticky top-6 transition-all duration-200"
+                style={{
+                  backgroundColor: isPreviewDark ? '#030712' : '#ffffff',
+                  borderColor: previewBorder,
+                  color: previewTextColor
                 }}
               >
-                <Zap className="w-3 h-3" />
-                Online-First + Physical Campus Lab
-              </span>
-
-              <h4 className="text-base font-bold text-white tracking-tight leading-snug">
-                Launch Your Tech Career in{' '}
-                <span style={{ color: primaryColor }}>Software, Data, & AI</span>
-              </h4>
-
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Kenya’s premier career-accelerator coding school. Live evening online cohorts + 24/7 Ngong Road lab access.
-              </p>
-
-              {/* Action Buttons Mock */}
-              <div className="flex items-center gap-2 pt-1">
-                <button
-                  style={{ backgroundColor: primaryColor }}
-                  className="px-4 py-2 rounded-lg text-slate-950 font-bold text-xs shadow-md flex items-center gap-1.5 transition-transform hover:scale-105"
-                >
-                  <span>Apply Now</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-                <button
-                  className="px-3.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-xs font-medium"
-                >
-                  Explore Programs
-                </button>
-              </div>
-            </div>
-
-            {/* Mock Mini Course Card */}
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <span
-                    className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded"
-                    style={{ backgroundColor: `${secondaryColor}25`, color: secondaryColor }}
-                  >
-                    Artificial Intelligence
-                  </span>
-                  <div className="text-xs font-bold text-white mt-1">Applied AI Engineering</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs font-bold text-white font-mono">KES 95,000</div>
-                  <div className="text-[10px] font-mono" style={{ color: primaryColor }}>
-                    KES 20,500/mo
+                <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: previewBorder }}>
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-amber-500" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider">
+                      Live Real-Time Theme Preview
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span 
+                      className="text-[10px] font-mono px-2 py-0.5 rounded border"
+                      style={{ 
+                        backgroundColor: `${primaryColor}15`, 
+                        color: primaryColor,
+                        borderColor: `${primaryColor}30` 
+                      }}
+                    >
+                      {selectedMode === 'system' ? `Auto (${isPreviewDark ? 'Dark' : 'Light'})` : selectedMode === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                    </span>
                   </div>
                 </div>
+
+                {/* Mock Live Canvas Box */}
+                <div 
+                  className="p-4 rounded-2xl border space-y-3.5 transition-all duration-200 shadow-sm"
+                  style={{
+                    backgroundColor: previewBg,
+                    borderColor: previewBorder,
+                    color: previewTextColor
+                  }}
+                >
+                  {/* Mock Mini Website Header */}
+                  <div 
+                    className="p-3.5 rounded-xl border flex items-center justify-between transition-all"
+                    style={{
+                      backgroundColor: previewCardBg,
+                      borderColor: previewBorder
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs font-mono shadow-sm text-slate-950"
+                        style={{ backgroundColor: primaryColor }}
+                      >
+                        CP
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold leading-none" style={{ color: previewTextColor }}>
+                          Code Point Kenya
+                        </div>
+                        <div className="text-[9px] font-mono mt-0.5" style={{ color: previewMutedColor }}>
+                          Nairobi Tech Institute
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className="px-2 py-0.5 rounded text-[10px] font-bold"
+                      style={{ 
+                        backgroundColor: `${primaryColor}18`,
+                        color: primaryColor,
+                        borderColor: `${primaryColor}40`,
+                        borderWidth: 1
+                      }}
+                    >
+                      Ngong Rd Lab
+                    </div>
+                  </div>
+
+                  {/* Mock Mini Hero Section */}
+                  <div 
+                    className="p-4 rounded-xl border space-y-3 transition-all"
+                    style={{
+                      backgroundColor: previewCardBg,
+                      borderColor: previewBorder
+                    }}
+                  >
+                    <span
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold"
+                      style={{ 
+                        backgroundColor: `${primaryColor}18`,
+                        color: primaryColor
+                      }}
+                    >
+                      <Zap className="w-3 h-3" />
+                      Online-First + Physical Campus Lab
+                    </span>
+
+                    <h4 className="text-base font-bold tracking-tight leading-snug" style={{ color: previewTextColor }}>
+                      Launch Your Tech Career in{' '}
+                      <span style={{ color: primaryColor }}>Software, Data, & AI</span>
+                    </h4>
+
+                    <p className="text-xs leading-relaxed" style={{ color: previewMutedColor }}>
+                      Kenya’s premier career-accelerator coding school. Live evening online cohorts + 24/7 Ngong Road lab access.
+                    </p>
+
+                    {/* Action Buttons Mock */}
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        style={{ backgroundColor: primaryColor }}
+                        className="px-4 py-2 rounded-lg text-slate-950 font-bold text-xs shadow-md flex items-center gap-1.5 transition-transform hover:scale-105"
+                      >
+                        <span>Apply Now</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                      <button
+                        className="px-3.5 py-2 rounded-lg border text-xs font-medium"
+                        style={{ 
+                          borderColor: previewBorder,
+                          color: previewTextColor,
+                          backgroundColor: isPreviewDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'
+                        }}
+                      >
+                        Explore Programs
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mock Mini Course Card */}
+                  <div 
+                    className="p-3.5 rounded-xl border space-y-2 transition-all"
+                    style={{
+                      backgroundColor: previewCardBg,
+                      borderColor: previewBorder
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span
+                          className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded"
+                          style={{ backgroundColor: `${secondaryColor}20`, color: secondaryColor }}
+                        >
+                          Artificial Intelligence
+                        </span>
+                        <div className="text-xs font-bold mt-1" style={{ color: previewTextColor }}>
+                          Applied AI Engineering
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-bold font-mono" style={{ color: previewTextColor }}>
+                          KES 95,000
+                        </div>
+                        <div className="text-[10px] font-mono" style={{ color: primaryColor }}>
+                          KES 20,500/mo
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveTheme}
+                    disabled={isSaving}
+                    style={{ backgroundColor: primaryColor }}
+                    className="w-full py-3 rounded-xl text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all hover:brightness-110 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4" />
+                    )}
+                    <span>Apply This Theme to Live Site</span>
+                  </button>
+                </div>
+
               </div>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={handleSaveTheme}
-                disabled={isSaving}
-                style={{ backgroundColor: primaryColor }}
-                className="w-full py-3 rounded-xl text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all hover:brightness-110 cursor-pointer disabled:opacity-50"
-              >
-                {isSaving ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="w-4 h-4" />
-                )}
-                <span>Apply This Theme to Live Site</span>
-              </button>
-            </div>
-
-          </div>
+            );
+          })()}
         </div>
 
       </div>

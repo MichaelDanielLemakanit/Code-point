@@ -1,3 +1,4 @@
+import { ThemeModeToggle } from '../ThemeModeToggle';
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
@@ -1123,6 +1124,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-stone-500 hidden sm:inline">Theme:</span>
+                    <ThemeModeToggle size="sm" variant="light" />
+                  </div>
                 </div>
               </div>
 

@@ -699,10 +699,28 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ curren
                           </span>
                         </div>
 
-                        {/* Title */}
+                        {/* Title & Body */}
                         <h5 className="text-base font-bold text-white pt-1">
                           {ann.title}
                         </h5>
+                        <p className="text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-line">
+                          {ann.content}
+                        </p>
+
+                        {/* Attached Action URL if any */}
+                        {ann.action_url && (
+                          <div className="pt-2">
+                            <a
+                              href={ann.action_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 text-emerald-300 border border-emerald-500/30 text-xs font-semibold"
+                            >
+                              <span>{ann.action_label || 'Attached Resource'}</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        )}
 
                         {/* Author & Timestamp */}
                         <div className="flex items-center gap-2 pt-2 text-[11px] text-slate-400 font-mono">

@@ -9,6 +9,7 @@ import {
   Smartphone, 
   Mail, 
   ShieldAlert, 
+  DollarSign, 
   CheckCircle2, 
   PhoneCall 
 } from 'lucide-react';
@@ -101,6 +102,9 @@ export const FeeNotificationSettingsModal: React.FC<FeeNotificationSettingsModal
             </div>
             <div>
               <h3 className="text-base font-bold text-white">Automated Notification Engine Configuration</h3>
+              <p className="text-xs text-slate-400">
+                Configure automated rule triggers, reminder schedules, M-Pesa gateway credentials, and sender IDs.
+              </p>
             </div>
           </div>
           <button
@@ -139,6 +143,9 @@ export const FeeNotificationSettingsModal: React.FC<FeeNotificationSettingsModal
                           </span>
                         )}
                       </div>
+                      <p className="text-[11px] text-slate-400">
+                        Automatically dispatch reminder alerts before payment deadline expires.
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -158,6 +165,9 @@ export const FeeNotificationSettingsModal: React.FC<FeeNotificationSettingsModal
                         <div className="text-xs font-medium text-slate-200">
                           Deadline Threshold Window
                         </div>
+                        <p className="text-[11px] text-slate-400">
+                          Number of days before deadline to initiate reminder dispatches.
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <input
@@ -184,6 +194,9 @@ export const FeeNotificationSettingsModal: React.FC<FeeNotificationSettingsModal
                           </span>
                         )}
                       </div>
+                      <p className="text-[11px] text-slate-400">
+                        Automatically trigger alert when status changes to 'Overdue' or student access is restricted.
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -206,6 +219,7 @@ export const FeeNotificationSettingsModal: React.FC<FeeNotificationSettingsModal
                 </div>
 
                 <div>
+                  <label className="block text-xs text-slate-400 mb-2">Default Notification Channel:</label>
                   <div className="grid grid-cols-3 gap-3">
                     <button
                       type="button"
@@ -276,6 +290,11 @@ export const FeeNotificationSettingsModal: React.FC<FeeNotificationSettingsModal
 
               {/* Section 3: Financial Reconciliation Details */}
               <div className="space-y-4">
+                <div className="text-xs font-mono font-medium text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-emerald-400" />
+                  <span>Payment Gateway & Desk Contacts</span>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[11px] text-slate-400 mb-1">

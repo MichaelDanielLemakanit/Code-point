@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { MessageCircle, X, ExternalLink, Send } from 'lucide-react';
 import { SiteSettings } from '../types';
 
 interface WhatsAppWidgetProps {
@@ -47,6 +47,9 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({ siteSettings }) 
               </div>
               <div>
                 <h4 className="text-sm font-bold leading-tight">{brandName} Support</h4>
+                <p className="text-[11px] text-white/90 flex items-center gap-1">
+                  <span>Admissions Online (Replies in &lt;5 mins)</span>
+                </p>
               </div>
             </div>
             <button
@@ -61,6 +64,10 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({ siteSettings }) 
           <div className="p-4 bg-slate-950/90 text-xs space-y-3">
             <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 space-y-1">
               <p className="font-semibold theme-text-primary">👋 Karibu to {brandName}!</p>
+              <p>Need help choosing between Software Engineering, Data Science, AI, or Cybersecurity?</p>
+              <p className="text-[11px] text-slate-400 pt-1">
+                📍 Physical campus: {siteSettings?.address || "Ngong Road, Teamshark 5th Floor, Nairobi"}.
+              </p>
             </div>
 
             <form onSubmit={handleSend} className="space-y-2 pt-1">
@@ -72,7 +79,17 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({ siteSettings }) 
                 className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 transition-colors"
               />
 
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <a
+                  href={`https://wa.me/${cleanPhone || '254756295128'}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] theme-text-primary hover:underline flex items-center gap-1 font-mono"
+                >
+                  <span>{phone}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+
                 <button
                   type="submit"
                   style={{ backgroundColor: 'var(--primary-color)' }}

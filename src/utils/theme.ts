@@ -3,6 +3,8 @@
  * to global CSS root variables.
  */
 
+export type ThemeMode = 'system' | 'dark' | 'light';
+
 export interface ThemeColors {
   primary: string;
   secondary: string;
@@ -25,9 +27,32 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
 }
 
 /**
- * Dynamically binds the active theme colors across all CSS variables on :root
+ * Returns system OS color scheme preference
  */
-export function applyGlobalTheme(primaryHex?: string, secondaryHex?: string, mode?: string) {
+export function getSystemTheme(): 'dark' | 'light' {
+  if (typeof window === 'undefined' || !window.matchMedia) return 'dark';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+/**
+ * Resolves effective mode ('dark' or 'light') considering 'system' auto-detection
+ */
+export function resolveEffectiveMode(mode: string = 'system'): 'dark' | 'light' {
+  if (mode === 'system') {
+    return getSystemTheme();
+  }
+  return mode === 'light' ? 'light' : 'dark';
+}
+
+/**
+ * Dynamically binds the active theme colors, modes, and canvas backgrounds across all CSS variables on :root
+ */
+export function applyGlobalTheme(
+  primaryHex?: string, 
+  secondaryHex?: string, 
+  mode: string = 'system',
+  canvasBgHex?: string
+) {
   if (typeof document === 'undefined') return;
 
   const primary = primaryHex || '#10B981';
@@ -54,9 +79,40 @@ export function applyGlobalTheme(primaryHex?: string, secondaryHex?: string, mod
   root.style.setProperty('--highlight-color', primary);
   root.style.setProperty('--cpk-secondary', secondary);
 
-  // Background atmosphere variable
-  const bgDark = mode === 'slate' ? '#0B1120' : mode === 'oled' ? '#030712' : '#020617';
-  root.style.setProperty('--bg-dark', bgDark);
+  // 1. Resolve effective mode (system, dark, or light)
+  const normalizedMode: ThemeMode = (mode === 'light' || mode === 'dark') ? mode : 'system';
+  const effective = resolveEffectiveMode(normalizedMode);
+  const isDark = effective === 'dark';
+
+  // 2. Toggle Tailwind's dark class on <html>
+  if (isDark) {
+    root.classList.add('dark');
+  } else {
+    root.classList.remove('dark');
+  }
+
+  // 3. Set root CSS variable --color-canvas-bg to the active background hex
+  // (or fall back to #020617 for Dark / #FFFFFF for Light when no custom hex is set)
+  let activeBg = (canvasBgHex || '').trim();
+  if (!activeBg) {
+    activeBg = isDark ? '#020617' : '#FFFFFF';
+  } else {
+    // Validate brightness compatibility with current mode
+    const rgb = hexToRgb(activeBg);
+    const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+    if (isDark && luminance > 0.6) {
+      activeBg = '#020617';
+    } else if (!isDark && luminance < 0.35) {
+      activeBg = '#FFFFFF';
+    }
+  }
+
+  // 4. Set root CSS variable --color-text-main to #F8FAFC for dark mode and #0F172A for light mode
+  const activeText = isDark ? '#F8FAFC' : '#0F172A';
+
+  root.style.setProperty('--color-canvas-bg', activeBg);
+  root.style.setProperty('--color-text-main', activeText);
+  root.style.setProperty('--bg-dark', isDark ? activeBg : '#020617');
 
   // Badge & Status Pills variables
   root.style.setProperty('--badge-bg', `rgba(${r1}, ${g1}, ${b1}, 0.12)`);
@@ -75,10 +131,11 @@ export function applyGlobalTheme(primaryHex?: string, secondaryHex?: string, mod
   root.style.setProperty('--card-accent-glow', `rgba(${r2}, ${g2}, ${b2}, 0.16)`);
   root.style.setProperty('--focus-ring', `rgba(${r1}, ${g1}, ${b1}, 0.4)`);
 
-  // Persist to localStorage for zero-latency instant rendering on refresh
+  // Persist to localStorage under cpk_theme_mode and cpk_canvas_bg
   try {
     localStorage.setItem('cpk_theme_primary', primary);
     localStorage.setItem('cpk_theme_secondary', secondary);
-    if (mode) localStorage.setItem('cpk_theme_mode', mode);
+    localStorage.setItem('cpk_theme_mode', normalizedMode);
+    localStorage.setItem('cpk_canvas_bg', activeBg);
   } catch (_) {}
 }
