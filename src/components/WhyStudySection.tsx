@@ -140,8 +140,7 @@ export const WhyStudySection: React.FC<WhyStudySectionProps> = ({
   return (
     <section 
       id="why-codepoint" 
-      style={{ backgroundColor: 'var(--color-canvas-bg, #020617)' }}
-      className="w-full max-w-full overflow-x-hidden py-20 text-slate-100 border-t border-slate-800/80 relative scroll-mt-24 transition-colors duration-300"
+      className="w-full max-w-full overflow-x-hidden py-20 text-slate-900 dark:text-slate-100 border-t border-slate-200/80 dark:border-slate-800/80 relative scroll-mt-24 transition-colors duration-300"
     >
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         

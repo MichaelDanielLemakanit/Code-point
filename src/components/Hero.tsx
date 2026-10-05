@@ -199,8 +199,7 @@ export const Hero: React.FC<HeroProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.7 }}
-      style={{ backgroundColor: 'var(--color-canvas-bg, #020617)' }}
-      className="w-full max-w-full overflow-x-hidden relative text-slate-100 pt-10 pb-16 lg:pt-16 lg:pb-24 border-b border-slate-800/80 group scroll-mt-20 transition-colors duration-300"
+      className="w-full max-w-full overflow-x-hidden relative text-slate-900 dark:text-slate-100 pt-10 pb-16 lg:pt-16 lg:pb-24 border-b border-slate-200/80 dark:border-slate-800/80 group scroll-mt-20 transition-colors duration-300"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -229,10 +228,10 @@ export const Hero: React.FC<HeroProps> = ({
           );
         })}
 
-        {/* Dark Overlays */}
-        <div className="absolute inset-0 bg-slate-950/30 sm:bg-slate-950/25 backdrop-blur-[0.5px] z-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-950/40 to-transparent z-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/40 z-10" />
+        {/* Adaptive Overlays */}
+        <div className="absolute inset-0 bg-white/20 dark:bg-slate-950/30 sm:bg-white/15 sm:dark:bg-slate-950/25 backdrop-blur-[0.5px] z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent dark:from-slate-950/80 dark:via-slate-950/40 dark:to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-white/95 via-white/40 to-transparent dark:from-slate-950/90 dark:via-transparent dark:to-slate-950/40 z-10 pointer-events-none" />
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[650px] h-[350px] bg-emerald-500/10 blur-[140px] rounded-full z-10 pointer-events-none" />
         <div className="absolute top-1/3 right-0 w-full max-w-[350px] h-[350px] bg-teal-500/10 blur-[110px] rounded-full z-10 pointer-events-none" />
       </div>
@@ -253,7 +252,7 @@ export const Hero: React.FC<HeroProps> = ({
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.35, ease: 'easeOut' }}
               >
-                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.14] min-h-[100px] sm:min-h-[120px] flex flex-col justify-center">
+                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.14] min-h-[100px] sm:min-h-[120px] flex flex-col justify-center">
                   <span>
                     {activeSlide.headlinePrefix}
                     <span className="theme-gradient-text">
@@ -263,7 +262,7 @@ export const Hero: React.FC<HeroProps> = ({
                   </span>
                 </h1>
 
-                <p className="text-base md:text-lg text-slate-300 max-w-2xl leading-relaxed mt-2.5">
+                <p className="text-base md:text-lg text-slate-700 dark:text-slate-300 max-w-2xl leading-relaxed mt-2.5">
                   {activeSlide.description}
                 </p>
               </motion.div>

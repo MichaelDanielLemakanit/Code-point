@@ -84,20 +84,39 @@ export function applyGlobalTheme(
   const effective = resolveEffectiveMode(normalizedMode);
 
   // 2. Resolve active background hex: prioritize explicitly chosen canvas hex,
-  // falling back to mode defaults (#F8FAFC for light, #020617 for dark)
+  // falling back to mode defaults (#FFFFFF for light, #020617 for dark)
   let activeBg = (canvasBgHex || '').trim();
-  if (!activeBg) {
-    activeBg = effective === 'light' ? '#F8FAFC' : '#020617';
-  } else if (!activeBg.startsWith('#')) {
-    activeBg = `#${activeBg}`;
+  if (effective === 'light') {
+    if (!activeBg || activeBg === '#020617' || activeBg === '#000000' || activeBg === '#0b0f19') {
+      activeBg = '#FFFFFF';
+    } else if (!activeBg.startsWith('#')) {
+      activeBg = `#${activeBg}`;
+    }
+    // If custom hex is provided but too dark for light mode, fall back to #FFFFFF
+    const rgb = hexToRgb(activeBg);
+    const lum = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+    if (lum <= 0.45) {
+      activeBg = '#FFFFFF';
+    }
+  } else {
+    // dark mode
+    if (!activeBg || activeBg === '#FFFFFF' || activeBg === '#F8FAFC' || activeBg === '#ffffff') {
+      activeBg = '#020617';
+    } else if (!activeBg.startsWith('#')) {
+      activeBg = `#${activeBg}`;
+    }
+    // If custom hex is provided but too bright for dark mode, fall back to #020617
+    const rgb = hexToRgb(activeBg);
+    const lum = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+    if (lum > 0.55) {
+      activeBg = '#020617';
+    }
   }
 
-  // 3. Compute luminance to adapt text and card contrast dynamically
   const rgb = hexToRgb(activeBg);
-  const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-  const isBright = luminance > 0.5;
+  const isBright = effective === 'light';
 
-  // 4. Toggle root classes for Tailwind and custom CSS rules
+  // 4. Toggle root classes directly for Tailwind (darkMode: 'class') and custom CSS rules
   if (isBright) {
     root.classList.add('light-theme');
     root.classList.remove('dark');
@@ -110,7 +129,7 @@ export function applyGlobalTheme(
   const activeText = isBright ? '#0F172A' : '#F8FAFC';
   const activeMuted = isBright ? '#475569' : '#94A3B8';
   const activeHeading = isBright ? '#0F172A' : '#FFFFFF';
-  const activeSurface = isBright ? 'rgba(255, 255, 255, 0.95)' : 'rgba(15, 23, 42, 0.75)';
+  const activeSurface = isBright ? 'rgba(255, 255, 255, 0.98)' : 'rgba(15, 23, 42, 0.75)';
   const activeSurfaceAlt = isBright ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.02)';
   const activeBorder = isBright ? 'rgba(15, 23, 42, 0.12)' : 'rgba(51, 65, 85, 0.55)';
   const activeNavBg = isBright ? 'rgba(255, 255, 255, 0.92)' : 'rgba(2, 6, 23, 0.85)';

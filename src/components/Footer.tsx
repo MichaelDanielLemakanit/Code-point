@@ -35,8 +35,7 @@ export const Footer: React.FC<FooterProps> = ({
 
   return (
     <footer 
-      style={{ backgroundColor: 'var(--color-canvas-bg, #020617)' }}
-      className="w-full max-w-full overflow-x-hidden text-slate-400 border-t border-slate-800/80 text-xs transition-colors duration-300"
+      className="w-full max-w-full overflow-x-hidden text-slate-500 dark:text-slate-400 border-t border-slate-200/80 dark:border-slate-800/80 text-xs transition-colors duration-300"
     >
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         

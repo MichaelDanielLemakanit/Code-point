@@ -181,8 +181,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ onFeedbackSubmit
   return (
     <section 
       id="reviews" 
-      style={{ backgroundColor: 'var(--color-canvas-bg, #020617)' }}
-      className="w-full max-w-full overflow-x-hidden py-24 text-slate-100 border-t border-slate-800/80 relative scroll-mt-20 transition-colors duration-300"
+      className="w-full max-w-full overflow-x-hidden py-24 text-slate-900 dark:text-slate-100 border-t border-slate-200/80 dark:border-slate-800/80 relative scroll-mt-20 transition-colors duration-300"
     >
       {/* Background radial glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[800px] h-[400px] bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-indigo-500/10 blur-3xl pointer-events-none -z-0" />

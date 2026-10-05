@@ -33,15 +33,27 @@
           var effectiveMode = m === 'light' ? 'light' : (m === 'dark' ? 'dark' : (isSystemDark ? 'dark' : 'light'));
 
           var activeBg = (customBg || '').trim();
-          if (!activeBg) {
-            activeBg = effectiveMode === 'light' ? '#F8FAFC' : '#020617';
-          } else if (!activeBg.startsWith('#')) {
-            activeBg = '#' + activeBg;
+          if (effectiveMode === 'light') {
+            if (!activeBg || activeBg === '#020617' || activeBg === '#000000' || activeBg === '#0b0f19') {
+              activeBg = '#FFFFFF';
+            } else if (!activeBg.startsWith('#')) {
+              activeBg = '#' + activeBg;
+            }
+            var bgRgb = hexToRgb(activeBg);
+            var lum = (0.299 * bgRgb.r + 0.587 * bgRgb.g + 0.114 * bgRgb.b) / 255;
+            if (lum <= 0.45) activeBg = '#FFFFFF';
+          } else {
+            if (!activeBg || activeBg === '#FFFFFF' || activeBg === '#F8FAFC' || activeBg === '#ffffff') {
+              activeBg = '#020617';
+            } else if (!activeBg.startsWith('#')) {
+              activeBg = '#' + activeBg;
+            }
+            var bgRgb = hexToRgb(activeBg);
+            var lum = (0.299 * bgRgb.r + 0.587 * bgRgb.g + 0.114 * bgRgb.b) / 255;
+            if (lum > 0.55) activeBg = '#020617';
           }
 
-          var bgRgb = hexToRgb(activeBg);
-          var lum = (0.299 * bgRgb.r + 0.587 * bgRgb.g + 0.114 * bgRgb.b) / 255;
-          var isBright = lum > 0.5;
+          var isBright = effectiveMode === 'light';
 
           var root = document.documentElement;
           if (isBright) {
@@ -55,7 +67,7 @@
           var activeText = isBright ? '#0F172A' : '#F8FAFC';
           var activeMuted = isBright ? '#475569' : '#94A3B8';
           var activeHeading = isBright ? '#0F172A' : '#FFFFFF';
-          var activeSurface = isBright ? 'rgba(255, 255, 255, 0.95)' : 'rgba(15, 23, 42, 0.75)';
+          var activeSurface = isBright ? 'rgba(255, 255, 255, 0.98)' : 'rgba(15, 23, 42, 0.75)';
           var activeSurfaceAlt = isBright ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.02)';
           var activeBorder = isBright ? 'rgba(15, 23, 42, 0.12)' : 'rgba(51, 65, 85, 0.55)';
           var activeNavBg = isBright ? 'rgba(255, 255, 255, 0.92)' : 'rgba(2, 6, 23, 0.85)';
@@ -96,7 +108,7 @@
       })();
     </script>
   </head>
-  <body class="w-full max-w-full overflow-x-hidden min-h-screen bg-slate-950 text-slate-100">
+  <body class="w-full max-w-full overflow-x-hidden min-h-screen bg-[var(--color-canvas-bg)] text-slate-900 dark:text-slate-100 transition-colors duration-200">
     <div id="root" class="w-full max-w-full overflow-x-hidden"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

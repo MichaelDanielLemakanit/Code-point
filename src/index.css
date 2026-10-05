@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
+@config "../tailwind.config.js";
+
 @variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 html {
   scroll-behavior: smooth;
@@ -243,6 +246,32 @@ html.light-theme .bg-slate-850 {
 
 html.light-theme .shadow-xl {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+}
+
+html.light-theme .text-slate-500 {
+  color: #64748B !important;
+}
+
+html.light-theme .text-slate-600 {
+  color: #475569 !important;
+}
+
+html.light-theme .border-slate-700,
+html.light-theme .border-slate-750 {
+  border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+html.light-theme input:not([type="checkbox"]):not([type="radio"]),
+html.light-theme textarea,
+html.light-theme select {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: rgba(15, 23, 42, 0.18) !important;
+}
+
+html.light-theme input::placeholder,
+html.light-theme textarea::placeholder {
+  color: #94A3B8 !important;
 }
 
 .theme-group-hover-title {

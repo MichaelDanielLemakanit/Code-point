@@ -68,8 +68,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ siteSettings }) 
   return (
     <section 
       id="contact" 
-      style={{ backgroundColor: 'var(--color-canvas-bg, #020617)' }}
-      className="w-full max-w-full overflow-x-hidden py-20 text-slate-100 relative scroll-mt-20 transition-colors duration-300"
+      className="w-full max-w-full overflow-x-hidden py-20 text-slate-900 dark:text-slate-100 relative scroll-mt-20 transition-colors duration-300"
     >
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         

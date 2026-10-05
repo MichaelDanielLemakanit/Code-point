@@ -123,7 +123,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         isScrolled 
           ? 'shadow-xl shadow-black/30' 
           : 'shadow-sm'
-      } text-slate-100`}
+      } text-slate-900 dark:text-slate-100`}
     >
       {/* Top-Bar Announcement Banner for Upcoming Intake & Next Cohort */}
       <AnnouncementBanner
@@ -147,14 +147,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             />
           )}
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-white font-sans whitespace-nowrap">
+            <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-slate-900 dark:text-white font-sans whitespace-nowrap">
               {siteSettings?.brand_name || "Code Point Kenya"}
             </span>
           </div>
         </a>
 
         {/* Desktop Navigation Links (Visible on lg: 1024px and above) */}
-        <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 2xl:gap-2 text-[11px] xl:text-xs 2xl:text-sm font-medium text-slate-300 flex-nowrap whitespace-nowrap shrink-0">
+        <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 2xl:gap-2 text-[11px] xl:text-xs 2xl:text-sm font-medium text-slate-600 dark:text-slate-300 flex-nowrap whitespace-nowrap shrink-0">
           {/* Career Path Quiz Link */}
           <a
             href="#career-quiz"
@@ -225,7 +225,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Desktop Header Right (Visible on lg: 1024px and above) */}
         <div className="hidden lg:flex items-center gap-2 xl:gap-2.5 flex-nowrap whitespace-nowrap shrink-0">
           {/* Theme Mode Segmented Control (Auto / System, Dark, Light) */}
-          <ThemeModeToggle size="sm" variant="dark" />
+          <ThemeModeToggle size="sm" variant="auto" />
 
           {/* Admin CMS Button */}
           <button
@@ -369,7 +369,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Theme Mode Segmented Control (Mobile) */}
               <div className="flex items-center justify-between px-3 py-2.5 bg-slate-900/60 rounded-xl border border-slate-800">
                 <span className="text-xs font-semibold text-slate-300">Theme Appearance</span>
-                <ThemeModeToggle size="xs" variant="dark" />
+                <ThemeModeToggle size="xs" variant="auto" />
               </div>
             </div>
 

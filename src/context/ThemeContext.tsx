@@ -132,15 +132,71 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode; initialSetting
 
   const setMode = useCallback((newMode: ThemeMode) => {
     setModeState(newMode);
-    applyGlobalTheme(primaryColor, secondaryColor, newMode, canvasBg);
-    setEffectiveMode(resolveEffectiveMode(newMode));
+
+    // Direct root element DOM update
+    const root = document.documentElement;
+    let nextBg = canvasBg;
+
+    if (newMode === 'light') {
+      root.classList.remove('dark');
+      root.classList.add('light-theme');
+      nextBg = '#FFFFFF';
+      root.style.setProperty('--color-canvas-bg', nextBg);
+      root.style.setProperty('--canvas-bg', nextBg);
+      root.style.setProperty('--color-text-main', '#0F172A');
+      setCanvasBgState(nextBg);
+      setEffectiveMode('light');
+    } else if (newMode === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light-theme');
+      nextBg = '#020617';
+      root.style.setProperty('--color-canvas-bg', nextBg);
+      root.style.setProperty('--canvas-bg', nextBg);
+      root.style.setProperty('--color-text-main', '#F8FAFC');
+      setCanvasBgState(nextBg);
+      setEffectiveMode('dark');
+    } else {
+      const isSystemDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      nextBg = isSystemDark ? '#020617' : '#FFFFFF';
+      if (isSystemDark) {
+        root.classList.add('dark');
+        root.classList.remove('light-theme');
+        root.style.setProperty('--color-text-main', '#F8FAFC');
+      } else {
+        root.classList.remove('dark');
+        root.classList.add('light-theme');
+        root.style.setProperty('--color-text-main', '#0F172A');
+      }
+      root.style.setProperty('--color-canvas-bg', nextBg);
+      root.style.setProperty('--canvas-bg', nextBg);
+      setCanvasBgState(nextBg);
+      setEffectiveMode(isSystemDark ? 'dark' : 'light');
+    }
+
+    applyGlobalTheme(primaryColor, secondaryColor, newMode, nextBg);
 
     try {
       localStorage.setItem('cpk_theme_mode', newMode);
+      localStorage.setItem('cpk_canvas_bg', nextBg);
+    } catch (_) {}
+
+    // Background sync to server API so database stays in sync with user's selection
+    try {
+      fetch('/api/admin/theme', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          primaryColor,
+          secondaryColor,
+          backgroundColor: nextBg,
+          themeMode: newMode,
+          themePalette: palette
+        })
+      }).catch(() => {});
     } catch (_) {}
 
     window.dispatchEvent(new CustomEvent('cpk_theme_updated', {
-      detail: { primary: primaryColor, secondary: secondaryColor, palette, mode: newMode, canvasBg }
+      detail: { primary: primaryColor, secondary: secondaryColor, palette, mode: newMode, canvasBg: nextBg }
     }));
   }, [primaryColor, secondaryColor, palette, canvasBg]);
 
@@ -224,8 +280,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode; initialSetting
     const p = settings.primary_cta_color;
     const s = settings.secondary_cta_color;
     const pal = settings.theme_palette;
-    const m = settings.theme_mode as ThemeMode | undefined;
-    const bg = settings.canvas_bg;
+
+    // Strict priority: user's manual choice in localStorage takes precedence over API defaults
+    const storedMode = typeof window !== 'undefined' ? localStorage.getItem('cpk_theme_mode') : null;
+    const storedBg = typeof window !== 'undefined' ? localStorage.getItem('cpk_canvas_bg') : null;
+
+    const m = (storedMode === 'light' || storedMode === 'dark' || storedMode === 'system')
+      ? (storedMode as ThemeMode)
+      : (settings.theme_mode as ThemeMode | undefined);
+
+    const bg = storedBg || settings.canvas_bg;
 
     if (p && p !== primaryColor) setPrimaryColor(p);
     if (s && s !== secondaryColor) setSecondaryColor(s);

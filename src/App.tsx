@@ -116,11 +116,23 @@ export default function App() {
   }, []);
 
   // Dynamically synchronize theme colors, mode, and root CSS variables
+  // Strict precedence: user's manual localStorage choice MUST take precedence over fetched database defaults
   useEffect(() => {
-    const primary = siteSettings?.primary_cta_color || '#10B981';
-    const secondary = siteSettings?.secondary_cta_color || '#06B6D4';
-    const mode = siteSettings?.theme_mode || 'system';
-    const canvasBg = siteSettings?.canvas_bg || siteSettings?.canvas_bg_color || siteSettings?.background_color || '';
+    if (!siteSettings) return;
+
+    const storedMode = typeof window !== 'undefined' ? localStorage.getItem('cpk_theme_mode') : null;
+    const storedBg = typeof window !== 'undefined' ? localStorage.getItem('cpk_canvas_bg') : null;
+
+    const primary = siteSettings.primary_cta_color || '#10B981';
+    const secondary = siteSettings.secondary_cta_color || '#06B6D4';
+
+    // Strict priority: user's manual choice takes precedence over database default
+    const mode = (storedMode === 'light' || storedMode === 'dark' || storedMode === 'system')
+      ? storedMode
+      : (siteSettings.theme_mode || 'system');
+
+    const canvasBg = storedBg || siteSettings.canvas_bg || siteSettings.canvas_bg_color || siteSettings.background_color || '';
+
     applyGlobalTheme(primary, secondary, mode, canvasBg);
   }, [siteSettings]);
 
@@ -131,7 +143,6 @@ export default function App() {
         const { primary, secondary, mode, canvasBg } = e.detail;
         applyGlobalTheme(primary, secondary, mode, canvasBg);
       }
-      fetchSiteSettings();
     };
     window.addEventListener('cpk_theme_updated', handleThemeUpdated);
     return () => {
@@ -188,12 +199,7 @@ export default function App() {
 
   return (
     <div 
-      className="w-full max-w-full overflow-x-hidden min-h-screen font-sans selection:bg-emerald-500/30 selection:text-emerald-300"
-      style={{ 
-        backgroundColor: 'var(--color-canvas-bg)', 
-        color: 'var(--color-text-main)', 
-        transition: 'background-color 0.2s ease, color 0.2s ease' 
-      }}
+      className="w-full max-w-full overflow-x-hidden min-h-screen font-sans bg-[var(--color-canvas-bg)] text-slate-900 dark:text-slate-100 transition-colors duration-200 selection:bg-emerald-500/30 selection:text-emerald-300"
     >
       
       {/* Main Fixed Navigation (Includes Announcement Banner & Navigation Bar) */}

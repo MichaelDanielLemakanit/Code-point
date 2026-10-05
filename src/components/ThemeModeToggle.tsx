@@ -84,6 +84,41 @@ export const ThemeModeToggle: React.FC<ThemeModeToggleProps> = ({
     return 'bg-slate-800 text-emerald-400 font-bold shadow-sm border border-slate-700/80';
   };
 
+  const handleModeClick = (newMode: ThemeMode) => {
+    // Direct root DOM update on click
+    const root = document.documentElement;
+    if (newMode === 'light') {
+      root.classList.remove('dark');
+      root.classList.add('light-theme');
+      root.style.setProperty('--color-canvas-bg', '#FFFFFF');
+      root.style.setProperty('--canvas-bg', '#FFFFFF');
+      root.style.setProperty('--color-text-main', '#0F172A');
+    } else if (newMode === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light-theme');
+      root.style.setProperty('--color-canvas-bg', '#020617');
+      root.style.setProperty('--canvas-bg', '#020617');
+      root.style.setProperty('--color-text-main', '#F8FAFC');
+    } else {
+      const isSystemDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isSystemDark) {
+        root.classList.add('dark');
+        root.classList.remove('light-theme');
+        root.style.setProperty('--color-canvas-bg', '#020617');
+        root.style.setProperty('--canvas-bg', '#020617');
+        root.style.setProperty('--color-text-main', '#F8FAFC');
+      } else {
+        root.classList.remove('dark');
+        root.classList.add('light-theme');
+        root.style.setProperty('--color-canvas-bg', '#FFFFFF');
+        root.style.setProperty('--canvas-bg', '#FFFFFF');
+        root.style.setProperty('--color-text-main', '#0F172A');
+      }
+    }
+
+    setMode(newMode);
+  };
+
   return (
     <div
       role="radiogroup"
@@ -101,7 +136,7 @@ export const ThemeModeToggle: React.FC<ThemeModeToggleProps> = ({
             role="radio"
             aria-checked={isActive}
             title={opt.title}
-            onClick={() => setMode(opt.id)}
+            onClick={() => handleModeClick(opt.id)}
             className={`flex items-center justify-center rounded-lg font-medium transition-all duration-150 cursor-pointer ${
               sizeClasses.btn
             } ${getActiveBtnStyle(isActive)}`}
