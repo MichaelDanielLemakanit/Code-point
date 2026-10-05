@@ -34,7 +34,10 @@ export const Footer: React.FC<FooterProps> = ({
   };
 
   return (
-    <footer className="w-full max-w-full overflow-x-hidden bg-slate-950 text-slate-400 border-t border-slate-800 text-xs">
+    <footer 
+      style={{ backgroundColor: 'var(--color-canvas-bg, #020617)' }}
+      className="w-full max-w-full overflow-x-hidden text-slate-400 border-t border-slate-800/80 text-xs transition-colors duration-300"
+    >
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10">

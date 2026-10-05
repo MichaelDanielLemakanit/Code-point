@@ -199,7 +199,8 @@ export const Hero: React.FC<HeroProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.7 }}
-      className="w-full max-w-full overflow-x-hidden relative bg-slate-950 text-slate-100 pt-10 pb-16 lg:pt-16 lg:pb-24 border-b border-slate-800/80 group scroll-mt-20"
+      style={{ backgroundColor: 'var(--color-canvas-bg, #020617)' }}
+      className="w-full max-w-full overflow-x-hidden relative text-slate-100 pt-10 pb-16 lg:pt-16 lg:pb-24 border-b border-slate-800/80 group scroll-mt-20 transition-colors duration-300"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >

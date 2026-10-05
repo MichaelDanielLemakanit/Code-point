@@ -129,6 +129,81 @@ app.put("/api/site-settings", async (req: Request, res: Response) => {
   }
 });
 
+// Admin Theme API: Get current theme configuration
+app.get("/api/admin/theme", async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const settings = await getSiteSettings(db);
+    res.json({
+      success: true,
+      theme: {
+        primaryColor: settings.primary_cta_color || "#10B981",
+        secondaryColor: settings.secondary_cta_color || "#06B6D4",
+        backgroundColor: settings.canvas_bg_color || settings.background_color || "#020617",
+        themeMode: settings.theme_mode || "dark",
+        themePalette: settings.theme_palette || "emerald"
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Admin Theme API: Save and apply theme configuration
+const handleSaveThemeRoute = async (req: Request, res: Response) => {
+  try {
+    const db = await getDatabase();
+    const { 
+      primaryColor, 
+      secondaryColor, 
+      backgroundColor, 
+      themeMode, 
+      themePalette,
+      primary_cta_color,
+      secondary_cta_color,
+      background_color,
+      canvas_bg_color,
+      theme_mode,
+      theme_palette
+    } = req.body || {};
+
+    const finalPrimary = primaryColor || primary_cta_color || "#10B981";
+    const finalSecondary = secondaryColor || secondary_cta_color || "#06B6D4";
+    const finalBg = backgroundColor || background_color || canvas_bg_color || "#020617";
+    const finalMode = themeMode || theme_mode || "dark";
+    const finalPalette = themePalette || theme_palette || "emerald";
+
+    const payloadToSave: Record<string, string> = {
+      primary_cta_color: finalPrimary,
+      secondary_cta_color: finalSecondary,
+      canvas_bg_color: finalBg,
+      background_color: finalBg,
+      theme_mode: finalMode,
+      theme_palette: finalPalette
+    };
+
+    const updated = await saveSiteSettings(db, payloadToSave);
+
+    res.json({
+      success: true,
+      message: "Theme saved and applied successfully.",
+      theme: {
+        primaryColor: finalPrimary,
+        secondaryColor: finalSecondary,
+        backgroundColor: finalBg,
+        themeMode: finalMode,
+        themePalette: finalPalette
+      },
+      settings: updated
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+app.post("/api/admin/theme", handleSaveThemeRoute);
+app.put("/api/admin/theme", handleSaveThemeRoute);
+
 // Intake Settings: Get upcoming intake & cohort configuration
 app.get("/api/intake-settings", async (req: Request, res: Response) => {
   try {

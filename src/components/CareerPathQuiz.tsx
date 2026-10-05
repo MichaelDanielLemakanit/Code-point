@@ -401,7 +401,8 @@ export const CareerPathQuiz: React.FC<CareerPathQuizProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.1, margin: '-40px 0px' }}
       transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full max-w-full overflow-x-hidden py-16 sm:py-20 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 relative border-b border-slate-800/80 scroll-mt-20"
+      style={{ backgroundColor: 'var(--color-canvas-bg, #020617)' }}
+      className="w-full max-w-full overflow-x-hidden py-16 sm:py-20 text-slate-100 relative border-b border-slate-800/80 scroll-mt-20 transition-colors duration-300"
     >
       {/* Background ambient decorative glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[600px] h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />

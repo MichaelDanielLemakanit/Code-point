@@ -220,7 +220,11 @@ export const VideoTestimonialsGallery: React.FC<VideoTestimonialsGalleryProps> =
   };
 
   return (
-    <section id="alumni" className="w-full max-w-full overflow-x-hidden py-20 bg-slate-900 text-slate-100 border-b border-slate-800 relative scroll-mt-20">
+    <section 
+      id="alumni" 
+      style={{ backgroundColor: 'var(--color-canvas-bg, #020617)' }}
+      className="w-full max-w-full overflow-x-hidden py-20 text-slate-100 border-b border-slate-800/80 relative scroll-mt-20 transition-colors duration-300"
+    >
       
       {/* Background ambient accents dynamically bound to theme */}
       <div 

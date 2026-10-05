@@ -112,7 +112,8 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.08, margin: '-40px 0px' }}
       transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full max-w-full overflow-x-hidden py-20 bg-slate-900 text-slate-100 relative scroll-mt-20 border-b border-slate-800"
+      style={{ backgroundColor: 'var(--color-canvas-bg, #020617)' }}
+      className="w-full max-w-full overflow-x-hidden py-20 text-slate-100 relative scroll-mt-20 border-b border-slate-800/80 transition-colors duration-300"
     >
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         

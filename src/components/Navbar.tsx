@@ -117,11 +117,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 w-full transition-colors duration-200 ${
-      isScrolled 
-        ? 'bg-slate-950/85 backdrop-blur-md border-b border-slate-800/60 shadow-xl shadow-black/30' 
-        : 'bg-slate-950/80 backdrop-blur-md border-b border-slate-800/50 shadow-sm'
-    } text-slate-100`}>
+    <header 
+      style={{ backgroundColor: 'var(--nav-bg, rgba(2, 6, 23, 0.85))' }}
+      className={`fixed top-0 left-0 right-0 z-50 w-full transition-colors duration-200 backdrop-blur-md border-b border-slate-800/60 ${
+        isScrolled 
+          ? 'shadow-xl shadow-black/30' 
+          : 'shadow-sm'
+      } text-slate-100`}
+    >
       {/* Top-Bar Announcement Banner for Upcoming Intake & Next Cohort */}
       <AnnouncementBanner
         siteSettings={siteSettings}
@@ -299,7 +302,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-40 lg:hidden border-b border-slate-800 bg-slate-950 px-4 pt-3 pb-6 space-y-3.5 max-h-[calc(100vh-4.5rem)] overflow-y-auto shadow-2xl pointer-events-auto"
+            style={{ backgroundColor: 'var(--color-canvas-surface, #020617)' }}
+            className="relative z-40 lg:hidden border-b border-slate-800 px-4 pt-3 pb-6 space-y-3.5 max-h-[calc(100vh-4.5rem)] overflow-y-auto shadow-2xl pointer-events-auto"
           >
             <div className="p-2.5 rounded-lg bg-slate-900 text-xs text-slate-300 space-y-1">
               <p className="theme-text-primary font-medium">📍 {siteSettings?.address || "Ngong Road, Teamshark, 5th Floor"}</p>

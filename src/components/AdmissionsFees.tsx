@@ -67,7 +67,11 @@ export const AdmissionsFees: React.FC<AdmissionsFeesProps> = ({
   };
 
   return (
-    <section id="tuition" className="w-full max-w-full overflow-x-hidden py-20 bg-slate-900 text-slate-100 border-b border-slate-800 scroll-mt-20">
+    <section 
+      id="tuition" 
+      style={{ backgroundColor: 'var(--color-canvas-bg, #020617)' }}
+      className="w-full max-w-full overflow-x-hidden py-20 text-slate-100 border-b border-slate-800/80 scroll-mt-20 transition-colors duration-300"
+    >
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}

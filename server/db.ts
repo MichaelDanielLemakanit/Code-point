@@ -460,7 +460,13 @@ export const DEFAULT_SITE_SETTINGS: Record<string, string> = {
         is_visible: true
       }
     ]
-  })
+  }),
+  theme_palette: "emerald",
+  theme_mode: "dark",
+  primary_cta_color: "#10B981",
+  secondary_cta_color: "#06B6D4",
+  canvas_bg_color: "#020617",
+  background_color: "#020617"
 };
 
 export const DEFAULT_COURSES = [
