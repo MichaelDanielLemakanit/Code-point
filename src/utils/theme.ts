@@ -82,37 +82,50 @@ export function applyGlobalTheme(
   // 1. Resolve effective mode (system, dark, or light)
   const normalizedMode: ThemeMode = (mode === 'light' || mode === 'dark') ? mode : 'system';
   const effective = resolveEffectiveMode(normalizedMode);
-  const isDark = effective === 'dark';
 
-  // 2. Toggle Tailwind's dark class on <html>
-  if (isDark) {
-    root.classList.add('dark');
-  } else {
-    root.classList.remove('dark');
-  }
-
-  // 3. Set root CSS variable --color-canvas-bg to the active background hex
-  // (or fall back to #020617 for Dark / #FFFFFF for Light when no custom hex is set)
+  // 2. Resolve active background hex: prioritize explicitly chosen canvas hex,
+  // falling back to mode defaults (#F8FAFC for light, #020617 for dark)
   let activeBg = (canvasBgHex || '').trim();
   if (!activeBg) {
-    activeBg = isDark ? '#020617' : '#FFFFFF';
-  } else {
-    // Validate brightness compatibility with current mode
-    const rgb = hexToRgb(activeBg);
-    const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-    if (isDark && luminance > 0.6) {
-      activeBg = '#020617';
-    } else if (!isDark && luminance < 0.35) {
-      activeBg = '#FFFFFF';
-    }
+    activeBg = effective === 'light' ? '#F8FAFC' : '#020617';
+  } else if (!activeBg.startsWith('#')) {
+    activeBg = `#${activeBg}`;
   }
 
-  // 4. Set root CSS variable --color-text-main to #F8FAFC for dark mode and #0F172A for light mode
-  const activeText = isDark ? '#F8FAFC' : '#0F172A';
+  // 3. Compute luminance to adapt text and card contrast dynamically
+  const rgb = hexToRgb(activeBg);
+  const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+  const isBright = luminance > 0.5;
+
+  // 4. Toggle root classes for Tailwind and custom CSS rules
+  if (isBright) {
+    root.classList.add('light-theme');
+    root.classList.remove('dark');
+  } else {
+    root.classList.remove('light-theme');
+    root.classList.add('dark');
+  }
+
+  // 5. Adaptive text & card contrast variables
+  const activeText = isBright ? '#0F172A' : '#F8FAFC';
+  const activeMuted = isBright ? '#475569' : '#94A3B8';
+  const activeHeading = isBright ? '#0F172A' : '#FFFFFF';
+  const activeSurface = isBright ? 'rgba(255, 255, 255, 0.95)' : 'rgba(15, 23, 42, 0.75)';
+  const activeSurfaceAlt = isBright ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.02)';
+  const activeBorder = isBright ? 'rgba(15, 23, 42, 0.12)' : 'rgba(51, 65, 85, 0.55)';
+  const activeNavBg = isBright ? 'rgba(255, 255, 255, 0.92)' : 'rgba(2, 6, 23, 0.85)';
 
   root.style.setProperty('--color-canvas-bg', activeBg);
+  root.style.setProperty('--canvas-bg', activeBg);
   root.style.setProperty('--color-text-main', activeText);
-  root.style.setProperty('--bg-dark', isDark ? activeBg : '#020617');
+  root.style.setProperty('--color-canvas-text', activeText);
+  root.style.setProperty('--color-canvas-muted', activeMuted);
+  root.style.setProperty('--color-canvas-heading', activeHeading);
+  root.style.setProperty('--color-canvas-surface', activeSurface);
+  root.style.setProperty('--color-canvas-surface-alt', activeSurfaceAlt);
+  root.style.setProperty('--color-canvas-border', activeBorder);
+  root.style.setProperty('--nav-bg', activeNavBg);
+  root.style.setProperty('--bg-dark', activeBg);
 
   // Badge & Status Pills variables
   root.style.setProperty('--badge-bg', `rgba(${r1}, ${g1}, ${b1}, 0.12)`);

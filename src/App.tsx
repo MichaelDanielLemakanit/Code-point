@@ -120,13 +120,17 @@ export default function App() {
     const primary = siteSettings?.primary_cta_color || '#10B981';
     const secondary = siteSettings?.secondary_cta_color || '#06B6D4';
     const mode = siteSettings?.theme_mode || 'system';
-    const canvasBg = siteSettings?.canvas_bg || '';
+    const canvasBg = siteSettings?.canvas_bg || siteSettings?.canvas_bg_color || siteSettings?.background_color || '';
     applyGlobalTheme(primary, secondary, mode, canvasBg);
   }, [siteSettings]);
 
-  // Listen for real-time theme updates dispatched across components
+  // Listen for real-time theme updates dispatched across components for instant live page updating
   useEffect(() => {
-    const handleThemeUpdated = () => {
+    const handleThemeUpdated = (e: any) => {
+      if (e?.detail) {
+        const { primary, secondary, mode, canvasBg } = e.detail;
+        applyGlobalTheme(primary, secondary, mode, canvasBg);
+      }
       fetchSiteSettings();
     };
     window.addEventListener('cpk_theme_updated', handleThemeUpdated);

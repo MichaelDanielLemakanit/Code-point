@@ -39,6 +39,17 @@ app.get("/api/health", (req: Request, res: Response) => {
   res.json({ status: "ok", institution: "Code Point Kenya", timestamp: new Date().toISOString() });
 });
 
+// AI Health check (safe environment variable detection without exposing keys)
+app.get("/api/ai/health", (req: Request, res: Response) => {
+  const hasKey = Boolean(process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY);
+  res.json({
+    status: "ok",
+    configured: hasKey,
+    model: "gemini-2.5-flash",
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Database Diagnostics for Admin / Vercel verification
 app.get("/api/admin/db-status", async (req: Request, res: Response) => {
   try {
@@ -129,8 +140,8 @@ app.put("/api/site-settings", async (req: Request, res: Response) => {
   }
 });
 
-// Admin Theme API: Get current theme configuration
-app.get("/api/admin/theme", async (req: Request, res: Response) => {
+// Admin & Public Theme API: Get current theme configuration
+const handleGetThemeRoute = async (req: Request, res: Response) => {
   try {
     const db = await getDatabase();
     const settings = await getSiteSettings(db);
@@ -139,7 +150,7 @@ app.get("/api/admin/theme", async (req: Request, res: Response) => {
       theme: {
         primaryColor: settings.primary_cta_color || "#10B981",
         secondaryColor: settings.secondary_cta_color || "#06B6D4",
-        backgroundColor: settings.canvas_bg_color || settings.background_color || "#020617",
+        backgroundColor: settings.canvas_bg_color || settings.background_color || settings.canvas_bg || "#020617",
         themeMode: settings.theme_mode || "dark",
         themePalette: settings.theme_palette || "emerald"
       }
@@ -147,7 +158,10 @@ app.get("/api/admin/theme", async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
-});
+};
+
+app.get("/api/admin/theme", handleGetThemeRoute);
+app.get("/api/theme", handleGetThemeRoute);
 
 // Admin Theme API: Save and apply theme configuration
 const handleSaveThemeRoute = async (req: Request, res: Response) => {
@@ -163,19 +177,21 @@ const handleSaveThemeRoute = async (req: Request, res: Response) => {
       secondary_cta_color,
       background_color,
       canvas_bg_color,
+      canvas_bg,
       theme_mode,
       theme_palette
     } = req.body || {};
 
     const finalPrimary = primaryColor || primary_cta_color || "#10B981";
     const finalSecondary = secondaryColor || secondary_cta_color || "#06B6D4";
-    const finalBg = backgroundColor || background_color || canvas_bg_color || "#020617";
+    const finalBg = backgroundColor || background_color || canvas_bg_color || canvas_bg || "#020617";
     const finalMode = themeMode || theme_mode || "dark";
     const finalPalette = themePalette || theme_palette || "emerald";
 
     const payloadToSave: Record<string, string> = {
       primary_cta_color: finalPrimary,
       secondary_cta_color: finalSecondary,
+      canvas_bg: finalBg,
       canvas_bg_color: finalBg,
       background_color: finalBg,
       theme_mode: finalMode,
@@ -203,6 +219,8 @@ const handleSaveThemeRoute = async (req: Request, res: Response) => {
 
 app.post("/api/admin/theme", handleSaveThemeRoute);
 app.put("/api/admin/theme", handleSaveThemeRoute);
+app.post("/api/theme", handleSaveThemeRoute);
+app.put("/api/theme", handleSaveThemeRoute);
 
 // Intake Settings: Get upcoming intake & cohort configuration
 app.get("/api/intake-settings", async (req: Request, res: Response) => {

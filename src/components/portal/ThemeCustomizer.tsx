@@ -193,9 +193,27 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
         theme_palette: selectedPalette,
         theme_mode: selectedMode,
         canvas_bg: canvasBgHex,
+        canvas_bg_color: canvasBgHex,
+        background_color: canvasBgHex,
         primary_cta_color: primaryColor,
         secondary_cta_color: secondaryColor
       };
+
+      // Also persist directly to /api/admin/theme
+      try {
+        await fetch('/api/admin/theme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            primaryColor,
+            secondaryColor,
+            backgroundColor: canvasBgHex,
+            canvas_bg_color: canvasBgHex,
+            themeMode: selectedMode,
+            themePalette: selectedPalette
+          })
+        });
+      } catch (_) {}
 
       let success = false;
       if (typeof onUpdateSiteSettings === 'function') {
