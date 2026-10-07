@@ -5,7 +5,6 @@ import {
   User as UserIcon, 
   Menu, 
   X, 
-  ArrowRight,
   ShieldCheck,
   ChevronDown,
   Lock,
@@ -132,34 +131,44 @@ export const Navbar: React.FC<NavbarProps> = ({
       />
 
       {/* Main Navigation Bar */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-2 lg:gap-3">
-        {/* Brand Logo */}
-        <a 
-          href="#hero"
-          onClick={(e) => handleNavClick('hero', e)}
-          className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group select-none min-w-0 shrink-0"
-        >
-          {siteSettings?.school_logo_url && (
-            <img 
-              src={siteSettings.school_logo_url} 
-              alt={siteSettings.brand_name || "Code Point Kenya"} 
-              className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover shadow-lg border border-slate-750 shrink-0" 
-            />
-          )}
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-slate-900 dark:text-white font-sans whitespace-nowrap">
-              {siteSettings?.brand_name || "Code Point Kenya"}
-            </span>
-          </div>
-        </a>
+      <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-3 lg:gap-4 xl:gap-6">
+        
+        {/* ========================================================================= */}
+        {/* LEFT SECTION: Brand Logo & Title (Fixed / Content-Based Width)            */}
+        {/* ========================================================================= */}
+        <div className="flex items-center flex-shrink-0">
+          <a 
+            href="#hero"
+            onClick={(e) => handleNavClick('hero', e)}
+            className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group select-none flex-shrink-0"
+          >
+            {siteSettings?.school_logo_url && (
+              <img 
+                src={siteSettings.school_logo_url} 
+                alt={siteSettings.brand_name || "Code Point Kenya"} 
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover shadow-lg border border-slate-750 shrink-0" 
+              />
+            )}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-slate-900 dark:text-white font-sans whitespace-nowrap">
+                {siteSettings?.brand_name || "Code Point Kenya"}
+              </span>
+            </div>
+          </a>
+        </div>
 
-        {/* Desktop Navigation Links (Visible on lg: 1024px and above) */}
-        <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 2xl:gap-2 text-[11px] xl:text-xs 2xl:text-sm font-medium text-slate-600 dark:text-slate-300 flex-nowrap whitespace-nowrap shrink-0">
+        {/* ========================================================================= */}
+        {/* CENTER SECTION: Perfectly Centered Navigation Links List                  */}
+        {/* ========================================================================= */}
+        <nav 
+          aria-label="Primary navigation"
+          className="hidden lg:flex flex-1 justify-center items-center gap-1.5 xl:gap-2.5 2xl:gap-4 mx-auto min-w-0 overflow-x-auto no-scrollbar py-1"
+        >
           {/* Career Path Quiz Link */}
           <a
             href="#career-quiz"
             onClick={(e) => handleNavClick('career-quiz', e)}
-            className={`relative px-2 py-1 xl:px-2.5 xl:py-1.5 rounded-lg transition-colors font-semibold cursor-pointer whitespace-nowrap shrink-0 theme-btn-secondary flex items-center gap-1.5 ${
+            className={`relative px-2 py-1 xl:px-2.5 xl:py-1.5 rounded-lg transition-colors font-semibold cursor-pointer whitespace-nowrap shrink-0 theme-btn-secondary flex items-center gap-1.5 text-xs xl:text-sm ${
               activeSection === 'career-quiz' ? 'brightness-110 shadow-sm' : ''
             }`}
             title="Interactive Career Path Quiz (60 Seconds)"
@@ -176,16 +185,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 href={`#${item.id}`}
                 title={item.label}
                 onClick={(e) => handleNavClick(item.id, e)}
-                className={`relative px-1.5 py-1 xl:px-2 xl:py-1.5 2xl:px-2.5 rounded-lg transition-colors font-medium cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`relative px-1.5 py-1 xl:px-2 xl:py-1.5 2xl:px-2.5 rounded-lg transition-colors text-xs xl:text-sm font-medium cursor-pointer whitespace-nowrap shrink-0 ${
                   isActive
-                    ? 'text-white font-semibold'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-900/60'
+                    ? 'text-slate-900 dark:text-white font-semibold'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-900/60'
                 }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="activeNavPill"
-                    className="absolute inset-0 rounded-lg bg-slate-850/90 border border-slate-700/70 shadow-sm"
+                    className="absolute inset-0 rounded-lg bg-slate-200/80 dark:bg-slate-850/90 border border-slate-300/80 dark:border-slate-700/70 shadow-xs"
                     transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                   />
                 )}
@@ -197,85 +206,72 @@ export const Navbar: React.FC<NavbarProps> = ({
           })}
         </nav>
 
-        {/* Mobile & Tablet Header Right (strictly Quick Action "Admin CMS" or "Portal" + Hamburger Icon only) */}
-        <div className="flex lg:hidden items-center gap-2 shrink-0 relative z-30 pointer-events-auto">
-          <button
-            type="button"
-            onClick={() => {
-              setMobileMenuOpen(false);
-              onOpenAdminCMS();
-            }}
-            className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 pointer-events-auto"
-            title="Admin CMS"
-          >
-            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>Admin CMS</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-900 border border-slate-800 transition-colors cursor-pointer flex items-center justify-center shrink-0 pointer-events-auto"
-            aria-label="Toggle Navigation Menu"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-slate-200" />}
-          </button>
-        </div>
-
-        {/* Desktop Header Right (Visible on lg: 1024px and above) */}
-        <div className="hidden lg:flex items-center gap-2 xl:gap-2.5 flex-nowrap whitespace-nowrap shrink-0">
-          {/* Theme Mode Segmented Control (Auto / System, Dark, Light) */}
-          <ThemeModeToggle size="sm" variant="auto" />
-
-          {/* Admin CMS Button */}
-          <button
-            onClick={onOpenAdminCMS}
-            className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 xl:px-3 py-1.5 rounded-xl transition-colors cursor-pointer whitespace-nowrap shrink-0"
-            title="Dedicated Admin CMS Panel"
-          >
-            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="whitespace-nowrap">Admin CMS</span>
-          </button>
-
-          {/* Portal Login / User Profile */}
-          {currentUser ? (
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl p-1 pr-3 shrink-0 whitespace-nowrap">
-              <button
-                onClick={onOpenPortal}
-                className="flex items-center gap-1.5 text-xs text-slate-200 hover:text-white font-medium px-2 py-1.5 rounded-lg whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                <div className="w-6 h-6 rounded-full theme-badge flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                  {currentUser.name.charAt(0)}
-                </div>
-                <span className="whitespace-nowrap">{currentUser.name.split(' ')[0]} ({currentUser.role})</span>
-              </button>
-              <button
-                onClick={onLogout}
-                className="text-[11px] text-slate-400 hover:text-rose-400 transition-colors ml-1 whitespace-nowrap shrink-0 cursor-pointer"
-                title="Sign out"
-              >
-                Sign out
-              </button>
-            </div>
-          ) : (
+        {/* ========================================================================= */}
+        {/* RIGHT SECTION: Controls (Theme Toggle, Admin CMS, User/Portal, Apply)     */}
+        {/* ========================================================================= */}
+        <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0">
+          {/* Mobile Right Controls (< lg) */}
+          <div className="flex lg:hidden items-center gap-2">
             <button
-              onClick={onOpenPortal}
-              className="flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-850 border border-slate-800 px-3 py-1.5 rounded-xl transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenAdminCMS();
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 pointer-events-auto"
+              title="Admin CMS"
             >
-              <ShieldCheck className="w-3.5 h-3.5 theme-text-primary shrink-0" />
-              <span className="whitespace-nowrap">Portal</span>
+              <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Admin CMS</span>
             </button>
-          )}
 
-          {/* Apply Now Button */}
-          <button
-            onClick={() => onOpenApply()}
-            style={{ backgroundColor: 'var(--primary-color)' }}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-950 hover:brightness-110 px-3 py-1.5 rounded-xl shadow-md transition-all hover:translate-y-[-1px] cursor-pointer whitespace-nowrap shrink-0"
-          >
-            <span className="whitespace-nowrap">Apply</span>
-            <ArrowRight className="w-3.5 h-3.5 shrink-0" />
-          </button>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-900 border border-slate-300 dark:border-slate-800 transition-colors cursor-pointer flex items-center justify-center shrink-0 pointer-events-auto"
+              aria-label="Toggle Navigation Menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5 text-slate-900 dark:text-white" /> : <Menu className="w-5 h-5 text-slate-700 dark:text-slate-200" />}
+            </button>
+          </div>
+
+          {/* Desktop Right Controls (lg+) */}
+          <div className="hidden lg:flex items-center gap-2 xl:gap-2.5 2xl:gap-3 flex-nowrap whitespace-nowrap flex-shrink-0">
+            {/* Theme Mode Segmented Control (Auto / System, Dark, Light) */}
+            <ThemeModeToggle size="sm" variant="auto" />
+
+            {/* Admin CMS Button */}
+            <button
+              onClick={onOpenAdminCMS}
+              className="flex items-center gap-1.5 text-xs font-semibold text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 xl:px-3 py-1.5 rounded-xl transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              title="Dedicated Admin CMS Panel"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
+              <span className="whitespace-nowrap">Admin CMS</span>
+            </button>
+
+            {/* User Profile (when authenticated) */}
+            {currentUser && (
+              <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 pr-3 shrink-0 whitespace-nowrap">
+                <button
+                  onClick={onOpenPortal}
+                  className="flex items-center gap-1.5 text-xs text-slate-800 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white font-medium px-2 py-1.5 rounded-lg whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <div className="w-6 h-6 rounded-full theme-badge flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                    {currentUser.name.charAt(0)}
+                  </div>
+                  <span className="whitespace-nowrap">{currentUser.name.split(' ')[0]} ({currentUser.role})</span>
+                </button>
+                <button
+                  onClick={onLogout}
+                  className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors ml-1 whitespace-nowrap shrink-0 cursor-pointer"
+                  title="Sign out"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
