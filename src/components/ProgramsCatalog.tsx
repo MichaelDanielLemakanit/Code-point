@@ -132,9 +132,6 @@ export const ProgramsCatalog: React.FC<ProgramsCatalogProps> = ({
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
             Transformative Tech Programs in Nairobi
           </h2>
-          <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
-            Practical, project-based engineering tracks taught by seasoned practitioners. Gain real-world mastery with flexible evening, weekend, and lab access.
-          </p>
         </div>
 
         {/* Category Filter Pills with Dynamic Theme Color */}

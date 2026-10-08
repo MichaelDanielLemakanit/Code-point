@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
-import { CareerPathQuiz } from './components/CareerPathQuiz';
 import { ProgramsCatalog } from './components/ProgramsCatalog';
 import { VideoTestimonialsGallery } from './components/VideoTestimonialsGallery';
 import { LearningModel } from './components/LearningModel';
 import { ReviewsSection } from './components/ReviewsSection';
 import { AdmissionsFees } from './components/AdmissionsFees';
-import { TechnologiesSection } from './components/TechnologiesSection';
 import { ClassSchedulesSection } from './components/ClassSchedulesSection';
 import { WhyStudySection } from './components/WhyStudySection';
 import { ContactSection } from './components/ContactSection';
@@ -221,15 +219,6 @@ export default function App() {
           onExplorePrograms={() => handleNavigateSection('programs')}
           onApplyNow={() => handleOpenApply()}
           onOpenTracker={() => handleOpenTracker()}
-          onTakeQuiz={() => handleNavigateSection('career-quiz')}
-          siteSettings={siteSettings}
-        />
-
-        {/* 1.5 Interactive Career Path Quiz Section */}
-        <CareerPathQuiz
-          courses={courses}
-          onApplyCourse={(courseId) => handleOpenApply(courseId)}
-          onExplorePrograms={() => handleNavigateSection('programs')}
           siteSettings={siteSettings}
         />
 
@@ -241,10 +230,7 @@ export default function App() {
           siteSettings={siteSettings}
         />
 
-        {/* 3. Technologies You Will Master */}
-        <TechnologiesSection />
-
-        {/* 4. Flexible Class Schedules (Evening Track & Weekend Track) */}
+        {/* 3. Flexible Class Schedules (Evening Track & Weekend Track) */}
         <ClassSchedulesSection
           onApply={() => handleOpenApply()}
           siteSettings={siteSettings}

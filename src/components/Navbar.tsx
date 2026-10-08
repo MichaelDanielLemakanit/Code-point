@@ -7,8 +7,7 @@ import {
   X, 
   ShieldCheck,
   ChevronDown,
-  Lock,
-  Compass
+  Lock
 } from 'lucide-react';
 import { User, SiteSettings } from '../types';
 import { useActiveSection } from '../hooks/useActiveSection';
@@ -41,9 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const activeSection = useActiveSection([
     'hero',
-    'career-quiz',
     'programs',
-    'technologies',
     'schedules',
     'why-codepoint',
     'campus',
@@ -55,7 +52,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navLinks = [
     { id: 'programs', label: 'Programs & Pricing', desktopLabel: 'Programs' },
-    { id: 'technologies', label: 'Technologies You Will Master', desktopLabel: 'Technologies' },
     { id: 'schedules', label: 'Flexible Class Schedules', desktopLabel: 'Schedules' },
     { id: 'why-codepoint', label: 'Why Study at CodePoint', desktopLabel: 'Why Us' },
     { id: 'campus', label: 'Online-First + Ngong Rd Lab', desktopLabel: 'Campus & Lab' },
@@ -164,19 +160,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           aria-label="Primary navigation"
           className="hidden lg:flex flex-1 justify-center items-center gap-1.5 xl:gap-2.5 2xl:gap-4 mx-auto min-w-0 overflow-x-auto no-scrollbar py-1"
         >
-          {/* Career Path Quiz Link */}
-          <a
-            href="#career-quiz"
-            onClick={(e) => handleNavClick('career-quiz', e)}
-            className={`relative px-2 py-1 xl:px-2.5 xl:py-1.5 rounded-lg transition-colors font-semibold cursor-pointer whitespace-nowrap shrink-0 theme-btn-secondary flex items-center gap-1.5 text-xs xl:text-sm ${
-              activeSection === 'career-quiz' ? 'brightness-110 shadow-sm' : ''
-            }`}
-            title="Interactive Career Path Quiz (60 Seconds)"
-          >
-            <Compass className="w-3.5 h-3.5 theme-text-primary shrink-0" />
-            <span className="whitespace-nowrap">Quiz</span>
-          </a>
-
           {navLinks.map((item) => {
             const isActive = activeSection === item.id;
             return (
@@ -307,16 +290,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <div className="flex flex-col space-y-1.5 text-sm font-medium">
-              {/* Career Path Quiz Link */}
-              <a
-                href="#career-quiz"
-                onClick={(e) => handleNavClick('career-quiz', e)}
-                className="text-left px-3 py-2.5 rounded-lg theme-btn-secondary font-semibold flex items-center gap-2 cursor-pointer relative z-20 pointer-events-auto"
-              >
-                <Compass className="w-4 h-4 theme-text-primary shrink-0" />
-                <span>Career Path Quiz (60 Seconds)</span>
-              </a>
-
               {/* Section Anchor Navigation Links */}
               {navLinks.map((link) => {
                 const isActive = activeSection === link.id;
